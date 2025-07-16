@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Power Management</title>
+	<link href="./cssConcept/fonts.css" rel="stylesheet" type="text/css" />
+	<link href="./cssConcept/index.css" rel="stylesheet" type="text/css" />
+	<link href="./cssConcept/system.css" rel="stylesheet" type="text/css" />
+	<link href="./cssConcept/systemPreview.css" rel="stylesheet" type="text/css" />
+	<link href="./cssConcept/files.css" rel="stylesheet" type="text/css" />
+	<link href="./cssConcept/usedDevices.css" rel="stylesheet" type="text/css" />
+	<link href='https://fonts.googleapis.com/css?family=Spartan' rel='stylesheet' />
+</head>
+
+<body id="body">
+	<header id="top">
+		<div id="configuratorInfo">
+			<h2 id="configuratorTitle" data-translate="configuratorHeader"></h2>
+			<p id="configuratorDescription" data-translate="configuratorDescription"></p>
+		</div>
+		<nav id="configuratorNav">
+			<ul class="configuratorNavList">
+				<li class="configuratorNavItem"><a id="navItemGuide"
+						href="https://doc.atestgaz.pl/AG/POD/POD-047-PLWydruk.pdf" data-translate="tetaGasGuidance"></a>
+				</li>
+				<li class="configuratorNavItem"><a id="navItemSchema"
+						href="https://doc.atestgaz.pl/AG/PROJ/PROJ-LIB-037.dwg" data-translate="dwgSchema"></a></li>
+				<li class="configuratorNavItem"><a id="navItemContact" href="https://www.atestgaz.pl/kontakt-3"
+						data-translate="contact"></a></li>
+				<li class="configuratorNavItem"><a id="navItemShop"
+						href="https://shop.atestgaz.com/teta-gas-adresowalny/49" data-translate="shop"></a></li>
+			</ul>
+		</nav>
+		<div class="configuratorLogo">
+			<img alt="Configurator logo image" id="configuratorLogoImage" src="./Icons/agLogo.png" />
+			<div id="configuratorLanguage">
+				<a href="index.html?lang=pl" class="langLink">PL</a>/
+				<a href="index.html?lang=en" class="langLink">EN</a>
+			</div>
+		</div>
+	</header>
+	<div class="configuratorPanel panelContainer">
+		<div class="panelHeaderContainer">
+			<h3 id="defaultHeader" data-translate="defaultHeader"></h3>
+		</div>
+		<div class="contentContainer">
+			<div class="formContainer">
+				<form class="form">
+					<div class="detectorAmounts">
+						<label for="amountOfDetectors" class="detectorAmountsLabel"
+							data-translate="detectorAmountsLabel"></label>
+						<div class="detectorAmountsInputContainer">
+							<input type="number" min="1" value="1" id="amountOfDetectors" class="detectorAmountsInput"
+								name="amountOfDetectors" />
+							<span id="quantity" data-translate="quantity"></span>
+							<span class="shadedAmount" data-translate="shadedAmount"></span>
+						</div>
+					</div>
+					<span class="buildingInformation tooltip">i</span>
+					<div class="buildingType">
+						<label for="structureType" class="structureLabel" data-translate="structureLabel"></label>
+						<div id="structureSelectForm" class="structureSelect formSelectInput">
+							<select id="structureType" name="structureType"></select>
+						</div>
+					</div>
+					<span class="detectedGasInformation tooltip">i</span>
+					<div class="detectedGas">
+						<label for="gasDetected" class="detectedGasLabel" data-translate="detectedGas"></label>
+						<div id="gasSelectForm" class="gasSelect formSelectInput">
+							<select id="gasDetected" name="gasDetected"></select>
+						</div>
+					</div>
+					<span class="batteryBackUpInformation tooltip">i</span>
+					<div class="batteryBackUp">
+						<label for="batteryBackUp" class="batteryBackUpLabel"
+							data-translate="batteryBackUpLabel"></label>
+						<div id="batterySelectFormBtn" class="batteryBackUpSelect formSelectInput">
+							<select id="batteryBackUp" name="batteryBackUp"></select>
+						</div>
+					</div>
+					<span class="wireLengthInformation tooltip">i</span>
+					<div class="wireLength">
+						<label for="EWL" class="wireLengthLabel" data-translate="wireLengthLabel"></label></label>
+						<div class="wireLengthInputContainer">
+							<input min="1" max="999" value="15" type="number" class="wireLengthInput" id="EWL"
+								name="EWL" />m
+						</div>
+					</div>
+					<button class="formButton" data-translate="confirmButton"><span></span></button>
+				</form>
+			</div>
+			<div class="descriptionContainer">
+				<ol>
+					<li class="descriptionEntry" data-translate="aboutAppDescriptionEntry"></li>
+					<li class="descriptionNext" data-translate="aboutAppDescriptionNext"></li>
+					<li class="descriptionEnd" data-translate="aboutAppDescriptionEnd"></li>
+				</ol>
+				<div class="descriptionAboutContainer">
+					<p class="inf" data-translate="aboutAppDescriptionInf"></p>
+					<br>
+					<p class="moreInf" data-translate="aboutAppDescriptionAbout">
+					</p>
+				</div>
+			</div>
+
+		</div>
+	</div>
+	<div class="dragAndDropPanel panelContainer">
+		<div id="dragNDropArea" class="dragAndDropArea" ondrop="handleDropFile(event);"
+			ondragover="handleDragOver(event);" data-translate="fileLoadDesc"></div>
+		<label class="formButton" for="readFileInput" data-translate="fileUpload"><span></span></label>
+		<input class="formButton" id="readFileInput" type="file" accept=".json"
+			onchange="handleInputLoadFile(event);" />
+	</div>
+	<div class="system" id="system">
+		<div class="systemStatus panelContainer">
+			<div class="panelHeaderContainer">
+				<h3 id="systemState" data-translate="systemStatusHeader"></h3>
+			</div>
+			<div class="systemStatusContainer">
+				<div class="panelContentContainer">
+					<div class="detectorsContainer">
+						<h4 class="detectorsListHeader" id="detectorListHeader" data-translate="systemStatusDetectors">
+						</h4>
+						<ol id="detectorsList" class="detectorsList"></ol>
+					</div>
+					<div class="signallersContainer">
+						<h4 class="signallerListHeader" id="signallerListHeader"
+							data-translate="systemStatusSignallers"></h4>
+						<ol id="signallersList" class="signallersList"></ol>
+					</div>
+					<div class="accessoriesContainer">
+						<h4 class="accessoriesListHeader" id="accessoriesListHeader"
+							data-translate="systemStatusAccessories"></h4>
+						<ol id="accessoriesList" class="accessoriesList"></ol>
+					</div>
+					<div class="controlUnitContainer">
+						<h4 class="controlUnitHeader" id="controlUnitHeader" data-translate="systemStatusPSU"></h4>
+						<ol id="controlUnitList" class="controlUnitList">
+							<li>
+								<div id="controlUnitBusLength" data-translate="busDescLength"></div>
+								<div><span id="busLength">58</span>m</div>
+							</li>
+							<li>
+								<div id="controlUnitPowerConsumption" data-translate="controlUnitPowerConsumption">
+								</div>
+								<div><span id="powerConsumption">150</span>W</div>
+							</li>
+						</ol>
+					</div>
+				</div>
+				<div class="powerSupplyContainer">
+					<ol class="powerSupplyList">
+						<li>
+							<div class="modControlType"></div>
+							<div><span id="powerSupply"></span></div>
+						</li>
+						<li>
+							<div id="powerSupplyCableDim" data-translate="powerSupplyCableDim"></div>
+							<div><span id="wireCrossSection"></span></div>
+						</li>
+					</ol>
+					<div class="systemStatusStateContainer">
+						<div class="systemStatusState" id="systemStatusState" data-translate="psuSystemStatus"></div>
+						<div id="systemOutput" class="systemOutput"></div>
+						<!-- <button id="optimizeSystem" class="optimizeSystem" data-translate="optimizeSystem"></button> -->
+						<div class="errors">
+							<ul class="errorList">
+
+							</ul>
+						</div>
+
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="systemPreview panelContainer">
+			<div class="systemGraphics">
+				<div class="panelHeaderContainer">
+					<h3 data-translate="mainSystemPreview"></h3>
+				</div>
+				<div class="systemPreviewControlUnit">
+					<img src="./SVG/controlUnit.svg" alt="Control unit image" />
+				</div>
+				<div id="systemDiagram" class="systemDiagram">
+					<div class="deviceSegment" id="segmentDiagram1" data-segmentindex="1">
+						<div class="checkboxContainer">
+							<input type="checkbox" class="segmentCheckbox">
+						</div>
+						<div class="warningDeviceImageContainer">
+							<img src alt="Warning device image" style="visibility: hidden;">
+						</div>
+						<div class="busImageContainer">
+							<img src alt="T-konektor image">
+						</div>
+						<div class="detectorImageContainer">
+							<img src alt="Detector image" style="visibility: hidden;">
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="systemActions">
+				<div class="panelHeaderContainer">
+					<h3 class="systemHeader" data-translate="mainSystemActions"></h3>
+				</div>
+				<div id="actionsList" class="actionsList">
+					<div class="actionsSegment" id="actionsSegment0" data-segmentType="PSU" data-segmentindex="0">
+						<div class="wrapper">
+							<label for="actionsSegmentIndex0" class="segmentIndexLabel">
+								<input type="number" class="segmentId" id="actionsSegmentIndex0" min="0" max="50"
+									value="0" disabled="true">
+							</label>
+							<label for="actionsSegmentDevice0" class="segmentDeviceLabel" id="segmentDeviceLabel">
+								<br>
+								<div class="possibleMODControls">
+									<button class="modControlList">Warianty zasilania</button>
+								</div>
+								<div class="upsDescription">UPS</div>
+								<div class="actionsSegment0SelectContainer">
+									<select type="text" class="segmentDeviceSelect" id="actionsSegmentDevice0"></select>
+								</div>
+								<input type="text" id="modControlBatteryBackUp" style="min-width: 30px;">
+							</label>
+						</div>
+					</div>
+					<div class="actionsSegment" id="actionsSegment1" data-segmentType="detectors" data-segmentindex="1">
+						<div class="wrapper">
+							<label for="actionsSegmentIndex1" class="segmentIndexLabel">
+								<input type="number" class="segmentId" id="actionsSegmentIndex1" min="0" max="50"
+									value="1" disabled="true">
+							</label>
+							<div class="deviceTypeWrapper">
+								<div class="segmentDeviceSelectContainer">
+									<label for="actionsSegmentDevice1" data-translate="systemSegmentDescription"
+										class="segmentDeviceLabel"></label>
+									<div class="formSelectInput">
+										<select id="actionsSegmentDevice1" class="segmentDeviceSelect"></select>
+									</div>
+								</div>
+							</div>
+							<div class="segmentWireLengthContainer">
+								<label for="actionsSegmentWireLength1" class="segmentWireLengthLabel"
+									data-translate="segmentWireLength"></label>
+								<br>
+								<input type="number" min="1" class="segmentWireLength" id="actionsSegmentWireLength1">
+							</div>
+							<div class="segmentButtonsContainer">
+								<button class="duplicateDeviceButton" id="duplicateDevice1">+</button>
+								<button class="removeDeviceButton" id="removeDevice1">-</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="wrapper">
+			<div class="systemFiles panelContainer">
+				<div class="panelHeaderContainer">
+					<h3 data-translate="systemFile"></h3>
+				</div>
+				<div class="panelContentContainer">
+					<div class="saveSystem fileButton">
+						<img src="./SVG/save.svg" alt="Export to JSON">
+						<button id="exportToJSON" data-translate="mainSystemSaveFile"></button>
+					</div>
+					<div class="setOfDevices fileButton">
+						<img src="./SVG/save.svg" alt="Export to CSV">
+						<button id="exportToCSV" data-translate="mainSystemDownloadFactsheet"></button>
+					</div>
+				</div>
+			</div>
+			<div class="checkboxButtons panelContainer">
+				<div class="panelHeaderContainer">
+					<h3 data-translate="checkboxes"></h3>
+					<div class="panelContentContainer">
+						<button class="formButton checkAll" data-translate="checkAll"></button>
+						<button class="formButton unCheckAll" data-translate="unCheckAll"></button>
+					</div>
+				</div>
+			</div>
+			<div class="usedDevices panelContainer">
+				<div class="panelHeaderContainer">
+					<h3 data-translate="mainSystemUsedDevices"></h3>
+				</div>
+				<div id="usedDevicesContainer" class="panelContentContainer"></div>
+			</div>
+		</div>
+		<div class="popupContainer">
+			<div class="popupContent">
+				<span class="popupText" onClick="closePopup"></span>
+				<p class="popupParagraphText"></p>
+			</div>
+		</div>
+
+		<div id="overlayPanel" class="overlay-panel hidden">
+			<div class="overlay-panel-backdrop"></div>
+			<div class="overlay-panel-content">
+				<button class="close-btn" title="Zamknij">&times;</button>
+				<div class="overlay-scroll-list" id="overlayList">
+					<div class="scroll-padding"></div>
+					<!-- Szablon do kopiowania, startowo ukryty -->
+					<div class="panel-col template" id="colTemplate" style="display:none;">
+						<div class="img-box">
+							<img class="img" src="" alt="Nazwa" />
+						</div>
+						<div class="panel-middle">
+							<div class="name"></div>
+							<div class="productKey"></div>
+							<select class="cable-select"></select>
+							<div class="totalPower"></div>
+							<div class="totalCurrent"></div>
+							<div class="totalVoltage"></div>
+						</div>
+						<button class="choose-btn"></button>
+					</div>
+					<!-- Tutaj JS doklei kopie -->
+				</div>
+			</div>
+		</div>
+
+
+	</div>
+	</div>
+	<nav id="configuratorNavMobile">
+		<ul class="configuratorNavList">
+			<li class="configuratorNavItem"><a href="https://doc.atestgaz.pl/AG/POD/POD-047-PLWydruk.pdf">
+					/a></li>
+			<li class="configuratorNavItem"><a href="https://doc.atestgaz.pl/AG/PROJ/PROJ-LIB-037.dwg"></a></li>
+			<li class="configuratorNavItem"><a href="https://atestgaz.pl/kontakt"></a></li>
+			<li class="configuratorNavItem"><a href="https://shop.atestgaz.com/teta-gas-adresowalny/49"></a></li>
+		</ul>
+	</nav>
+	<button id="navMobileActivationBtn">
+		<i class="navMobileActivationBtnIcon"></i>
+	</button>
+
+
+
+	<script src="./AnalysisEngine/models.js"></script>
+	<script src="./AnalysisEngine/engine.js"></script>
+	<!-- <script src="./AnalysisEngine/analysisEngine.js"></script> -->
+	<script src="js/language.js" type="text/javascript"></script>
+	<script src="js/index.js" type="text/javascript"></script>
+	<script src="js/helpers.js" type="text/javascript"></script>
+	<script src="js/form.js" type="text/javascript"></script>
+	<script src="js/translator.js" type="text/javascript"></script>
+	<script src="js/system.js" type="text/javascript"></script>
+	<script src="js/file.js" type="text/javascript"></script>
+</body>
+
+</html>

@@ -1,0 +1,37 @@
+.systemFiles .fileButton {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  cursor: pointer;
+}
+
+.systemFiles .fileButton:first-child { margin-bottom: 15px; }
+
+.systemFiles .fileButton img {
+  width: calc(var(--input-height) - 6px);
+  height: calc(var(--input-height) - 6px);
+}
+
+.systemFiles .fileButton button {
+  width: 100%;
+  height: calc(var(--input-height) - 8px);
+  font-family: var(--main-font-family);
+  font-size: 14px;
+  background: #ffffff;
+  border: 2px solid var(--input-border-color);
+  border-left: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+@media screen and (max-width: 500px) {
+  .systemFiles .fileButton button {
+    font-size: 11px;
+    padding: 4px 2px;
+  }
+  .systemFiles .fileButton img {
+    width: 22px;
+    height: 22px;
+  }
+}

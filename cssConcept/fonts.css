@@ -1,0 +1,53 @@
+@font-face {
+    font-family: 'Spartan';
+    src:  url('../fonts/Spartan-Thin.woff') format('woff');
+    font-weight: 100;
+}
+  
+@font-face {
+    font-family: 'Spartan';
+    src:  url('../fonts/Spartan-ExtraLight.woff') format('woff');
+    font-weight: 200;
+}
+  
+@font-face {
+    font-family: 'Spartan';
+    src:  url('../fonts/Spartan-Light.woff') format('woff');
+    font-weight: 300;
+}
+  
+@font-face {
+    font-family: 'Spartan';
+    src:  url('../fonts/Spartan-Regular.woff') format('woff');
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: 'Spartan';
+    src:  url('../fonts/Spartan-Medium.woff') format('woff');
+    font-weight: 500;
+}
+
+@font-face {
+    font-family: 'Spartan';
+    src:  url('../fonts/Spartan-SemiBold.woff') format('woff');
+    font-weight: 600;
+}
+
+@font-face {
+    font-family: 'Spartan';
+    src:  url('../fonts/Spartan-Bold.woff') format('woff');
+    font-weight: 700;
+}
+
+@font-face {
+    font-family: 'Spartan';
+    src:  url('../fonts/Spartan-ExtraBold.woff') format('woff');
+    font-weight: 800;
+}
+
+@font-face {
+    font-family: 'Spartan';
+    src:  url('../fonts/Spartan-Black.woff') format('woff');
+    font-weight: 900;
+}

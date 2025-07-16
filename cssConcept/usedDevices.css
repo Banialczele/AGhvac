@@ -1,0 +1,105 @@
+#usedDevicesContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+#usedDevicesContainer .usedDeviceItem {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  width: 100%;
+  padding: 25px 0;
+  border-bottom: 2px solid var(--input-border-color);
+  box-sizing: border-box;
+}
+
+#usedDevicesContainer .usedDeviceItem:first-child {
+  padding-top: 0;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr 15px;
+  grid-template-areas: "modControlDescription modControlImage"
+    "modControlDocTech modControlImage";
+    padding-bottom: 12px; 
+}
+
+.usedDeviceItem:first-child .usedDeviceName {
+  grid-area: modControlDescription;
+}
+
+.usedDeviceItem:first-child .usedDeviceDocs {
+  grid-area: modControlDocTech;
+}
+
+.usedDeviceItem:first-child .usedDeviceImageContainer {
+  grid-area: modControlImage;
+}
+
+#usedDevicesContainer .usedDeviceItem:last-child {
+  border: none;
+}
+
+.usedDeviceItem .systemUsedDeviceDataContainer,
+.usedDeviceItem .usedDeviceImageContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.systemUsedDeviceDataContainer p {
+  margin: 0;
+}
+
+.systemUsedDeviceDataContainer .usedDeviceName {
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.usedDeviceItem .usedDeviceDocs {
+  color: var(--secondary-bg-color);
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.systemUsedDeviceDataContainer .usedDeviceDocs {
+  color: var(--secondary-bg-color);
+  text-decoration: none;
+}
+
+.systemUsedDeviceDataContainer .usedDeviceDocs:nth-of-type(2) {
+  margin-top: 8px;
+}
+
+.usedDeviceImageContainer img {
+  display: block;
+  width: 100%;
+  max-width: 60px;
+  max-height: 80px;
+}
+@media screen and (max-width: 768px) {
+  #usedDevicesContainer .usedDeviceItem {
+    flex-direction: column;
+    align-items: flex-start;
+    row-gap: 15px;
+  }
+
+  .usedDeviceImageContainer {
+    align-self: center;
+  }
+}
+
+@media screen and (max-width: 400px) {
+  #usedDevicesContainer .usedDeviceItem {
+    padding: 12px 0;
+  }
+  .usedDeviceImageContainer img {
+    max-width: 45px;
+    max-height: 55px;
+  }
+  .systemUsedDeviceDataContainer, .usedDeviceImageContainer {
+    font-size: 10px;
+  }
+}

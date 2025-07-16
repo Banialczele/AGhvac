@@ -1,0 +1,383 @@
+.system .systemPreview {
+  display: grid;
+  grid-template-columns: 45% 55%;
+  height: 100%;
+  overflow: auto;
+}
+
+.systemPreview .systemActions input {
+  width: calc(var(--input-height) - 15px);
+  height: calc(var(--input-height) - 15px);
+  padding: 5px 2px;
+  font-size: 11px;
+}
+
+.systemPreview .systemActions select {
+  width: 100%;
+  height: calc(var(--input-height) - 15px);
+  padding: 5px 2px;
+}
+
+.systemPreview .systemActions .formSelectInput:has(select) {
+  height: calc(var(--input-height) - 15px);
+  margin: 0;
+}
+
+.systemPreview .systemActions .formSelectInput:has(select)::after {
+  width: calc(var(--input-height) - 25px);
+  height: calc(var(--input-height) - 15px);
+  bottom: 2px;
+}
+
+.systemPreview .systemGraphics,
+.systemActions {
+  place-self: start center;
+  width: 100%;
+  height: 100%;
+}
+
+.systemPreview .systemGraphics {
+  display: grid;
+  grid-template-areas:
+    "header"
+    "."
+    "controlUnit"
+    "device";
+  grid-template-rows: 50px 30px 150px 1fr;
+}
+
+.systemPreview .systemGraphics .systemHeader {
+  grid-area: header;
+}
+
+.systemPreview .systemGraphics .systemPreviewControlUnit {
+  grid-area: controlUnit;
+  margin-top: 20px;
+}
+
+.systemPreview .systemGraphics .systemPreviewControlUnit img {
+  width: 100%;
+  height: 100%;
+}
+
+.systemPreview .systemGraphics .systemDiagram {
+  grid-area: device;
+  place-self: start center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.systemGraphics .systemDiagram .deviceSegment {
+  width: 100%;
+  display: grid;
+  grid-template-areas: "checkbox sirenImage tcon deviceImage";
+  grid-template-rows: 200px;
+  grid-template-columns: 15px 1fr 100px 1fr;
+}
+
+.systemGraphics .systemDiagram .deviceSegment:nth-child(odd) {
+  background-color: var(--accent-bg-color);
+}
+
+.systemDiagram .deviceSegment .checkboxContainer {
+  grid-row: checkbox;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.systemDiagram .deviceSegment .warningDeviceImageContainer {
+  grid-row: sirenImage;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.systemDiagram .deviceSegment .busImageContainer {
+  grid-row: tcon;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.systemDiagram .deviceSegment .detectorImageContainer {
+  grid-row: deviceImage;
+}
+
+.deviceSegment img {
+  height: 100%;
+}
+
+.systemActions {
+  display: grid;
+  grid-template-areas:
+    "actionHeader"
+    "."
+    "actions";
+  grid-template-rows: 50px 30px 1fr;
+}
+
+.systemActions .actionsList {
+  grid-area: actions;
+  display: grid;
+  grid-template-rows: 130px;
+  grid-auto-rows: 200px;
+  margin-top: 20px;
+}
+
+.actionsList .actionsSegment {
+  width: 100%;
+  padding: 15px 0;
+}
+
+.actionsList .actionsSegment:nth-child(even) {
+  background-color: var(--accent-bg-color);
+}
+
+.actionsList .actionsSegment .wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  min-width: 100%;
+  height: 100%;
+  padding: 0 40px;
+  border-left: 2px solid var(--input-border-color);
+  box-sizing: border-box;
+}
+
+.actionsList .actionsSegment .wrapper .segmentDeviceLabel,
+.actionsList .actionsSegment .wrapper div {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.actionsList .actionsSegment .wrapper .segmentIndexLabel {
+  font-size: 18px;
+}
+
+.actionsList .actionsSegment .wrapper .segmentIndexLabel,
+.actionsList .actionsSegment .wrapper .deviceTypeWrapper {
+  margin-bottom: 20px;
+}
+
+.actionsList .actionsSegment .wrapper .deviceTypeWrapper {
+  display: flex;
+  width: 100%;
+  column-gap: 15px;
+}
+
+.actionsList .actionsSegment:first-child .wrapper input.segmentDeviceSelect,
+.actionsList .actionsSegment .wrapper .deviceTypeWrapper .segmentDeviceSelectContainer {
+  width: 160px;
+}
+
+.actionsList .actionsSegment .wrapper .deviceTypeWrapper .toledContainer {
+  width: 210px;
+}
+
+.actionsList .actionsSegment .wrapper .segmentWireLength {
+  width: 30px;
+}
+
+.segmentButtonsContainer {
+  display: flex;
+  flex-direction: column-reverse;
+  position: absolute;
+  bottom: calc(50% - 30px);
+  right: 15px;
+}
+
+.segmentButtonsContainer button {
+  width: calc(var(--input-height) - 10px);
+  height: calc(var(--input-height) - 10px);
+  color: #ffffff;
+  font-family: var(--main-font-family);
+  font-size: 16px;
+  font-weight: 900;
+  border: none;
+}
+
+.segmentButtonsContainer button.duplicateDeviceButton {
+  background-color: var(--third-bg-color);
+}
+
+.segmentButtonsContainer button.removeDeviceButton {
+  background-color: var(--secondary-bg-color);
+}
+
+@media screen and (max-width: 699px) {
+  .actionsList .actionsSegment .wrapper {
+    padding: 0 40px 0 8px;
+  }
+
+  .actionsList .actionsSegment .wrapper .deviceTypeWrapper {
+    flex-direction: column;
+    column-gap: 0;
+    row-gap: 20px;
+  }
+
+  .actionsList .actionsSegment .wrapper .deviceTypeWrapper .segmentDeviceSelectContainer {
+    width: 210px;
+  }
+}
+
+@media screen and (min-width: 700px) and (max-width: 1015px) {
+  .systemActions {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .actionsList .actionsSegment .wrapper {
+    padding: 0 40px 8px;
+  }
+}
+
+@media screen and (max-width: 1015px) {
+  .system .systemPreview {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  .systemGraphics .systemDiagram .deviceSegment {
+    grid-template-rows: 174px;
+    grid-template-columns: 1fr 90px 1fr;
+  }
+
+  .systemActions .actionsList {
+    grid-auto-rows: auto;
+    margin-top: 0;
+  }
+
+  .systemPreview .systemGraphics {
+    margin-bottom: 22px;
+  }
+
+  .actionsList .actionsSegment .wrapper {
+    border: none;
+  }
+}
+
+/* === Zmodyfikowany systemPreview.css === */
+@media screen and (max-width: 480px) {
+  .actionsList .actionsSegment .wrapper {
+    padding: 0 10px;
+  }
+
+  .segmentButtonsContainer button {
+    font-size: 14px;
+  }
+
+  .actionsList .actionsSegment .wrapper .segmentIndexLabel {
+    font-size: 16px;
+  }
+}
+
+/* === Zmodyfikowany usedDevices.css === */
+@media screen and (max-width: 768px) {
+  #usedDevicesContainer .usedDeviceItem {
+    flex-direction: column;
+    align-items: flex-start;
+    row-gap: 15px;
+  }
+
+  .usedDeviceImageContainer {
+    align-self: center;
+  }
+}
+
+/* === Przykład responsywnej typografii przy pomocy clamp() === */
+.actionsList .actionsSegment .wrapper .segmentDeviceLabel,
+.actionsList .actionsSegment .wrapper div {
+  font-size: clamp(10px, 2vw, 12px);
+}
+
+.actionsList .actionsSegment .wrapper .segmentIndexLabel {
+  font-size: clamp(14px, 3vw, 18px);
+}
+
+#actionsSegment0 #segmentDeviceLabel {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 225px 50px 175px;
+  grid-template-rows: 1fr 1fr;
+  grid-template-areas:
+    "description UPSdescription possibleMod"
+    "modControlSelect modControlUPS possibleMod";
+}
+
+#segmentDeviceLabel:first-child {
+  grid-area: description;
+}
+
+#segmentDeviceLabel .upsDescription {
+  grid-area: UPSdescription;
+  place-self: center;
+}
+
+#segmentDeviceLabel .possibleMODControls {
+  grid-area: possibleMod;
+  align-self: end;
+}
+
+.possibleMODControls button {
+  width: 100%;
+  height: var(--input-height);
+  margin: 0;
+  font-family: var(--main-font-family);
+  font-size: 15px;
+  color: #ffffff;
+  background: var(--secondary-bg-color);
+  border: none;
+  cursor: pointer;
+}
+
+#segmentDeviceLabel .segmentDeviceSelect {
+  grid-area: modControlSelect;
+  width: 100%;
+  height: calc(var(--input-height) - 15px);
+  padding: 5px 2px;
+  border: 1px solid #dadada;
+}
+
+.actionsSegment0SelectContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.actionsSegment0SelectContainer::after {
+  content: "▼";
+  position: absolute;
+  top: 50%;
+  right: 0px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: white;
+  background-color: var(--secondary-bg-color);
+  width: 1.5em;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#segmentDeviceLabel #modControlBatteryBackUp {
+  grid-area: modControlUPS;
+  justify-self: center;
+  margin: 0;
+}
+
+@media screen and (max-width: 480px) {
+  .systemGraphics .systemDiagram .deviceSegment {
+    grid-template-rows: 120px;
+  }
+}

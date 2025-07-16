@@ -1,0 +1,552 @@
+.system {
+  display: flex;
+  justify-content: center;
+  column-gap: 25px;
+  row-gap: 17px;
+  margin-bottom: 17px;
+  position: relative;
+}
+
+.system .panelContainer {
+  padding: 15px 20px 40px 10px;
+}
+
+.system .panelContentContainer {
+  padding-left: 15px;
+  padding-right: 5px;
+}
+
+.system .panelHeaderContainer {
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.system .panelHeaderContainer h3 {
+  margin: 0 0 30px;
+}
+
+.usedDevices .panelHeaderContainer h3 {
+  padding: 20px 24px;
+}
+
+.system .systemStatus {
+  grid-area: systemStatus;
+  place-self: start end;
+}
+
+.system .systemPreview {
+  grid-area: systemPreview;
+}
+
+.system .wrapper {
+  grid-area: wrapper;
+  place-self: start start;
+}
+
+.system .systemStatus {
+  width: 100%;
+  max-width: 325px;
+  height: 100%;
+  max-height: calc(100vh - 118px);
+  overflow-y: scroll;
+}
+
+.system .wrapper {
+  width: 100%;
+  max-width: 325px;
+}
+
+.system .systemPreview {
+  width: 100%;
+  min-width: 943px;
+  max-width: 1100px;
+  max-height: calc(100vh - 118px);
+  overflow-y: scroll;
+}
+
+.system .wrapper .usedDevices {
+  min-height: 350px;
+  max-height: calc(100vh - 366px);
+  overflow-y: scroll;
+}
+
+.system .systemFiles {
+  margin-bottom: 17px;
+}
+
+.system .checkboxButtons .panelContentContainer button {
+  width: 100%;
+  margin: 10px 0;
+}
+
+.systemStatusContainer .panelContentContainer {
+  width: 100%;
+}
+
+.systemStatusContainer h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.systemStatusContainer ol,
+.powerSupplyContainer ol {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 20px 0 20px 15px;
+  margin: 0;
+  list-style: none;
+  font-size: 12px;
+  row-gap: 15px;
+}
+
+.powerSupplyContainer ol {
+  padding: 0;
+  margin-bottom: 20px;
+  row-gap: 20px;
+}
+
+.systemStatusContainer ol li,
+.powerSupplyContainer ol li {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.systemStatusContainer ol li div,
+.powerSupplyContainer ol li div {
+  display: flex;
+  align-items: end;
+}
+
+.systemStatusContainer ol li div:has(span),
+.powerSupplyContainer ol li div:has(span) {
+  font-weight: 300;
+}
+
+.systemStatusContainer ol li div span,
+.powerSupplyContainer ol li div span {
+  margin-right: 4px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.powerSupplyContainer ol li div span {
+  font-size: 12px;
+  text-align: center;
+}
+
+.powerSupplyContainer ol li div sup {
+  align-self: flex-start;
+  font-size: xx-small;
+  vertical-align: super;
+}
+
+.systemStatusContainer .detectorsContainer,
+.systemStatusContainer .signallersContainer,
+.systemStatusContainer .accessoriesContainer {
+  width: 100%;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--input-border-color);
+}
+
+.systemStatusContainer .controlUnitContainer {
+  width: 100%;
+}
+
+.powerSupplyContainer {
+  width: 100%;
+  padding: 20px 5px 20px 30px;
+  background: var(--accent-bg-color);
+  border: 2px solid var(--third-bg-color);
+}
+
+.powerSupplyContainer .systemStatusStateContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "systemState stateValue"
+    "errorList errorList";
+  width: 100%;
+  font-size: 13px;
+}
+
+.systemStatusStateContainer .systemStatusState {
+  grid-area: systemState;
+  width: 100%;
+  place-self: center start;
+}
+
+.systemStatusStateContainer .systemOutput {
+  grid-area: stateValue;
+  width: 100%;
+  place-self: center end;
+}
+
+
+.systemStatusStateContainer .errors {
+  grid-area: errorList;
+  width: 100%;
+  place-self: center start;
+}
+
+
+.systemStatusStateContainer .systemOutput {
+  color: #ffffff;
+  background-color: var(--third-bg-color);
+  border: none;
+  text-align: center;
+}
+
+.systemStatusStateContainer .falseSystem {
+  background: #a90300f9;
+  border: none;
+}
+
+
+.systemStatusStateContainer .errors ul {
+  list-style: none;
+  padding: 0;
+  background: #a90300f9;
+  color: white;
+}
+
+.systemStatusStateContainer .errors ul li {
+  margin: 10px 5px;
+  padding: 10px 5px;
+}
+
+@media screen and (max-width: 699px) {
+  .system {
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: 11px;
+    column-gap: 0;
+    width: 100%;
+    margin-bottom: 11px;
+  }
+
+  .system .panelContentContainer {
+    padding: 0;
+  }
+
+  .system .systemFiles {
+    margin-bottom: 11px;
+  }
+}
+
+@media screen and (min-width: 700px) and (max-width: 1015px) {
+  .system {
+    max-width: 700px;
+  }
+}
+
+@media screen and (max-width: 1015px) {
+  .system .panelContainer {
+    padding: 23px 8px;
+  }
+}
+
+@media screen and (min-width: 700px) and (max-width: 1642px) {
+  .system {
+    display: grid;
+    grid-template-areas:
+      "systemPreview systemPreview"
+      "systemStatus wrapper";
+    grid-template-columns: 1fr 1fr;
+    padding: 0 8px;
+    margin: 0 auto 17px;
+  }
+}
+
+@media screen and (min-width: 1016px) and (max-width: 1642px) {
+  .system {
+    max-width: 927px;
+  }
+}
+
+@media screen and (max-width: 1642px) {
+  .system .systemPreview {
+    height: 100%;
+    overflow: auto;
+  }
+
+  .system .systemStatus,
+  .system .wrapper {
+    max-width: 100%;
+  }
+}
+
+.popupcontainer {
+  display: none;
+}
+
+.popupContainerToggle {
+  position: absolute;
+  width: 350px;
+  height: 350px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.overlay-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Ukrywanie panelu */
+.overlay-panel.hidden {
+  display: none;
+}
+
+/* Półprzezroczyste tło */
+.overlay-panel-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(30, 41, 59, 0.70);
+  z-index: 1;
+}
+
+/* Biała karta na środku */
+.overlay-panel-content {
+  position: relative;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 40px #23314f33;
+  max-width: 1200px;
+  min-width: 500px;
+  width: 94vw;
+  max-height: 90vh;
+  min-height: 500px;
+  height: 65vh;
+  padding: 50px 40px 0 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+}
+
+/* Przycisk zamykania */
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 2.3rem;
+  background: none;
+  border: none;
+  color: #182c51;
+  cursor: pointer;
+  opacity: .66;
+  transition: color .18s, opacity .14s;
+}
+
+.close-btn:hover {
+  color: #e63946;
+  opacity: 1;
+}
+
+/* Infinite scroll list — poziomy, przewijany kontener */
+.overlay-scroll-list {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  display: flex;
+  flex-direction: row;
+  scroll-snap-type: x mandatory;
+  gap: 15px;
+  padding: 15px 0;
+}
+
+.scroll-padding {
+  flex: 0 0 15px;
+  /* Tyle co padding-listy */
+  width: 15px;
+  height: 1px;
+  /* Może być minimalne, byle było */
+  pointer-events: none;
+  user-select: none;
+  scroll-snap-align: start;
+}
+
+/* Każdy kafelek panelu */
+.panel-col {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 0 0 330px;
+  max-width: 330px;
+  min-width: 270px;
+  min-height: unset;
+  max-height: unset;
+  height: auto;
+  box-sizing: border-box;
+  scroll-snap-align: start;
+  background: #f6f7fb;
+  border-radius: 16px;
+  box-shadow: 0 -1px 8px 0 #000000db;
+  padding: 22px 20px 18px 20px;
+  margin: 0 5px;
+  transition: box-shadow .17s;
+  position: relative;
+}
+
+.panel-col:last-child {
+  margin-right: 0;
+}
+
+.panel-col.template {
+  display: none !important;
+}
+
+.panel-col:hover {
+  box-shadow: 0 5px 18px 3px #cbd5e17a;
+}
+
+/* Kontener na zdjęcie — duży, wycentrowany */
+.img-box {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px auto;
+}
+
+.panel-col .img {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 8px #e2e8f0;
+  display: block;
+}
+
+/* Sekcja środkowa — na dane i kabel, rozciąga się na max. miejsce */
+.panel-middle {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  min-height: unset;
+  gap: 10px;
+}
+
+/* Nazwa urządzenia */
+.panel-col .name {
+  font-weight: 700;
+  font-size: 1.13rem;
+  color: #1d223b;
+  text-align: center;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Kod produktu — zawsze pod nazwą, zawsze równo */
+.panel-col .productKey {
+  font-size: 1.01rem;
+  color: #4b5069;
+  text-align: center;
+  word-break: break-all;
+  white-space: normal;
+
+  margin-bottom: 5px;
+}
+
+/* Kabel select */
+.panel-col .cable-select {
+  width: 60%;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-size: .99rem;
+  color: #2e3440;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* Dodatkowe dane, zawsze na osobnych liniach, na środku */
+.panel-col .totalPower,
+.panel-col .totalCurrent,
+.panel-col .totalVoltage {
+  font-size: .99rem;
+  color: #393e52;
+  text-align: center;
+  line-height: 1.34;
+  margin: 1px 0;
+}
+
+/* Przycisk zawsze na dole */
+.panel-col .choose-btn {
+  margin-top: 16px;
+  align-self: center;
+  min-width: 120px;
+  padding: 10px 0;
+  background: #cc2a27;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1.08rem;
+  cursor: pointer;
+  box-shadow: 0 1px 6px 0 #b6c2e966;
+  letter-spacing: .03em;
+  transition: background .15s;
+}
+
+.panel-col .choose-btn:hover {
+  background: #a12220;
+}
+
+@media (max-width: 700px) {
+  .overlay-panel-content {
+    max-width: 99vw;
+    padding: 18px 2vw 22px 2vw;
+    font-size: 0.96rem;
+  }
+
+  .overlay-scroll-list {
+    max-height: 80vh;
+    gap: 15px;
+  }
+
+  .panel-col {
+    max-width: 95vw;
+    min-width: 70vw;
+    padding: 12px 2vw;
+    font-size: clamp(12px, 2vw, 16px);
+  }
+
+  .img-box,
+  .panel-col .img {
+    width: 90px;
+    height: 90px;
+  }
+
+  .panel-col .name,
+  .panel-col .productKey,
+  .panel-col .totalPower,
+  .panel-col .totalCurrent,
+  .panel-col .totalVoltage {
+    font-size: 0.98rem;
+  }
+}

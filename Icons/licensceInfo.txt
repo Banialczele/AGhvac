@@ -1,0 +1,2 @@
+copy.svg - https://www.svgrepo.com/svg/309481/copy-add - MIT
+delete.svg - https://www.svgrepo.com/svg/309511/delete-forever - MIT

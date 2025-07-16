@@ -1,0 +1,640 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --main-font-family: "Spartan", Helvetica, sans-serif;
+  --panel-bg-color: #ffffff;
+  --accent-bg-color: #f4f4f4;
+  --accent-font-color: #959494;
+  --secondary-bg-color: #cc2a27;
+  --third-bg-color: #46bd36;
+  --input-height: 40px;
+  --input-margin: 5px;
+  --input-font-size: 12px;
+  --input-font-weight: 300;
+  --input-border-color: #dadada;
+}
+
+body {
+  margin: 0px;
+  padding: 0px;
+  font-family: var(--main-font-family);
+  font-size: 14px;
+  background: #e7e7e6;
+  overflow-x: hidden;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+input {
+  width: var(--input-height);
+  padding: 10px 4px;
+  margin-right: var(--input-margin);
+  text-align: center;
+}
+
+select {
+  appearance: none;
+  width: 100%;
+  padding: 10px 4px;
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  cursor: inherit;
+  z-index: 1;
+}
+
+input,
+.formSelectInput:has(select) {
+  height: var(--input-height);
+  font-size: var(--input-font-size);
+  font-family: var(--main-font-family);
+  font-weight: var(--input-font-weight);
+  border: 2px solid var(--input-border-color);
+}
+
+.formSelectInput:has(select) {
+  display: grid;
+  grid-template-areas: "select";
+  position: relative;
+  align-items: center;
+  width: 100%;
+  background-image: linear-gradient(to top, #f9f9f9, #fff 33%);
+  cursor: pointer;
+}
+
+.formSelectInput:has(select)::after {
+  content: "▼";
+  grid-area: select;
+  display: flex;
+  position: absolute;
+  justify-self: end;
+  align-items: center;
+  justify-content: center;
+  width: var(--input-height);
+  height: var(--input-height);
+  right: -2px;
+  font-size: var(--input-font-size);
+  color: #ffffff;
+  background-color: var(--secondary-bg-color);
+}
+
+.formSelectInput:has(select:focus) {
+  border-color: var(--secondary-bg-color);
+}
+
+.formSelectInput:has(select) select {
+  grid-area: select;
+}
+
+.panelContainer {
+  width: 100%;
+  max-width: 1000px;
+  background-color: var(--panel-bg-color);
+  border: 1px solid rgba(39, 39, 39, 0.096);
+  box-shadow: 0px 0px 12px 10px rgba(227, 227, 227, 1);
+  -webkit-box-shadow: 0px 0px 12px 10px rgba(227, 227, 227, 1);
+  -moz-box-shadow: 0px 0px 12px 10px rgba(227, 227, 227, 1);
+  border-radius: 10px;
+}
+
+.panelHeaderContainer {
+  width: 100%;
+  padding: 0 15px 0 5px;
+  margin-bottom: 18px;
+}
+
+.panelHeaderContainer h3 {
+  width: 100%;
+  padding: 20px 30px;
+  font-size: 18px;
+  font-weight: 400;
+  background: var(--accent-bg-color);
+}
+
+header {
+  width: 100%;
+  position: fixed;
+  display: grid;
+  grid-template-areas: "info info navi logo";
+  grid-template-columns: 2fr fit-content(100%);
+  padding: 30px 30px 0;
+  top: 0;
+  background-color: var(--accent-bg-color);
+  border-bottom: 2px solid #fff;
+  z-index: 999;
+}
+
+header #configuratorInfo {
+  grid-area: info;
+  place-self: start start;
+}
+
+header #configuratorTitle {
+  margin: 0 0 10px 0;
+  font-weight: 400;
+}
+header #configuratorDescription {
+  margin: 0;
+  color: var(--accent-font-color);
+}
+
+header #configuratorTitle > span {
+  font-weight: 700;
+}
+header #configuratorTitle span:has(span) span {
+  color: var(--secondary-bg-color);
+}
+
+header #configuratorNav {
+  grid-area: navi;
+  place-self: flex-end center;
+  display: flex;
+}
+
+header #configuratorNav .configuratorNavList {
+  display: flex;
+  padding: 0;
+  margin: 0 30px;
+}
+
+header #configuratorNav .configuratorNavList li {
+  list-style: none;
+  padding: 10px 0;
+  margin-right: 5px;
+}
+
+header #configuratorNav .configuratorNavList li:last-of-type {
+  margin-right: 0;
+}
+
+header #configuratorNav .configuratorNavList li a {
+  padding: 10px 20px;
+  text-decoration: none;
+  color: #000;
+  background-color: #bcbcbc;
+}
+
+#configuratorNavMobile {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #fff;
+  transform: translateX(-100%);
+  transition: 1s ease;
+  z-index: 999;
+}
+
+#configuratorNavMobile.active {
+  transform: translateX(0);
+  transition: 1s ease;
+}
+
+#configuratorNavMobile .configuratorNavList {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+#configuratorNavMobile .configuratorNavList li {
+  width: 100%;
+  list-style: none;
+}
+
+#configuratorNavMobile .configuratorNavList li a {
+  display: block;
+  padding: 20px 0;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  color: #000;
+}
+
+#navMobileActivationBtn {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  background-color: #fff;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0px 0px 12px 10px rgba(227, 227, 227, 1);
+  box-sizing: border-box;
+  z-index: 1000;
+}
+
+#navMobileActivationBtn .navMobileActivationBtnIcon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000000' width='24px' height='24px'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 24px;
+  transition: 0.3s ease;
+}
+
+#navMobileActivationBtn .navMobileActivationBtnIcon.active {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2a27' width='24px' height='24px'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z'/%3E%3C/svg%3E");
+  transition: 0.3s ease;
+}
+
+header #configuratorLogo {
+  grid-area: logo;
+  place-self: start end;
+}
+
+header #configuratorLogoImage {
+  height: 25px;
+  width: 187px;
+  margin-bottom: 5px;
+}
+
+header #configuratorLanguage {
+  color: gray;
+  text-align: right;
+}
+header #configuratorLanguage .langLink {
+  color: gray;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+header #configuratorLanguage .langLink:first-child {
+  margin-right: 5px;
+}
+
+.configuratorPanel {
+  width: 100%;
+  padding: 23px 31px 41px;
+  margin: 166px auto 11px;
+}
+
+.configuratorPanel .contentContainer {
+  display: flex;
+  flex-wrap: wrap-reverse;
+}
+
+.contentContainer .formContainer {
+  width: 50%;
+  padding-right: 22px;
+  border-right: 2px solid var(--input-border-color);
+  box-sizing: border-box;
+}
+
+.formContainer .form {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    ". amounts"
+    "buildingInfo building"
+    "gasInfo gas"
+    "batteryInfo batterybackup"
+    "wireInfo wireLength"
+    ". button";
+  row-gap: calc(3 * var(--input-margin));
+}
+
+.form .tooltip {
+  place-self: center;
+  position: relative;
+  padding: 0px 6px;
+  margin-right: 15px;
+  bottom: 0;
+  font-family: "Times New Roman", Times, serif;
+  color: grey;
+  font-weight: bold;
+  border: 2px solid grey;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.form .buildingInformation,
+.form .detectedGasInformation,
+.form .batteryBackUpInformation,
+.form .wireLengthInformation {
+  align-self: end;
+  margin-bottom: 10px;
+}
+
+.form .tooltip::before {
+  position: absolute;
+  display: none;
+  content: attr(data-text);
+  width: 300px;
+  bottom: 180%;
+  left: -50%;
+  padding: 10px;
+  font-family: var(--main-font-family);
+  font-size: 12px;
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+  background: #222;
+  border-radius: 5px;
+  z-index: 2;
+}
+
+.form .tooltip::after {
+  position: absolute;
+  display: none;
+  content: "";
+  bottom: 80%;
+  left: -15%;
+  border: 10px solid #222;
+  border-color: #222 transparent transparent transparent;
+  z-index: 2;
+}
+
+.form .tooltip:hover::before,
+.form .tooltip:hover::after {
+  display: block;
+}
+
+.form .detectorAmounts,
+.form .buildingType,
+.form .detectedGas,
+.form .batteryBackUp,
+.form .wireLength {
+  width: 100%;
+}
+
+.form .buildingType,
+.form .detectedGas,
+.form .batteryBackUp {
+  max-width: 280px;
+}
+
+.detectorAmounts .detectorAmountsLabel,
+.buildingType .structureLabel,
+.detectedGas .detectedGasLabel,
+.batteryBackUp .batteryBackUpLabel,
+.wireLength .wireLengthLabel {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 400;
+}
+
+.buildingType .structureSelect,
+.detectedGas .detectedGasSelect,
+.batteryBackUp .batteryBackUpSelect {
+  position: relative;
+}
+
+.form .detectorAmounts {
+  grid-area: amounts;
+}
+.form .buildingType {
+  grid-area: building;
+}
+.form .detectedGas {
+  grid-area: gas;
+}
+.form .batteryBackUp {
+  grid-area: batterybackup;
+}
+.form .wireLength {
+  grid-area: wireLength;
+}
+.form .buildingInformation {
+  grid-area: buildingInfo;
+}
+.form .detectedGasInformation {
+  grid-area: gasInfo;
+}
+.form .batteryBackUpInformation {
+  grid-area: batteryInfo;
+}
+.form .wireLengthInformation {
+  grid-area: wireInfo;
+}
+
+.detectorAmounts .shadedAmount {
+  color: var(--accent-font-color);
+  margin: 0 var(--input-margin);
+}
+
+.formButton {
+  width: 150px;
+  height: var(--input-height);
+  margin: 0;
+  font-family: var(--main-font-family);
+  font-size: 15px;
+  color: #ffffff;
+  background: var(--secondary-bg-color);
+  border: none;
+  cursor: pointer;
+}
+
+.formButton span {
+  margin-left: calc(3 * var(--input-margin));
+  font-size: 10px;
+}
+
+.form .formButton {
+  grid-area: button;
+  place-self: end end;
+}
+
+.contentContainer .descriptionContainer {
+  width: 50%;
+  padding-left: 22px;
+  line-height: calc(var(--input-font-size) + 10px);
+  text-align: justify;
+  box-sizing: border-box;
+}
+
+.descriptionContainer ol {
+  margin: 0;
+}
+.descriptionContainer ol li {
+  margin: 10px 0;
+}
+.descriptionAboutContainer p {
+  margin: 0;
+}
+
+.descriptionContainer .descriptionAboutContainer a {
+  color: var(--secondary-bg-color);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dragAndDropPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+  width: 100%;
+  padding: 23px 31px;
+  margin: 0 auto 30px;
+}
+
+.dragAndDropPanel .dragAndDropArea {
+  width: 100%;
+  padding: 40px 30px;
+  margin-bottom: 23px;
+  color: var(--accent-font-color);
+  text-align: center;
+  text-transform: uppercase;
+  background-color: var(--accent-bg-color);
+  background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' stroke='%23DADADAFF' stroke-width='3' stroke-dasharray='12' stroke-dashoffset='5' stroke-linecap='square'/%3e%3c/svg%3e");
+}
+
+.dragAndDropPanel input[type="file"] {
+  display: none;
+}
+
+.dragAndDropPanel label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 150px;
+}
+
+@media screen and (max-width: 699px) {
+  .panelContainer {
+    border-radius: 0;
+  }
+
+  header #configuratorTitle {
+    font-size: 18px;
+  }
+
+  header #configuratorLogoImage {
+    width: 150px;
+    height: auto;
+  }
+
+  .configuratorPanel,
+  .dragAndDropPanel {
+    padding: 23px 8px;
+  }
+}
+
+@media screen and (min-width: 700px) and (max-width: 1015px) {
+  .configuratorPanel,
+  .dragAndDropPanel {
+    max-width: 684px;
+    padding: 23px 31px;
+  }
+}
+
+@media screen and (max-width: 1015px) {
+  header {
+    padding: 15px 15px 0;
+  }
+
+  header #configuratorTitle {
+    margin-bottom: 0;
+  }
+  header #configuratorDescription {
+    display: none;
+  }
+
+  .contentContainer .formContainer,
+  .contentContainer .descriptionContainer {
+    width: 100%;
+    padding: 0;
+    border: none;
+  }
+
+  .contentContainer .descriptionContainer {
+    margin-bottom: 22px;
+  }
+  .descriptionContainer ol {
+    padding-left: 22px;
+  }
+
+  .form .buildingType,
+  .form .detectedGas,
+  .form .batteryBackUp {
+    max-width: 100%;
+  }
+}
+
+@media screen and (max-width: 1440px) {
+  header #configuratorNav {
+    display: none;
+  }
+  #configuratorNavMobile {
+    display: flex;
+  }
+  #navMobileActivationBtn {
+    display: block;
+  }
+}
+
+@media screen and (min-width: 1016px) and (max-width: 1642px) {
+  .configuratorPanel,
+  .dragAndDropPanel {
+    max-width: 1000px;
+  }
+}
+
+.formPopupContainerToggle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 350px;
+  height: 250px;
+  display: grid;
+  background: rgb(179, 0, 0);
+  grid-template-rows: 25px 1fr;
+}
+
+.formPopupContainerToggle button {
+  width: 15px;
+  height: 15px;
+  justify-self: end;
+  align-self: center;
+  padding: 0;
+  margin: 15px 5px;
+}
+
+.formPopupContainerToggle p {
+  margin: 0;
+  text-align: center;
+  justify-self: center;
+  align-self: center;
+}
+
+@media screen and (max-width: 480px) {
+  .configuratorPanel, .dragAndDropPanel {
+    padding: 5px 2px;
+  }
+  .panelHeaderContainer h3 {
+    font-size: 14px;
+    padding: 10px 8px;
+  }
+  .formButton {
+    width: 100%;
+    min-width: 110px;
+    font-size: 13px;
+  }
+}
