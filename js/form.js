@@ -170,7 +170,14 @@ function handleFormSubmit() {
     if (initSystem.systemIsGenerated) {
       const confirmRegenerate = window.confirm(TRANSLATION.regenerateSystemMessage[lang]);
       if (!confirmRegenerate) return;
+      systemData = {
+        supplyType: ``,
+        wiretype: '',
+        devicesTypes: { detectors: [], signallers: [] },
+        bus: [],
+      };
     }
+
     systemData.supplyType = findControlUnit(batteryBackUp);
     initSystem.amountOfDetectors = parseInt(document.getElementById("amountOfDetectors").value);
     systemData.devicesTypes = { detectors: [], signallers: [] };
@@ -185,20 +192,16 @@ function handleFormSubmit() {
       });
     }
     systemData.selectedStructure = initSystem.selectedStructure;
-    const result = findValidPowerSuppliesWithCables(CONTROLUNITLIST, systemData.bus, Cables )
-    console.log(result)
-    // const res = validateSystem();
-    // const selectedPSU = res.results.find(element => element.isUserSelected === true ? element : '');
-    // console.log(res)
-    // //sprawdzam czy zasilacz wybrany domyślnie przez system jest odpowiednim
-    // const dataToFill = selectedPSU !== undefined ? selectedPSU : res.results[0];
-    // systemData.supplyType = dataToFill.supplyType;
-    // systemData.wireType = dataToFill.validCables[0].cableType.type;
-    // systemData.totalPower = dataToFill.validCables[0].totalPower;
-    // systemData.totalCurrent = dataToFill.validCables[0].totalCurrent;
-    // systemData.totalVoltage = dataToFill.validCables[0].totalVoltage;
-    // systemData.errorList = res.errors;
-    // initSystem.systemIsGenerated = true;
+    const result = findValidControlUnitsWithCables(CONTROLUNITLIST, systemData.bus, Cables);
+    console.log(result);
+    console.log(result.units[0]);
+    const powerSupply = result.units[0].controlUnit;
+    const wire = result.units[0].validCables[0];
+    systemData.supplyType = powerSupply;
+    systemData.wireType = wire.cable.type
+    systemData.totalPower = Math.ceil(wire.powerW);
+    systemData.errorList = result.error;
+    initSystem.systemIsGenerated = true;
     setSystem();
     system.scrollIntoView({ behavior: "smooth", block: "start" });
 

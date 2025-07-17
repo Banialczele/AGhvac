@@ -26,6 +26,7 @@ function copyImageSegmentOnFormSubmit(index) {
 
 function generateOptionsForModControl(selectedUnit) {
   const selectModControl = document.getElementById(`actionsSegmentDevice0`);
+  selectModControl.innerHTML = ""; 
   CONTROLUNITLIST.forEach((unit) => {
     const option = document.createElement("option");
     option.value = unit.productKey;
@@ -96,6 +97,8 @@ function setSelectInSegment(segment) {
 
     batteryBackUpInput.value = batteryTranslation;
   } else {
+    select.innerHTML = "";
+
     // WYGENEROWANIE OPCJI DLA SELECTA URZĄDZENIA!
     systemData.selectedStructure.devices.forEach((device, i) => {
       const text =
