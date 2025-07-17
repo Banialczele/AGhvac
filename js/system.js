@@ -24,28 +24,19 @@ function copyImageSegmentOnFormSubmit(index) {
   parentNode.appendChild(df);
 }
 
-function generateOptionsForModControl(selectedUnit) {
-  const selectModControl = document.getElementById(`actionsSegmentDevice0`);
-  selectModControl.innerHTML = ""; 
-  CONTROLUNITLIST.forEach((unit) => {
-    const option = document.createElement("option");
-    option.value = unit.productKey;
-    option.textContent = unit.type;
-    if (unit.productKey === selectedUnit.productKey) {
-      option.selected = true;
-    }
-    selectModControl.appendChild(option);
-  });
-  return selectModControl;
+function updateModControl() {
+  const modControl = document.getElementById(`actionsSegmentDevice0`);
+  console.log(systemData.supplyType.type)
+  modControl.innerText = systemData.supplyType.type
+  return modControl;
 }
 
-function copyActionsSegmentOnFormSubmit(index) {
+function copyActionsSegmentOnFormSubmit() {
   const parentNode = document.querySelector(`.actionsList`);
   const firstSegment = document.getElementById(`actionsSegment1`);
   const actionsSegments = document.querySelectorAll(`.actionsSegment`);
   actionsSegments.forEach((elem, i) => (i > 1 ? parentNode.removeChild(elem) : ""));
   const df = new DocumentFragment();
-  console.log(index)
   for (let i = 1; i < systemData.bus.length; i++) {
     console.log(i)
     const cloned = firstSegment.cloneNode(true);
@@ -101,10 +92,17 @@ function setSelectInSegment(segment) {
 
     // WYGENEROWANIE OPCJI DLA SELECTA URZĄDZENIA!
     systemData.selectedStructure.devices.forEach((device, i) => {
-      const text =
-        device.class === "detector"
-          ? `${TRANSLATION.deviceSegment.detector[lang]} ${device.gasDetected}`
-          : `${TRANSLATION.deviceSegment.signaller[lang]} ${device.type}`;
+      let text = '';
+      if (device.class === "detector") {
+        text = `${TRANSLATION.deviceSegment.detector[lang]} ${device.gasDetected}`;
+      } else if (device.type === "Teta Control V") {
+        text = `${TRANSLATION.valveControl[lang]}`;
+      } else if (device.type === "TOLED") {
+        text = `${TRANSLATION.toledDescription[lang]} ${device.type}`;
+      } else {
+        text = `${TRANSLATION.deviceSegment.signaller[lang]} ${device.type}`;
+      }
+
       const option = el(
         "option",
         {
@@ -281,20 +279,6 @@ function setList(listName, deviceList) {
   }
 }
 
-
-
-// function updateSystemState() {
-//   const state = document.querySelector(`.systemOutput`);
-//   if (systemData.errorList.length === 0) {
-//     state.classList.remove(`falseSystem`);
-//     state.innerText = `OK`
-//   } else {
-//     state.classList.add(`falseSystem`);
-//     state.innerText = TRANSLATION.systemStateFalse[lang];
-//   }
-// }
-
-
 // Tworzenie systemu
 function setSystem() {
   const actionsList = document.getElementById('actionsList');
@@ -304,8 +288,6 @@ function setSystem() {
   });
   setSystemSegmentsLazy(systemData.bus);
   copyImageSegmentOnFormSubmit(1);
-  // copyActionsSegmentOnFormSubmit(1);
-  generateOptionsForModControl(systemData.supplyType);
   fillData();
   funtionToUpdateSystem();
   //obsługa zdarzeń
@@ -318,13 +300,12 @@ function funtionToUpdateSystem() {
   setSystemStateLists();
   updateWireLength();
   setSystemStateBusLength();
+  updateModControl()
   updateSelectValue()
   setSystemStatePowerConsumption();
+  setSystemStateCableDim();
   createSystemUsedDevicesPanel();
-  updateSystemPowerSupply();
-  // const res = validateSystem();
-  // systemData.errorList = res.errors;
-  // errorHandling();
+  validateSystem()
 }
 
 function handleButton(index) {
@@ -360,66 +341,6 @@ function setUsedDevices() {
   }, {});
   return result;
 }
-
-
-function showOverlayPanel(data) {
-  const overlay = document.getElementById('overlayPanel');
-  const list = document.getElementById('overlayList');
-
-  list.querySelectorAll('.panel-col:not(.template)').forEach(e => e.remove()); // wyczyść poprzednie (nie szablon!)
-
-  const template = document.getElementById('colTemplate');
-  data.results.forEach(item => {
-    const col = template.cloneNode(true);
-    col.classList.remove('template');
-    col.id = ''; // usuwamy id z klona!
-    col.style.display = '';
-
-    // Obrazek
-    const img = col.querySelector('.img');
-    img.src = `./PNG/${item.supplyType.img}.png`;
-    img.alt = item.supplyType.type;
-
-    // Nazwa
-    col.querySelector('.name').textContent = item.supplyType.type;
-    // Dodatkowa wartość
-    col.querySelector('.productKey').textContent = item.supplyType.productKey;
-
-    // Kabel: select dla wielu, info dla jednego
-    const select = col.querySelector('.cable-select');
-    if (item.validCables.length > 0) {
-      item.validCables.forEach(cable => {
-        const option = document.createElement(`option`);
-        option.textContent = cable.cableType.type;
-        option.value = cable.cableType.type;
-        select.appendChild(option);
-      })
-    }
-    select.value = item.validCables[0].cableType.type;
-    select.addEventListener(`change`, e => updateDataInOverlay(e, col, item));
-    col.querySelector(`.totalPower`).textContent = `${TRANSLATION.popupPower[lang]}: ${item.validCables[0].totalPower}W`;
-    col.querySelector(`.totalCurrent`).textContent = `${TRANSLATION.popupCurrent[lang]}: ${item.validCables[0].totalCurrent}A`;
-    col.querySelector(`.totalVoltage`).textContent = `${TRANSLATION.popupVoltage[lang]}: ${item.validCables[0].totalVoltage}V`;
-    const button = col.querySelector(`.choose-btn`);
-    button.textContent = TRANSLATION.buttonText[lang];
-    button.onclick = () => {
-      const selectedCableType = select.value;
-      const selectedCable = item.validCables.find(cab => cab.cableType.type === selectedCableType);
-      systemData.supplyType = item.supplyType;
-      systemData.wireType = selectedCable.cableType.type
-      systemData.totalCurrent = selectedCable.totalCurrent;
-      systemData.totalPower = selectedCable.totalPower;
-      systemData.totalVoltage = selectedCable.totalVoltage;
-      updateSystemPowerSupply();
-      hideOverlayPanel();
-    }
-
-    list.appendChild(col);
-  });
-
-  overlay.classList.remove('hidden');
-}
-
 
 function updateDataInOverlay(event, col, item) {
   const newCable = item.validCables.find(cable => cable.cableType.type === event.target.value);
@@ -482,10 +403,9 @@ function setupSystemEventHandlers() {
           }
         }
       });
-    
+
       funtionToUpdateSystem();
       checkIfToledExists();
-      updateSystemPowerSupply();
     }
   });
 
@@ -498,19 +418,17 @@ function setupSystemEventHandlers() {
       const copy = JSON.parse(JSON.stringify(systemData.bus[index - 1]));
       systemData.bus.splice(index, 0, copy);
       handleButton(index);
+      funtionToUpdateSystem();
+    checkIfToledExists();
     }
     // Usunięcie segmentu
     if (btn.matches("button.removeDeviceButton")) {
       systemData.bus.splice(index - 1, 1);
       handleButton(index);
       checkIfToledExists();
+      funtionToUpdateSystem();
+    checkIfToledExists();
     }
-
-    if (btn.matches("button.modControlList")) {
-      const res = validateSystem();
-      showOverlayPanel(res);
-    }
-
     // Zaznacz wszystkie
     if (btn.matches(".checkAll")) {
       document.querySelectorAll(".segmentCheckbox").forEach((cb) => (cb.checked = true));
@@ -527,25 +445,7 @@ function setupSystemEventHandlers() {
     } else if (btn.matches("button#exportToJSON")) {
       exportToJSON();
     }
-    funtionToUpdateSystem();
-    checkIfToledExists();
   });
-  const overlayPanel = document.querySelector('.overlay-panel-content');
-
-  if (overlayPanel) {
-    overlayPanel.addEventListener('wheel', function (e) {
-      // znajdź najbliższą listę przewijaną
-      const scrollList = overlayPanel.querySelector('.overlay-scroll-list');
-      if (
-        scrollList &&
-        Math.abs(e.deltaY) > Math.abs(e.deltaX) &&
-        scrollList.scrollWidth > scrollList.clientWidth // tylko jeśli jest overflow!
-      ) {
-        e.preventDefault();
-        scrollList.scrollLeft += e.deltaY * 2;
-      }
-    }, { passive: false });
-  }
 }
 
 function checkIfToledExists() {
@@ -574,6 +474,11 @@ function setSystemStatePowerConsumption(value = 1) {
   if (powerConsumption.textContent !== String(value)) {
     powerConsumption.textContent = systemData.totalPower;
   }
+}
+
+function setSystemStateCableDim() {
+  document.querySelector(`#wireCrossSection`).innerText = systemData.wireType;
+
 }
 
 // // Tworzenie panelu z listą rodzajów wykorzystanych w systemie urządzeń
@@ -711,18 +616,10 @@ function setSystemUsedDevice(device) {
   return systemUsedDevice;
 }
 
-function updateSystemPowerSupply() {
-  const powerSupplyList = document.querySelector(`.powerSupplyList`);
-  powerSupplyList.querySelector(`.modControlType`).innerText = systemData.supplyType.type;
-  powerSupplyList.querySelector(`#powerSupply`).innerText = systemData.supplyType.productKey;
-  powerSupplyList.querySelector(`#powerSupplyCableDim`).innerText = TRANSLATION.powerSupplyCableDim[lang];
-  powerSupplyList.querySelector(`#wireCrossSection`).innerText = systemData.wireType;
-}
-
 function setSystemSegmentsLazy(bus) {
   const container = document.getElementById('actionsList');
   const SEGMENT_BATCH_SIZE = 10;
-  let loadedCount = 1; 
+  let loadedCount = 1;
 
   function renderSegment(index) {
     const template = document.getElementById('actionsSegment1');

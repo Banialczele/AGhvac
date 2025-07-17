@@ -149,18 +149,6 @@ function findControlUnit() {
       : CONTROLUNITLIST.find((unit) => unit.possibleUPS === `yes`);
   return backUpOption;
 }
-
-function updateModControlAndCable(item, newCable) {
-  const modControl = CONTROLUNITLIST.find(unit => unit.productKey === item.supplyType.productKey);
-  const elem = item.validCables.find(cable => cable.cableType.type === newCable);
-
-  systemData.supplyType = modControl;
-  systemData.totalCurrent = elem.totalCurrent;
-  systemData.totalPower = elem.totalPower;
-  systemData.totalVoltage = elem.totalVoltage;
-  systemData.wireType = elem.cableType.type
-}
-
 // Przetwarzanie formularza dot. systemu
 function handleFormSubmit() {
   //Zatwierdzenie formularza, przypisanie wybranych przez użytkownika parametrów do obiektu inicjującego podgląd systemu i wygenerowanie podglądu
@@ -192,39 +180,34 @@ function handleFormSubmit() {
       });
     }
     systemData.selectedStructure = initSystem.selectedStructure;
-    const result = findValidControlUnitsWithCables(CONTROLUNITLIST, systemData.bus, Cables);
-    console.log(result);
-    console.log(result.units[0]);
-    const powerSupply = result.units[0].controlUnit;
-    const wire = result.units[0].validCables[0];
-    systemData.supplyType = powerSupply;
-    systemData.wireType = wire.cable.type
-    systemData.totalPower = Math.ceil(wire.powerW);
-    systemData.errorList = result.error;
-    initSystem.systemIsGenerated = true;
+    validateSystem()
     setSystem();
     system.scrollIntoView({ behavior: "smooth", block: "start" });
-
-
   });
 }
+function validateSystem() {
+  const result = findValidControlUnitsWithCables(CONTROLUNITLIST, systemData.bus, Cables);
+  const powerSupply = result.units[0].controlUnit;
+  const wire = result.units[0].validCables[0];
+  systemData.supplyType = powerSupply;
+  systemData.wireType = wire.cable.type
+  systemData.totalPower = Math.ceil(wire.powerW);
+  systemData.errorList = result.error;
+  initSystem.systemIsGenerated = true;
+  errorHandling()
+}
 
-// function errorHandling() {
-//   if (systemData.bus.length > 50 && !systemData.errorList.find(error => error.code === `deviceMaxExceeded`)) {
-//     systemData.errorList.push({ message: TRANSLATION.busWarning[lang], code: `deviceMaxExceeded` });
-//   }
-//   updateSystemState()
-//   updateErrors();
-
-// }
-
-function updateErrors() {
-  const errorList = document.querySelector('.errorList');
-  errorList.innerHTML = ''; // Czyści całą listę
-  systemData.errorList.forEach(elem => {
-    const listItem = document.createElement('li');
-    listItem.classList.add(elem.code);
-    listItem.innerText = elem.message;
-    errorList.appendChild(listItem);
-  });
+function errorHandling() {
+  if(systemData.bus.length > 50 && !systemData.errorList.find( error => error.code === `TOO_MANY_DEVICES`) ) {
+    systemData.errorList.push({ code: `TOO_MANY_DEVICES`, message: `${TRANSLATION.busWarning[lang]}`})
+  }
+ const errorList = document.querySelector(`.errorList`);
+ console.log(systemData.errorList)
+ errorList.innerHTML = ""
+ systemData.errorList.forEach(error => {
+  const item = document.createElement(`li`);
+  item.setAttribute(`id`, error.code);
+  item.innerText = error.message;
+  errorList.appendChild(item);
+ })
 }

@@ -143,31 +143,18 @@
 						<ol id="controlUnitList" class="controlUnitList">
 							<li>
 								<div id="controlUnitBusLength" data-translate="busDescLength"></div>
-								<div><span id="busLength">58</span>m</div>
+								<div><span id="busLength"></span>m</div>
 							</li>
 							<li>
 								<div id="controlUnitPowerConsumption" data-translate="controlUnitPowerConsumption">
 								</div>
-								<div><span id="powerConsumption">150</span>W</div>
+								<div><span id="powerConsumption"></span>W</div>
+							</li>
+							<li>
+								<div id="powerSupplyCableDim" data-translate="powerSupplyCableDim"></div>
+								<div><span id="wireCrossSection"></span></div>
 							</li>
 						</ol>
-					</div>
-				</div>
-				<div class="powerSupplyContainer">
-					<ol class="powerSupplyList">
-						<li>
-							<div class="modControlType"></div>
-							<div><span id="powerSupply"></span></div>
-						</li>
-						<li>
-							<div id="powerSupplyCableDim" data-translate="powerSupplyCableDim"></div>
-							<div><span id="wireCrossSection"></span></div>
-						</li>
-					</ol>
-					<div class="systemStatusStateContainer">
-						<div class="systemStatusState" id="systemStatusState" data-translate="psuSystemStatus"></div>
-						<div id="systemOutput" class="systemOutput"></div>
-						<!-- <button id="optimizeSystem" class="optimizeSystem" data-translate="optimizeSystem"></button> -->
 						<div class="errors">
 							<ul class="errorList">
 
@@ -216,12 +203,9 @@
 							</label>
 							<label for="actionsSegmentDevice0" class="segmentDeviceLabel" id="segmentDeviceLabel">
 								<br>
-								<div class="possibleMODControls">
-									<button class="modControlList">Warianty zasilania</button>
-								</div>
 								<div class="upsDescription">UPS</div>
 								<div class="actionsSegment0SelectContainer">
-									<select type="text" class="segmentDeviceSelect" id="actionsSegmentDevice0"></select>
+									<p type="text" class="segmentDeviceSelect" id="actionsSegmentDevice0"></p>
 								</div>
 								<input type="text" id="modControlBatteryBackUp" style="min-width: 30px;">
 							</label>

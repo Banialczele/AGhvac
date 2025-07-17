@@ -307,16 +307,15 @@
 
 #actionsSegment0 #segmentDeviceLabel {
   display: grid;
-  width: 100%;
-  grid-template-columns: 225px 50px 175px;
-  grid-template-rows: 1fr 1fr;
+  grid-template-columns: 225px 50px;
   grid-template-areas:
-    "description UPSdescription possibleMod"
-    "modControlSelect modControlUPS possibleMod";
+    "description UPSdescription"
+    "modControlSelect modControlUPS";
 }
 
 #segmentDeviceLabel:first-child {
   grid-area: description;
+  place-self: start center;
 }
 
 #segmentDeviceLabel .upsDescription {
@@ -349,30 +348,9 @@
   border: 1px solid #dadada;
 }
 
-.actionsSegment0SelectContainer {
-  position: relative;
-  display: inline-block;
-}
-
-.actionsSegment0SelectContainer::after {
-  content: "▼";
-  position: absolute;
-  top: 50%;
-  right: 0px;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: white;
-  background-color: var(--secondary-bg-color);
-  width: 1.5em;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 #segmentDeviceLabel #modControlBatteryBackUp {
   grid-area: modControlUPS;
-  justify-self: center;
+  place-self: center;
   margin: 0;
 }
 

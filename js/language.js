@@ -140,7 +140,11 @@ const TRANSLATION = {
   },
   toledDescription: {
     pl: "Tablica ostrzegawcza",
-    en: "Warning panel",
+    en: "Warning LED Display",
+  },
+  valveControl: {
+    pl: "Sterownik zaworu",
+    en: "Valve controller"
   },
   deviceSegment: {
     detector: {

@@ -1,34 +1,3 @@
-function validateBus(busSegments) {
-  // Całkowita długość przewodów
-  const totalLength =
-    busSegments.reduce(
-      (sum, seg) => sum + (seg.wireLength ?? seg.cableLen_m),
-      0
-    );
-  if (totalLength > 1000) {
-    return { valid: false, error: "Zbyt duża długość magistrali (>1000m)", code: "BUS_TOO_LONG" };
-  }
-
-  // Ilość sygnalizatorów
-  const signallerCount = busSegments.filter(
-    seg => seg.detector.class === "signaller"
-  ).length;
-  if (signallerCount > 26) {
-    return { valid: false, error: "Zbyt dużo sygnalizatorów (>26 sztuk)", code: "TOO_MANY_SIGNALLERS" };
-  }
-
-  // Ilość zaworów
-  const valveCount = busSegments.filter(
-    seg => seg.detector.type === "valveCtrl"
-  ).length;
-  if (valveCount > 8) {
-    return { valid: false, error: "Zbyt dużo sterowników zaworu (>8 sztuk)", code: "TOO_MANY_VALVES" };
-  }
-
-  return { valid: true };
-}
-
-// ------------------- Silnik: sprawdzanie kabli dla zasilacza -------------------
 
 function checkSystemForPowerSupplyAndCable(controlUnit, busSegments, cables) {
   // supplyVoltage: zawsze wymagane!
@@ -107,16 +76,43 @@ function checkSystemForPowerSupplyAndCable(controlUnit, busSegments, cables) {
 // -------- Główna funkcja --------
 
 function findValidControlUnitsWithCables(controlUnits, busSegments, cables) {
-  const validation = validateBus(busSegments);
-  if (!validation.valid) {
-    return {
-      error: true,
-      code: validation.code,
-      message: validation.error,
-      units: []
-    };
+  const errors = [];
+  // Całkowita długość przewodów
+  
+
+  const totalLength = busSegments.reduce(
+    (sum, seg) => sum + seg.wireLength, 0
+  );
+  if (totalLength > 1000) {
+    errors.push({
+      code: "BUS_TOO_LONG",
+      message: "Zbyt długa magistrala! Max 1000m!"
+    });
   }
 
+  // Ilość sygnalizatorów
+  const signallerCount = busSegments.filter(
+    seg => seg.detector.class === "signaller"
+  ).length;
+  if (signallerCount > 26) {
+    errors.push({
+      code: "TOO_MANY_SIGNALLERS",
+      message: "Za dużo sygnalizatorów! Max 26 szt."
+    });
+  }
+
+  // Ilość zaworów
+  const valveCount = busSegments.filter(
+    seg => seg.detector.type === "valveCtrl"
+  ).length;
+  if (valveCount > 8) {
+    errors.push({
+      code: "TOO_MANY_VALVES",
+      message: "Za dużo sterowników zaworu! Max 8 szt."
+    });
+  }
+
+  // Reszta logiki – zawsze wykonuj!
   const result = [];
   for (const unit of controlUnits) {
     const validCables = checkSystemForPowerSupplyAndCable(unit, busSegments, cables);
@@ -128,9 +124,9 @@ function findValidControlUnitsWithCables(controlUnits, busSegments, cables) {
       });
     }
   }
-
+  // Zwracamy zawsze oba pola (errors i units)
   return {
-    error: false,
+    error: errors,
     units: result
   };
 }
