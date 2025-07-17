@@ -47,7 +47,6 @@ function createDetectedGasListSelect() {
 
   const structure = initSystem.selectedStructure;
   if (!structure) return;
-
   structure.detection.forEach((gas, i) => {
     const device = structure.devices[i];
     if (device.class !== "detector") return;
@@ -186,17 +185,20 @@ function handleFormSubmit() {
       });
     }
     systemData.selectedStructure = initSystem.selectedStructure;
-    const res = validateSystem();
-    const selectedPSU = res.results.find(element => element.isUserSelected === true ? element : '');
-    //sprawdzam czy zasilacz wybrany domyślnie przez system jest odpowiednim
-    const dataToFill = selectedPSU !== undefined ? selectedPSU : res.results[0];
-    systemData.supplyType = dataToFill.supplyType;
-    systemData.wireType = dataToFill.validCables[0].cableType.type;
-    systemData.totalPower = dataToFill.validCables[0].totalPower;
-    systemData.totalCurrent = dataToFill.validCables[0].totalCurrent;
-    systemData.totalVoltage = dataToFill.validCables[0].totalVoltage;
-    systemData.errorList = res.errors;
-    initSystem.systemIsGenerated = true;
+    const result = findValidPowerSuppliesWithCables(CONTROLUNITLIST, systemData.bus, Cables )
+    console.log(result)
+    // const res = validateSystem();
+    // const selectedPSU = res.results.find(element => element.isUserSelected === true ? element : '');
+    // console.log(res)
+    // //sprawdzam czy zasilacz wybrany domyślnie przez system jest odpowiednim
+    // const dataToFill = selectedPSU !== undefined ? selectedPSU : res.results[0];
+    // systemData.supplyType = dataToFill.supplyType;
+    // systemData.wireType = dataToFill.validCables[0].cableType.type;
+    // systemData.totalPower = dataToFill.validCables[0].totalPower;
+    // systemData.totalCurrent = dataToFill.validCables[0].totalCurrent;
+    // systemData.totalVoltage = dataToFill.validCables[0].totalVoltage;
+    // systemData.errorList = res.errors;
+    // initSystem.systemIsGenerated = true;
     setSystem();
     system.scrollIntoView({ behavior: "smooth", block: "start" });
 
@@ -204,14 +206,14 @@ function handleFormSubmit() {
   });
 }
 
-function errorHandling() {
-  if (systemData.bus.length > 50 && !systemData.errorList.find(error => error.code === `deviceMaxExceeded`)) {
-    systemData.errorList.push({ message: TRANSLATION.busWarning[lang], code: `deviceMaxExceeded` });
-  }
-  updateSystemState()
-  updateErrors();
+// function errorHandling() {
+//   if (systemData.bus.length > 50 && !systemData.errorList.find(error => error.code === `deviceMaxExceeded`)) {
+//     systemData.errorList.push({ message: TRANSLATION.busWarning[lang], code: `deviceMaxExceeded` });
+//   }
+//   updateSystemState()
+//   updateErrors();
 
-}
+// }
 
 function updateErrors() {
   const errorList = document.querySelector('.errorList');

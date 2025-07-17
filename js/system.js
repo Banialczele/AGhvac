@@ -96,6 +96,7 @@ function setSelectInSegment(segment) {
 
     batteryBackUpInput.value = batteryTranslation;
   } else {
+    // WYGENEROWANIE OPCJI DLA SELECTA URZĄDZENIA!
     systemData.selectedStructure.devices.forEach((device, i) => {
       const text =
         device.class === "detector"
@@ -279,16 +280,16 @@ function setList(listName, deviceList) {
 
 
 
-function updateSystemState() {
-  const state = document.querySelector(`.systemOutput`);
-  if (systemData.errorList.length === 0) {
-    state.classList.remove(`falseSystem`);
-    state.innerText = `OK`
-  } else {
-    state.classList.add(`falseSystem`);
-    state.innerText = TRANSLATION.systemStateFalse[lang];
-  }
-}
+// function updateSystemState() {
+//   const state = document.querySelector(`.systemOutput`);
+//   if (systemData.errorList.length === 0) {
+//     state.classList.remove(`falseSystem`);
+//     state.innerText = `OK`
+//   } else {
+//     state.classList.add(`falseSystem`);
+//     state.innerText = TRANSLATION.systemStateFalse[lang];
+//   }
+// }
 
 
 // Tworzenie systemu
@@ -306,7 +307,7 @@ function setSystem() {
   funtionToUpdateSystem();
   //obsługa zdarzeń
   setupSystemEventHandlers();
-  errorHandling();
+  // errorHandling();
 }
 
 function funtionToUpdateSystem() {
@@ -318,9 +319,9 @@ function funtionToUpdateSystem() {
   setSystemStatePowerConsumption();
   createSystemUsedDevicesPanel();
   updateSystemPowerSupply();
-  const res = validateSystem();
-  systemData.errorList = res.errors;
-  errorHandling();
+  // const res = validateSystem();
+  // systemData.errorList = res.errors;
+  // errorHandling();
 }
 
 function handleButton(index) {
@@ -478,7 +479,7 @@ function setupSystemEventHandlers() {
           }
         }
       });
-      validateSystem();
+    
       funtionToUpdateSystem();
       checkIfToledExists();
       updateSystemPowerSupply();
@@ -523,7 +524,6 @@ function setupSystemEventHandlers() {
     } else if (btn.matches("button#exportToJSON")) {
       exportToJSON();
     }
-    validateSystem();
     funtionToUpdateSystem();
     checkIfToledExists();
   });
@@ -613,7 +613,7 @@ function setSystemUsedPSU(supplyType) {
   });
   setAttributes(systemUsedPSUDocsLink, {
     class: "usedDeviceDocs",
-    href: "https://www.atestgaz.pl/produkt/modul-js-teta-mod-control-1",
+    href: lang === `pl` ? "https://www.atestgaz.pl/produkt/modul-js-teta-mod-control-1" : "https://atestgaz.pl/en/produkt/teta-mod-control-1-control-unit-module/",
     target: "_blank",
     "data-translate": "appliedDevicesDocTech",
   });
@@ -622,9 +622,6 @@ function setSystemUsedPSU(supplyType) {
     alt: `control unit image`,
   });
   systemUsedPSUName.appendChild(document.createTextNode(supplyType));
-  // systemUsedPSUType.appendChild(
-  //   document.createTextNode(`${TRANSLATION.controlUnitModule[lang]}`)
-  // );
   systemUsedPSUDocsLink.appendChild(document.createTextNode(`${TRANSLATION.appliedDevicesDocTech[lang]}`));
   df.appendChild(systemUsedPSUName);
   df.appendChild(systemUsedPSUType);
@@ -636,8 +633,8 @@ function setSystemUsedPSU(supplyType) {
   return systemUsedPSU;
 }
 
-// // Ustawienie wykorzystanego w systemie rodzaju urządzenia
-// //ZESTAWIENIE URZĄDZEŃ
+// Ustawienie wykorzystanego w systemie rodzaju urządzenia
+//ZESTAWIENIE URZĄDZEŃ
 function setSystemUsedDevice(device) {
   const systemUsedDevice = document.createElement("div");
   const systemUsedDeviceDataContainer = document.createElement("div");
@@ -680,13 +677,13 @@ function setSystemUsedDevice(device) {
     setAttributes(systemUsedDeviceDocsLink, {
       class: "usedDeviceDocs",
       "data-translate": "appliedDevicesDocTech",
-      href: device.doc.went,
+      href: device.doc.went[lang],
       target: "_blank",
     });
     setAttributes(systemUsedDeviceDocsLink2, {
       class: "usedDeviceDocs",
       "data-translate": "appliedDevicesDocTech",
-      href: device.doc.det,
+      href: device.doc.det[lang],
       target: "_blank",
     });
     systemUsedDeviceDocsLink.appendChild(document.createTextNode(`${TRANSLATION.appliedDevicesDocTech[lang]} CO`));
@@ -696,7 +693,7 @@ function setSystemUsedDevice(device) {
   } else {
     setAttributes(systemUsedDeviceDocsLink, {
       class: "usedDeviceDocs",
-      href: device.doc,
+      href: device.doc[lang],
       target: "_blank",
       "data-translate": "appliedDevicesDocTech",
     });
@@ -722,7 +719,7 @@ function updateSystemPowerSupply() {
 function setSystemSegmentsLazy(bus) {
   const container = document.getElementById('actionsList');
   const SEGMENT_BATCH_SIZE = 10;
-  let loadedCount = 1; // Start od 2, bo 0 i 1 już są w DOM!
+  let loadedCount = 1; 
 
   function renderSegment(index) {
     const template = document.getElementById('actionsSegment1');

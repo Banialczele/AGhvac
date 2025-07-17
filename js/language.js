@@ -99,7 +99,7 @@ const TRANSLATION = {
   mainSystemSaveFile: { pl: "Zapisz system", en: "Save system" },
   mainSystemDownloadFactsheet: {
     pl: "Pobierz zestawienie urządzeń",
-    en: "Download factsheet",
+    en: "Download datasheet",
   },
   mainSystemUsedDevices: {
     pl: "Zastosowane urządzenia",
@@ -179,5 +179,9 @@ const TRANSLATION = {
   buttonText: {
     pl: "Wybierz",
     en: "Select"
+  },
+  hvacGuidance: {
+    pl: "https://doc.atestgaz.pl/AG/POD/POD-047-PLWydruk.pdf",
+    en: "https://doc.atestgaz.pl/AG/POD/POD-047-ENGPrint.pdf"
   }
 };

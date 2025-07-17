@@ -35,10 +35,7 @@ const controlUnitModule = {
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
-    maxPower_W: 100,
-    maxCurrent: 4,
-    voltageIn_V: 230,
-    voltageOut_V: 24,
+    supplyVoltage: 24,
   },
   productKey: "PW-108A",
 };
@@ -48,70 +45,59 @@ const controlUnitS = {
   img: "Teta MOD Control 1",
   possibleUPS: `yes`,
   description: {
-    maxPower_W: 100,
-    maxCurrent: 4, //maxPower/VoltageOut
-    voltageIn_V: 230,
-    voltageOut_V: 24,
+   supplyVoltage: 24,
   },
   productKey: "PW-086-Control1-S",
 };
 const controlUnitS2460W = {
-  type: "Teta Mod Control 1-S24", img: "Teta MOD Control 1",
+  type: "Teta Mod Control 1-S24",
+  img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
-    maxPower_W: 60,
-    maxCurrent: 2,
-    voltageIn_V: 230,
-    voltageOut_V: 24,
+   supplyVoltage: 24,
   },
   productKey: "PW-086-Control1-S24",
 };
 
 const controlUnitS4860W = {
-  type: "Teta Mod Control 1-S48-60W", img: "Teta MOD Control 1",
+  type: "Teta Mod Control 1-S48-60W",
+  img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
-    maxPower_W: 60,
-    maxCurrent: 1,
-    voltageIn_V: 230,
-    voltageOut_V: 48,
+    supplyVoltage: 48,
+    power: 60
   },
   productKey: "PW-086-Control1-S48-60",
 };
 const controlUnitS48100W = {
-  type: "Teta Mod Control 1-S48-100W", img: "Teta MOD Control 1",
+  type: "Teta Mod Control 1-S48-100W",
+  img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
-    maxPower_W: 100,
-    maxCurrent: 2,
-    voltageIn_V: 230,
-    voltageOut_V: 48,
+   supplyVoltage:  48,
+   power: 100
   },
   productKey: "PW-086-Control1-S48-100",
 };
 
 const controlUnitS48150W = {
-  type: "Teta Mod Control 1-S48-150W", img: "Teta MOD Control 1",
+  type: "Teta Mod Control 1-S48-150W",
+  img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
-    maxPower_W: 150,
-    maxCurrent: 3,
-    voltageIn_V: 230,
-    voltageOut_V: 48,
+   supplyVoltage:  48,
+   power: 150
   },
   productKey: "PW-086-Control1-S48-150",
 }
 
 const controlUnitSUPS300 = {
-  type: "Teta Mod Control 1-S-UP300W", img: "Teta MOD Control 1",
+  type: "Teta Mod Control 1-S-UP300W",
+  img: "Teta MOD Control 1",
   possibleUPS: `yes`,
   description: {
-    maxPower_W: 300,
-    maxCurrent: 12,
-    voltageIn_V: 230,
-    voltageOut_V: 24,
-    maxCurrent_V48: 6,
-    voltageOut_V48: 48,
+    supplyVoltage:  48,
+    power: 300
   },
   productKey: "PW-086-Control1-S-UP300",
 };
@@ -140,7 +126,10 @@ const tetaEcoWentDevice = {
   class: DeviceCl.detector,
   gasDetected: "CO",
   productKey: "PW-105-CO",
-  doc: "https://www.atestgaz.pl/produkt/czujnik-gazu-teta-ecowent",
+  doc: {
+    pl: "https://www.atestgaz.pl/produkt/czujnik-gazu-teta-ecowent",
+    en: "https://atestgaz.pl/en/produkt/gas-detector-teta-ecowent/"
+  }
 }; // see adms://s:192.168.0.251/b:archidemes/i:165964
 
 const tetaEcoDetDevice = {
@@ -150,7 +139,10 @@ const tetaEcoDetDevice = {
   minVoltage_V: 12,
   class: DeviceCl.detector,
   gasDetected: "LPG",
-  doc: "https://www.atestgaz.pl/produkt/czujnik-gazu-teta-ecodet",
+  doc: {
+    pl: "https://www.atestgaz.pl/produkt/czujnik-gazu-teta-ecodet",
+    en: "https://atestgaz.pl/en/produkt/gas-detector-teta-ecodet/"
+  },
   productKey: "PW-106-LPG",
 }; // see ://s:192.168.0.251/b:archidemes/i:165964
 
@@ -167,9 +159,16 @@ const tetaEcoWentMiniDetDevice = {
     LPG: "PW-107-LPG",
   },
   doc: {
-    went: "https://www.atestgaz.pl/produkt/czujnik-gazu-teta-ecowent",
-    det: "https://atestgaz.pl/produkt/czujnik-gazu-teta-minidet/",
+    went: {
+      pl: "https://www.atestgaz.pl/produkt/czujnik-gazu-teta-ecowent",
+      en: "https://atestgaz.pl/en/produkt/gas-detector-teta-ecowent/"
+    },
+    det: {
+      pl: "https://atestgaz.pl/produkt/czujnik-gazu-teta-minidet/",
+      en: "https://atestgaz.pl/en/produkt/gas-detector-teta-minidet/"
+    }
   },
+
 }; // see adms://s:192.168.0.251/b:archidemes/i:165964
 
 const tetaEcoTermDevice = {
@@ -180,7 +179,10 @@ const tetaEcoTermDevice = {
   class: DeviceCl.detector,
   gasDetected: "NG",
   productKey: "PW-113-NG",
-  doc: "https://atestgaz.pl/produkt/czujnik-gazu-teta-ecoterm/",
+  doc: {
+    pl: "https://atestgaz.pl/produkt/czujnik-gazu-teta-ecoterm/",
+    en: "https://atestgaz.pl/en/produkt/gas-detector-teta-ecoterm/"
+  }
 }; // see adms://s:192.168.0.251/b:archidemes/i:165964
 
 const tetaEcoHDevice = {
@@ -191,7 +193,10 @@ const tetaEcoHDevice = {
   class: DeviceCl.detector,
   gasDetected: "H2",
   productKey: "PW-123-H2",
-  doc: "https://atestgaz.pl/produkt/czujnik-gazu-teta-ecoh/",
+  doc: {
+    pl: "https://atestgaz.pl/produkt/czujnik-gazu-teta-ecoh/",
+    en: "https://atestgaz.pl/en/produkt/gas-detector-teta-ecoh/"
+  }
 }; // see adms://s:192.168.0.251/b:archidemes/i:226424
 
 const tetaEcoNDevice = {
@@ -202,7 +207,10 @@ const tetaEcoNDevice = {
   class: DeviceCl.detector,
   gasDetected: "NO2",
   productKey: "PW-111-NO2",
-  doc: "https://www.atestgaz.pl/produkt/czujnik-gazu-teta-econ",
+  doc: {
+    pl: "https://www.atestgaz.pl/produkt/czujnik-gazu-teta-econ",
+    en: "https://atestgaz.pl/en/produkt/gas-detector-teta-econ/"
+  }
 }; // see EcoTerm
 
 const toledDevice = {
@@ -212,18 +220,22 @@ const toledDevice = {
   minVoltage_V: 15,
   class: DeviceCl.signaller,
   productKey: "PW-127-X",
-  doc: "https://www.atestgaz.pl/produkt/tablica-ostrzegawcza-toled",
+  doc: {
+    pl: "https://www.atestgaz.pl/produkt/tablica-ostrzegawcza-toled",
+    en: 'https://atestgaz.pl/en/produkt/warning-led-display-toled/'
+  }
 }; // see adms://s:192.168.0.251/b:archidemes/i:226424
 
-const tetaSZOADevice = {
-  type: "Teta SZOA",
-  power_W: 2.91,
-  current_A: -0.007,
-  minVoltage_V: 15,
-  class: DeviceCl.signaller,
-  productKey: "PW-118-TETA",
-  doc: "https://www.atestgaz.pl/produkt/sygnalizator-teta-szoa",
-}; // see adms://s:192.168.0.251/b:archidemes/i:226424
+// const tetaSZOADevice = {
+//   type: "Teta SZOA",
+//   power_W: 2.91,
+//   current_A: -0.007,
+//   minVoltage_V: 15,
+//   class: DeviceCl.signaller,
+//   productKey: "PW-118-TETA",
+//   doc: {
+//   pl: "https://www.atestgaz.pl/produkt/sygnalizator-teta-szoa",
+// }; // see adms://s:192.168.0.251/b:archidemes/i:226424
 
 const tetaSOLERTDevice = {
   type: "Teta SOLERT",
@@ -232,7 +244,10 @@ const tetaSOLERTDevice = {
   minVoltage_V: 15,
   class: DeviceCl.signaller,
   productKey: "PW-132-T",
-  doc: "https://atestgaz.pl/produkt/teta-solert/",
+  doc: {
+    pl: "https://atestgaz.pl/produkt/teta-solert/",
+    en: "https://atestgaz.pl/en/produkt/teta-solert-2/"
+  }
 }; // see adms://s:192.168.0.251/b:archidemes/i:226424 + adms://s:192.168.0.251/b:archidemes/i:165964
 
 const tetaControlVDevice = {
@@ -242,7 +257,10 @@ const tetaControlVDevice = {
   minVoltage_V: 15,
   class: DeviceCl.valveCtrl,
   productKey: "PW-121-X",
-  doc: "https://www.atestgaz.pl/produkt/sterownik-zaworu-control-v",
+  doc: {
+    pl: "https://www.atestgaz.pl/produkt/sterownik-zaworu-control-v",
+    en: "https://atestgaz.pl/en/produkt/valve-controller-control-v/"
+  }
 }; // see adms://s:192.168.0.251/b:archidemes/i:226424
 
 const facilityTypeGarage = {
@@ -255,7 +273,6 @@ const facilityTypeGarage = {
     tetaEcoDetDevice,
     tetaEcoWentMiniDetDevice,
     tetaEcoNDevice,
-    tetaSZOADevice,
     tetaSOLERTDevice,
     toledDevice,
   ],
@@ -272,7 +289,7 @@ const facilityTypeBattery = {
     pl: "Akumulatornie",
     en: "Battery room",
   },
-  devices: [tetaEcoHDevice, tetaSZOADevice, tetaSOLERTDevice, toledDevice],
+  devices: [tetaEcoHDevice, tetaSOLERTDevice, toledDevice],
   detection: [tetaEcoHDevice.gasDetected],
 };
 
@@ -281,7 +298,7 @@ const facilityTypeHall = {
     pl: "Hala",
     en: "Hall",
   },
-  devices: [tetaEcoDetDevice, tetaEcoTermDevice, tetaSZOADevice, tetaSOLERTDevice, toledDevice],
+  devices: [tetaEcoDetDevice, tetaEcoTermDevice, tetaSOLERTDevice, toledDevice],
   detection: [tetaEcoDetDevice.gasDetected, tetaEcoTermDevice.gasDetected],
 };
 
@@ -301,7 +318,6 @@ const facilityTypeOther = {
     tetaEcoHDevice,
     tetaEcoNDevice,
     toledDevice,
-    tetaSZOADevice,
     tetaSOLERTDevice,
     tetaControlVDevice,
   ],
@@ -323,7 +339,6 @@ const Devices = [
   tetaEcoHDevice,
   tetaEcoNDevice,
   toledDevice,
-  tetaSZOADevice,
   tetaSOLERTDevice,
   tetaControlVDevice,
 ];

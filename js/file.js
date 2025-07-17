@@ -16,7 +16,6 @@ function setDataToCSVFormat() {
   const rows = [];
 
   const reducedDevices = reduceDevicesForFile();
-  console.log(reducedDevices)
   // dodaj nagłówek urządzeń
   rows.push(rowsDescription.device);
 

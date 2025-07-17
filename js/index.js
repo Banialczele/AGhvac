@@ -55,9 +55,9 @@ window.addEventListener("load", () => {
 	setMobileMenuClickEvent();
 	formInit();
 	createSystemDataFromAFile();
-
 	handleFormSubmit();
-
+	const guidanceLink = document.querySelector(`.hvacGuidanceLink`);
+	guidanceLink.setAttribute(`href`, `${TRANSLATION.hvacGuidance[lang]}`)
 });
 
 // Reset pozycji scrolla do początku strony
