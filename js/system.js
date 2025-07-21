@@ -34,6 +34,10 @@ function updateModControl() {
 function copyActionsSegmentOnFormSubmit() {
   const parentNode = document.querySelector(`.actionsList`);
   const firstSegment = document.getElementById(`actionsSegment1`);
+  const toled = firstSegment.querySelector('.toledContainer.toledDescriptionSelect');
+  if (toled) toled.remove();
+  document.querySelectorAll('.toledContainer.toledDescriptionSelect')
+    .forEach(toled => console.log(toled));
   const actionsSegments = document.querySelectorAll(`.actionsSegment`);
   actionsSegments.forEach((elem, i) => (i > 1 ? parentNode.removeChild(elem) : ""));
   const df = new DocumentFragment();
@@ -387,12 +391,9 @@ function setupSystemEventHandlers() {
 
             if (selected?.type === "TOLED") {
               const container = segment.querySelector(".deviceTypeWrapper");
-              // const checkIfToledDescriptionExists = segment.querySelector(`.toledDescriptionSelect`);
-              // if(checkIfToledDescriptionExists) checkIfToledDescriptionExists.parentNode.removeChild(checkIfToledDescriptionExists)
-              if(container.lastChild) container.removeChild(container.lastChild)
-              console.log(container.children)
-              console.log(container.lastChild.classList)
-              console.log(container.lastChild)
+              const wrapper = segment.querySelector('.deviceTypeWrapper');
+              const toled = wrapper.querySelector('.toledContainer.toledDescriptionSelect');
+              if (toled) toled.remove();
               container.appendChild(createSegmentTOLEDDescriptionSelect());
               const toledSelect = segment.querySelector(`.toledDescriptionSelect select`);
               systemData.bus[index - 1].description = toledSelect.value;
@@ -423,7 +424,7 @@ function setupSystemEventHandlers() {
       systemData.bus.splice(index, 0, copy);
       handleButton(index);
       funtionToUpdateSystem();
-    checkIfToledExists();
+      checkIfToledExists();
     }
     // Usunięcie segmentu
     if (btn.matches("button.removeDeviceButton")) {
@@ -431,7 +432,7 @@ function setupSystemEventHandlers() {
       handleButton(index);
       checkIfToledExists();
       funtionToUpdateSystem();
-    checkIfToledExists();
+      checkIfToledExists();
     }
     // Zaznacz wszystkie
     if (btn.matches(".checkAll")) {
@@ -628,6 +629,8 @@ function setSystemSegmentsLazy(bus) {
   function renderSegment(index) {
     const template = document.getElementById('actionsSegment1');
     const newSegment = template.cloneNode(true);
+    const toled = newSegment.querySelector('.toledContainer.toledDescriptionSelect');
+    if (toled) toled.remove();
     const newIndex = index + 1;
     newSegment.style.display = '';
     newSegment.id = `actionsSegment${newIndex}`;
