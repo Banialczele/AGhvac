@@ -6,8 +6,8 @@ const TRANSLATION = {
   teta: "Teta",
   gas: "Gas",
   configuratorDescription: {
-    pl: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam porta acelitquis rutrum.",
-    en: "The same but in English so it looks smart",
+    pl: "REWIZJA",
+    en: "REVISION",
   },
   tetaGasGuidance: {
     pl: "Przewodnik TetaGas",

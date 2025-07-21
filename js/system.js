@@ -38,7 +38,6 @@ function copyActionsSegmentOnFormSubmit() {
   actionsSegments.forEach((elem, i) => (i > 1 ? parentNode.removeChild(elem) : ""));
   const df = new DocumentFragment();
   for (let i = 1; i < systemData.bus.length; i++) {
-    console.log(i)
     const cloned = firstSegment.cloneNode(true);
     const actionsSegmentIndexLabel = cloned.querySelector(`.segmentIndexLabel`);
     const actionsSegmentIndexInput = cloned.querySelector(`.segmentId`);
@@ -70,7 +69,6 @@ function copyActionsSegmentOnFormSubmit() {
 
 function setSelectInSegment(segment) {
   const select = segment.querySelector(`.segmentDeviceSelect`);
-  // console.log(select)
   const firstSegment = document.getElementById(`actionsSegmentDevice0`);
 
   const df = new DocumentFragment();
@@ -389,6 +387,12 @@ function setupSystemEventHandlers() {
 
             if (selected?.type === "TOLED") {
               const container = segment.querySelector(".deviceTypeWrapper");
+              // const checkIfToledDescriptionExists = segment.querySelector(`.toledDescriptionSelect`);
+              // if(checkIfToledDescriptionExists) checkIfToledDescriptionExists.parentNode.removeChild(checkIfToledDescriptionExists)
+              if(container.lastChild) container.removeChild(container.lastChild)
+              console.log(container.children)
+              console.log(container.lastChild.classList)
+              console.log(container.lastChild)
               container.appendChild(createSegmentTOLEDDescriptionSelect());
               const toledSelect = segment.querySelector(`.toledDescriptionSelect select`);
               systemData.bus[index - 1].description = toledSelect.value;

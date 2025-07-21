@@ -298,7 +298,7 @@ const facilityTypeHall = {
     pl: "Hala",
     en: "Hall",
   },
-  devices: [tetaEcoDetDevice, tetaEcoTermDevice, tetaSOLERTDevice, toledDevice],
+  devices: [tetaEcoDetDevice, tetaEcoTermDevice, tetaSOLERTDevice, toledDevice, tetaControlVDevice],
   detection: [tetaEcoDetDevice.gasDetected, tetaEcoTermDevice.gasDetected],
 };
 
