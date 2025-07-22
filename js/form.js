@@ -202,7 +202,6 @@ function errorHandling() {
     systemData.errorList.push({ code: `TOO_MANY_DEVICES`, message: `${TRANSLATION.busWarning[lang]}`})
   }
  const errorList = document.querySelector(`.errorList`);
- console.log(systemData.errorList)
  errorList.innerHTML = ""
  systemData.errorList.forEach(error => {
   const item = document.createElement(`li`);

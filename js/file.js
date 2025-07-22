@@ -113,8 +113,6 @@ function insertDeviceTypeData(devices, label, store) {
         store.push([label, key, (value.productKey.CO, value.productKey.LPG), `${value.quantity} szt.`]);
       }
       if (key === `TOLED`) {
-        console.log(key);
-        console.log(value);
         store.push([label, key, value.productKey, `${value.quantity} szt.`, value.description]);
       } else {
         store.push([label, key, value.productKey, `${value.quantity} szt.`]);
@@ -186,7 +184,6 @@ function convertAndLoadFileData(file) {
     reader.onload = function () {
       const data = reader.result;
       const formattedData = JSON.parse(data);
-      console.log(formattedData);
       systemData = formattedData;
       setSystem();
       system.scrollIntoView({ behavior: "smooth", block: "start" });

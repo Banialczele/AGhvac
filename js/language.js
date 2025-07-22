@@ -21,7 +21,22 @@ const TRANSLATION = {
     pl: "Tak",
     en: "Yes",
   },
-
+  buildingInformation: {
+    pl: "Proszę wybrać rodzaj obiektu na jakim zostanie zamontowany system",
+    en: "Please choose structure in which the system will be operating"
+  },
+  detectedGasInformation: {
+    pl: "Proszę wybrać główny gaz jaki będzie mierzony przez system",
+    en: "Please choose main gas to be detected by the system"
+  },
+  batteryBackUpInformation: {
+    pl: "Proszę wybrać czy jednostka sterująca powinna mieć akumulatorowe podtrzymanie pracy",
+    en: "Please choose if control unit module should have built-in UPS. "
+  },
+  wireLengthInformation: {
+    pl: "Orientacyjna odleglość pomiędzy urządeniami",
+    en: "Estimated distance amongst devices"
+  },
   batteryBackUpNo: {
     pl: "Nie",
     en: "No",
@@ -48,19 +63,19 @@ const TRANSLATION = {
   },
   aboutAppDescriptionEntry: {
     pl: "Wprowadź podstawowe dane dotyczące Twojego systemu.",
-    en: "Enter basic information about your system.",
+    en: "Please enter basic information about your system.",
   },
   aboutAppDescriptionNext: {
     pl: "W następnym kroku będzie możliwość modyfikowania wprowadzonych danych oraz dodanie sygnalizatorów czy zaworów.",
-    en: "In the next step it will be possible to modify the entered data and add signals or valves.",
+    en: "In the next step, you will be able to modify the entered data and add signaling devices (sounders, beacons, etc.) or solenoid valves.",
   },
   aboutAppDescriptionEnd: {
     pl: "Na końcu system dobierze optymalny przekrój kabla dla systemu oraz umożliwi zarówno zapis jak i wygenerowanie zestawienia urządzeń z kodami PW.",
-    en: "At the end, the system will select the optimal cable cross-section for the system and will enable both saving and generating a list of devices with PW codes.",
+    en: "Finally, the configurator will select the control unit and the optimal cable for the system, and will allow you to save and generate a list of devices with product codes.",
   },
   aboutAppDescriptionInf: {
     pl: "Konfigurator prezentuje system na podstawie konfigurowalnych segmentów zawierających urządzenia. Aktualnie możliwe jest dodanie 50 segmentów do systemu - np 40 segmentów zawierających czujniki gazu oraz 10 segmentów zawierających sygnalizatory.",
-    en: "The configurator presents the system based on configurable segments containing devices. Currently, it is possible to add 50 segments to the system - e.g. 40 segments containing gas sensors and 10 segments containing signaling devices.",
+    en: "The configurator presents the TetaGas gas detection system based on configurable segments containing devices. Currently, you can add up to 50 segments to the system – for example, 40 segments containing gas detectors and 10 segments containing signaling devices",
   },
   aboutAppDescriptionAbout: {
     pl: "Więcej informacji znajdziecie Państwo w dokumencie ",
@@ -79,7 +94,7 @@ const TRANSLATION = {
   systemStatusDetectors: { pl: "CZUJNIKI GAZU", en: "GAS DETECTORS" },
   systemStatusSignallers: {
     pl: "SYGNALIZATORY/ZAWORY",
-    en: "SIGNALLERS/VALVES",
+    en: "Signalling devices/Solenoid valves",
   },
   systemStatusAccessories: { pl: "AKCESORIA", en: "ACCESSORIES" },
   systemStatusPSU: {

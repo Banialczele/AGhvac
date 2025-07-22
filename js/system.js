@@ -26,7 +26,6 @@ function copyImageSegmentOnFormSubmit(index) {
 
 function updateModControl() {
   const modControl = document.getElementById(`actionsSegmentDevice0`);
-  console.log(systemData.supplyType.type)
   modControl.innerText = systemData.supplyType.type
   return modControl;
 }
@@ -37,7 +36,7 @@ function copyActionsSegmentOnFormSubmit() {
   const toled = firstSegment.querySelector('.toledContainer.toledDescriptionSelect');
   if (toled) toled.remove();
   document.querySelectorAll('.toledContainer.toledDescriptionSelect')
-    .forEach(toled => console.log(toled));
+    .forEach(toled =>  toled.remove());
   const actionsSegments = document.querySelectorAll(`.actionsSegment`);
   actionsSegments.forEach((elem, i) => (i > 1 ? parentNode.removeChild(elem) : ""));
   const df = new DocumentFragment();
