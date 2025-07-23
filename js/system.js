@@ -308,7 +308,7 @@ function funtionToUpdateSystem() {
   updateSelectValue();
   setSystemStatePowerConsumption();
   setSystemStateCableDim();
-  // createSystemUsedDevicesPanel();
+  createSystemUsedDevicesPanel();
   setSystemStateLists(); 
   validateSystem();
 }
@@ -486,6 +486,17 @@ function setSystemStatePowerConsumption(value = 1) {
 function setSystemStateCableDim() {
   document.querySelector(`#wireCrossSection`).innerText = systemData.wireType;
 
+}
+function createSystemUsedDevicesPanel() {
+  const systemUsedDevicesContainer = document.getElementById("usedDevicesContainer");
+  systemUsedDevicesContainer.replaceChildren();
+  const result = setUsedDevices();
+
+  //ZNALEZIENIE OBRAZU JEDNOSTKI STERUJĄCEJ
+  systemUsedDevicesContainer.appendChild(setSystemUsedPSU(systemData.supplyType.type));
+  for (const [key, value] of Object.entries(result)) {
+    systemUsedDevicesContainer.appendChild(setSystemUsedDevice(value));
+  }
 }
 
 // // Ustawienie wykorzystanego w systemie rodzaju jednostki sterującej
