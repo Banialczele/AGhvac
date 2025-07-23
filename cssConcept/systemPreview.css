@@ -189,7 +189,7 @@
 
 .segmentButtonsContainer {
   display: flex;
-  flex-direction: column-reverse;
+  /* flex-direction: column-reverse; */
   position: absolute;
   bottom: calc(50% - 30px);
   right: 15px;

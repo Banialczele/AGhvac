@@ -1,4 +1,3 @@
-// Inicjacja głównego obiektu z danymi systemu przy wczytaniu z pliku
 function createSystemDataFromAFile(fileData = null) {
   if (fileData) {
     systemData.supplyType = fileData.supplyType;
@@ -266,9 +265,13 @@ function createListItem(label, count) {
 
 function setSystemStateLists() {
   const deviceTotal = reduceDetectors();
+  const combinedSignallers = {
+    ...deviceTotal.valveCtrl,
+    ...deviceTotal.signaller
+  }
+  //console.log(deviceTotal)
   setList(`detectorsList`, deviceTotal.detector);
-  setList(`signallersList`, deviceTotal.valveCtrl);
-  setList(`signallersList`, deviceTotal.signaller);
+  setList(`signallersList`, combinedSignallers);
   setList(`accessoriesList`, deviceTotal.tCon);
 }
 
@@ -276,6 +279,7 @@ function setList(listName, deviceList) {
   const listToSet = document.getElementById(listName);
   listToSet.replaceChildren();
   for (const [key, value] of Object.entries(deviceList)) {
+    //if(listName === `signallersList`) console.log(key, value)
     listToSet.appendChild(createListItem(key, value));
   }
 }
@@ -291,22 +295,22 @@ function setSystem() {
   copyImageSegmentOnFormSubmit(1);
   fillData();
   funtionToUpdateSystem();
-  //obsługa zdarzeń
-  setupSystemEventHandlers();
+  setupSystemEventHandlers(); // UWAGA! Handlery tylko raz!
   // errorHandling();
 }
 
+// To powinno być wywoływane zawsze po zmianie w systemie:
 function funtionToUpdateSystem() {
   busImageController();
-  setSystemStateLists();
   updateWireLength();
   setSystemStateBusLength();
-  updateModControl()
-  updateSelectValue()
+  updateModControl();
+  updateSelectValue();
   setSystemStatePowerConsumption();
   setSystemStateCableDim();
-  createSystemUsedDevicesPanel();
-  validateSystem()
+  // createSystemUsedDevicesPanel();
+  setSystemStateLists(); 
+  validateSystem();
 }
 
 function handleButton(index) {
@@ -354,7 +358,6 @@ function hideOverlayPanel() {
   document.getElementById('overlayPanel').classList.add('hidden');
 }
 
-
 function setupSystemEventHandlers() {
   const container = document.getElementById("system");
   container.addEventListener("change", (event) => {
@@ -382,7 +385,7 @@ function setupSystemEventHandlers() {
           const modControlInput = segment.querySelector("#modControlBatteryBackUp");
           const inputTranslation =
             selecetedModControl.possibleUPS === "no" ? TRANSLATION.batteryBackUpNo[lang] : TRANSLATION.batteryBackUpYes[lang];
-          systemData.supplyType = selecetedModControl
+          systemData.supplyType = selecetedModControl;
           modControlInput.value = inputTranslation;
         } else {
           if (changeElement.matches("select.segmentDeviceSelect")) {
@@ -483,19 +486,6 @@ function setSystemStatePowerConsumption(value = 1) {
 function setSystemStateCableDim() {
   document.querySelector(`#wireCrossSection`).innerText = systemData.wireType;
 
-}
-
-// // Tworzenie panelu z listą rodzajów wykorzystanych w systemie urządzeń
-function createSystemUsedDevicesPanel() {
-  const systemUsedDevicesContainer = document.getElementById("usedDevicesContainer");
-  systemUsedDevicesContainer.replaceChildren();
-  const result = setUsedDevices();
-
-  //ZNALEZIENIE OBRAZU JEDNOSTKI STERUJĄCEJ
-  systemUsedDevicesContainer.appendChild(setSystemUsedPSU(systemData.supplyType.type));
-  for (const [key, value] of Object.entries(result)) {
-    systemUsedDevicesContainer.appendChild(setSystemUsedDevice(value));
-  }
 }
 
 // // Ustawienie wykorzystanego w systemie rodzaju jednostki sterującej
