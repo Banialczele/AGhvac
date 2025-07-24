@@ -295,8 +295,7 @@ function setSystem() {
   copyImageSegmentOnFormSubmit(1);
   fillData();
   funtionToUpdateSystem();
-  setupSystemEventHandlers(); // UWAGA! Handlery tylko raz!
-  // errorHandling();
+  setupSystemEventHandlers();
 }
 
 // To powinno być wywoływane zawsze po zmianie w systemie:
@@ -434,16 +433,11 @@ function setupSystemEventHandlers() {
       handleButton(index);
       checkIfToledExists();
       funtionToUpdateSystem();
-      checkIfToledExists();
     }
     // Zaznacz wszystkie
     if (btn.matches(".checkAll")) {
       document.querySelectorAll(".segmentCheckbox").forEach((cb) => (cb.checked = true));
     }
-    if (btn.matches(`.close-btn`)) {
-      hideOverlayPanel();
-    }
-
     // Odznacz wszystkie
     if (btn.matches(".unCheckAll")) {
       document.querySelectorAll(".segmentCheckbox").forEach((cb) => (cb.checked = false));

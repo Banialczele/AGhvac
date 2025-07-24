@@ -1,5 +1,5 @@
 .system {
-  display: flex;
+  /* display: flex; */
   justify-content: center;
   column-gap: 25px;
   row-gap: 17px;
@@ -46,7 +46,6 @@
 .system .systemStatus {
   width: 100%;
   max-width: 325px;
-  height: 100%;
   max-height: calc(100vh - 118px);
   overflow-y: scroll;
 }
@@ -237,9 +236,15 @@
   }
 }
 
-@media screen and (min-width: 700px) and (max-width: 1015px) {
+@media (min-width: 1800px) {
   .system {
-    max-width: 700px;
+    max-width: 1920px; 
+  }
+}
+
+@media screen and (min-width: 700px) {
+  .system {
+    max-width: 1800px;
   }
 }
 
@@ -249,14 +254,13 @@
   }
 }
 
-@media screen and (min-width: 700px) and (max-width: 1642px) {
+@media screen and (min-width: 700px) and (max-width: 2800px ){
   .system {
     display: grid;
     grid-template-areas:
-      "systemPreview systemPreview"
-      "systemStatus wrapper";
-    grid-template-columns: 1fr 1fr;
-    padding: 0 8px;
+      "wrapper systemPreview systemStatus";
+    grid-template-columns: 1fr 2fr 1fr;
+    padding: 0 30px;
     margin: 0 auto 17px;
   }
 }

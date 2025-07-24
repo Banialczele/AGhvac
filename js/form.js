@@ -187,26 +187,33 @@ function handleFormSubmit() {
 }
 function validateSystem() {
   const result = findValidControlUnitsWithCables(CONTROLUNITLIST, systemData.bus, Cables);
-  const powerSupply = result.units[0].controlUnit;
-  const wire = result.units[0].validCables[0];
+  let controlUnit = result.units[0].controlUnit;
+  let cable = result.units[0].validCables[0];
+  const nextUnit = result.units[1];
+  const higherPriorityCable = nextUnit.validCables.find(validCable => validCable.cable.priority < cable.cable.priority);
+  if (higherPriorityCable !== undefined) {
+    controlUnit = nextUnit.controlUnit;
+    cable = higherPriorityCable;
+  }
+  const powerSupply = controlUnit;
   systemData.supplyType = powerSupply;
-  systemData.wireType = wire.cable.type
-  systemData.totalPower = Math.ceil(wire.powerW);
+  systemData.wireType = cable.cable.type
+  systemData.totalPower = Math.ceil(cable.powerW);
   systemData.errorList = result.error;
   initSystem.systemIsGenerated = true;
   errorHandling()
 }
 
 function errorHandling() {
-  if(systemData.bus.length > 50 && !systemData.errorList.find( error => error.code === `TOO_MANY_DEVICES`) ) {
-    systemData.errorList.push({ code: `TOO_MANY_DEVICES`, message: `${TRANSLATION.busWarning[lang]}`})
+  if (systemData.bus.length > 50 && !systemData.errorList.find(error => error.code === `TOO_MANY_DEVICES`)) {
+    systemData.errorList.push({ code: `TOO_MANY_DEVICES`, message: `${TRANSLATION.busWarning[lang]}` })
   }
- const errorList = document.querySelector(`.errorList`);
- errorList.innerHTML = ""
- systemData.errorList.forEach(error => {
-  const item = document.createElement(`li`);
-  item.setAttribute(`id`, error.code);
-  item.innerText = error.message;
-  errorList.appendChild(item);
- })
+  const errorList = document.querySelector(`.errorList`);
+  errorList.innerHTML = ""
+  systemData.errorList.forEach(error => {
+    const item = document.createElement(`li`);
+    item.setAttribute(`id`, error.code);
+    item.innerText = error.message;
+    errorList.appendChild(item);
+  })
 }

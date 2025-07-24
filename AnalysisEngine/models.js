@@ -4,11 +4,12 @@ const PowerSupplies = [
   { type: "48V / 48V + UPS", supplyVoltage_V: 48 },
 ];
 
+//Przypisałem wagi do każdego kabla - 1 najważniejszy numer, 4 najmniej istotny
 const Cables = [
-  { type: "2 x 1 mm2", resistivity_OhmPerMeter: 0.0181 },
-  { type: "2 x 1,5 mm2", resistivity_OhmPerMeter: 0.0121 },
-  { type: "2 x 2,5 mm2", resistivity_OhmPerMeter: 0.00741 },
-  { type: "2 x 4 mm2", resistivity_OhmPerMeter: 0.00461 },
+  { type: "2 x 1 mm2", resistivity_OhmPerMeter: 0.0181, priority: 1 },
+  { type: "2 x 1,5 mm2", resistivity_OhmPerMeter: 0.0121, priority: 2 },
+  { type: "2 x 2,5 mm2", resistivity_OhmPerMeter: 0.00741, priority: 3 },
+  { type: "2 x 4 mm2", resistivity_OhmPerMeter: 0.00461, priority: 4 },
 ];
 
 const busTooLong = {
@@ -30,31 +31,35 @@ const valvesTooMany = {
 }
 
 //sprawdzić description w controlUnitModule oraz controlUnitS
-const controlUnitModule = {
-  type: "Teta Mod Control 1",
-  img: "Teta MOD Control 1",
-  possibleUPS: `no`,
-  description: {
-    supplyVoltage: 24,
-  },
-  productKey: "PW-108A",
-};
+//Zgodnie z wytycznymi "usuwam" na razie te jednostki sterujące z systemu
+// const controlUnitModule = {
+//   type: "Teta Mod Control 1",
+//   img: "Teta MOD Control 1",
+//   possibleUPS: `no`,
+//   description: {
+//     supplyVoltage: 24,
+//     power: 0
+//   },
+//   productKey: "PW-108A",
+// };
 
-const controlUnitS = {
-  type: "Teta Mod Control 1-S",
-  img: "Teta MOD Control 1",
-  possibleUPS: `yes`,
-  description: {
-   supplyVoltage: 24,
-  },
-  productKey: "PW-086-Control1-S",
-};
+// const controlUnitS = {
+//   type: "Teta Mod Control 1-S",
+//   img: "Teta MOD Control 1",
+//   possibleUPS: `yes`,
+//   description: {
+//    supplyVoltage: 24,
+//    power: 0
+//   },
+//   productKey: "PW-086-Control1-S",
+// };
 const controlUnitS2460W = {
-  type: "Teta Mod Control 1-S24",
+  type: "Teta Mod Control 1-S24-60W",
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
    supplyVoltage: 24,
+   power: 60
   },
   productKey: "PW-086-Control1-S24",
 };
@@ -103,13 +108,13 @@ const controlUnitSUPS300 = {
 };
 
 const CONTROLUNITLIST = [
-  controlUnitS,
+  // controlUnitS,
   controlUnitS2460W,
   controlUnitS4860W,
   controlUnitS48100W,
   controlUnitS48150W,
   controlUnitSUPS300,
-  controlUnitModule,
+  // controlUnitModule,
 ];
 
 const DeviceCl = {

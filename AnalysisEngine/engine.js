@@ -32,7 +32,7 @@ function checkSystemForPowerSupplyAndCable(controlUnit, busSegments, cables) {
         }
 
         let totalCurrent = currentAtNode + deviceCurrent;
-        const resistance = cable.resistivity_OhmPerMeter * (segment.wireLength ?? segment.cableLen_m);
+        const resistance = cable.resistivity_OhmPerMeter * (segment.wireLength);
         const voltageDrop = 2 * resistance * totalCurrent;
 
         const inputVoltage = voltageAtNode + voltageDrop;
