@@ -35,7 +35,7 @@ function copyActionsSegmentOnFormSubmit() {
   const toled = firstSegment.querySelector('.toledContainer.toledDescriptionSelect');
   if (toled) toled.remove();
   document.querySelectorAll('.toledContainer.toledDescriptionSelect')
-    .forEach(toled =>  toled.remove());
+    .forEach(toled => toled.remove());
   const actionsSegments = document.querySelectorAll(`.actionsSegment`);
   actionsSegments.forEach((elem, i) => (i > 1 ? parentNode.removeChild(elem) : ""));
   const df = new DocumentFragment();
@@ -300,6 +300,7 @@ function setSystem() {
 
 // To powinno być wywoływane zawsze po zmianie w systemie:
 function funtionToUpdateSystem() {
+  validateSystem();
   busImageController();
   updateWireLength();
   setSystemStateBusLength();
@@ -308,8 +309,7 @@ function funtionToUpdateSystem() {
   setSystemStatePowerConsumption();
   setSystemStateCableDim();
   createSystemUsedDevicesPanel();
-  setSystemStateLists(); 
-  validateSystem();
+  setSystemStateLists();
 }
 
 function handleButton(index) {
@@ -409,10 +409,9 @@ function setupSystemEventHandlers() {
           }
         }
       });
-
-      funtionToUpdateSystem();
-      checkIfToledExists();
     }
+    funtionToUpdateSystem();
+    checkIfToledExists();
   });
 
   container.addEventListener("click", (event) => {

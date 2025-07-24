@@ -187,6 +187,7 @@ function handleFormSubmit() {
 }
 function validateSystem() {
   const result = findValidControlUnitsWithCables(CONTROLUNITLIST, systemData.bus, Cables);
+  console.log(result)
   let controlUnit = result.units[0].controlUnit;
   let cable = result.units[0].validCables[0];
   const nextUnit = result.units[1];
