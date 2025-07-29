@@ -336,7 +336,7 @@ header #configuratorLanguage .langLink:first-child {
   row-gap: calc(3 * var(--input-margin));
 }
 
-.form .tooltip {
+.tooltip {
   position: relative;
   display: inline-block;
   padding: 0 6px;

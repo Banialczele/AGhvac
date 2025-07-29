@@ -1,7 +1,7 @@
 function createSystemDataFromAFile(fileData = null) {
   if (fileData) {
     systemData.supplyType = fileData.supplyType;
-    systemData.structureType = fileData.structureType;
+    systemData.selectedStructure = fileData.selectedStructure;
     systemData.bus = fileData.bus;
     systemData.batteryBackUp = fileData.batteryBackUp;
     systemData.devicesTypes = fileData.devicesTypes;
@@ -10,7 +10,7 @@ function createSystemDataFromAFile(fileData = null) {
 
 function copyImageSegmentOnFormSubmit(index) {
   const parentNode = document.querySelector(`.systemDiagram`);
-  const firstSegment = document.getElementById(`segmentDiagram${index}`);
+  const firstSegment = document.getElementById(`segmentDiagram1`);
   const segmentsDiagrams = document.querySelectorAll(`.deviceSegment`);
   segmentsDiagrams.forEach((elem, i) => (i > 0 ? parentNode.removeChild(elem) : ""));
   const df = new DocumentFragment();
@@ -32,10 +32,16 @@ function updateModControl() {
 function copyActionsSegmentOnFormSubmit() {
   const parentNode = document.querySelector(`.actionsList`);
   const firstSegment = document.getElementById(`actionsSegment1`);
-  const toled = firstSegment.querySelector('.toledContainer.toledDescriptionSelect');
-  if (toled) toled.remove();
-  document.querySelectorAll('.toledContainer.toledDescriptionSelect')
-    .forEach(toled => toled.remove());
+  document.querySelectorAll('.actionsSegment').forEach((segment, i) => {
+    const detectorType = systemData.bus[i]?.detector?.type;
+    const wrapper = segment.querySelector('.deviceTypeWrapper');
+    const existingToled = wrapper?.querySelector('.toledContainer.toledDescriptionSelect');
+    if (existingToled && detectorType !== 'TOLED') {
+      existingToled.remove();
+    } else if (!existingToled && detectorType === 'TOLED') {
+      wrapper?.appendChild(createSegmentTOLEDDescriptionSelect());
+    }
+  });
   const actionsSegments = document.querySelectorAll(`.actionsSegment`);
   actionsSegments.forEach((elem, i) => (i > 1 ? parentNode.removeChild(elem) : ""));
   const df = new DocumentFragment();
@@ -291,10 +297,11 @@ function setSystem() {
   Array.from(actionsList.children).forEach((child, idx) => {
     if (!keep.includes(idx)) actionsList.removeChild(child);
   });
+  funtionToUpdateSystem();
+
   setSystemSegmentsLazy(systemData.bus);
   copyImageSegmentOnFormSubmit(1);
   fillData();
-  funtionToUpdateSystem();
   setupSystemEventHandlers();
 }
 
@@ -441,7 +448,7 @@ function setupSystemEventHandlers() {
     if (btn.matches(".unCheckAll")) {
       document.querySelectorAll(".segmentCheckbox").forEach((cb) => (cb.checked = false));
     } else if (btn.matches("button#exportToCSV")) {
-      exportToCSV();
+      exportToXLSX();
     } else if (btn.matches("button#exportToJSON")) {
       exportToJSON();
     }
@@ -449,13 +456,25 @@ function setupSystemEventHandlers() {
 }
 
 function checkIfToledExists() {
-  const toledDescription = document.querySelectorAll(`.toledDescriptionSelect`);
-  toledDescription.forEach((element) => {
-    const container = element.closest(`.actionsSegment`);
-    const index = container.dataset.segmentindex;
-    if (systemData.bus[index - 1].detector.type !== `TOLED`) {
-      element.parentNode.removeChild(element);
-      systemData.bus[index - 1].description = "";
+  const segments = document.querySelectorAll(`.actionsSegment`);
+  segments.forEach((segment) => {
+    const index = parseInt(segment.dataset.segmentindex, 10);
+    const wrapper = segment.querySelector('.deviceTypeWrapper');
+    const existingToled = wrapper?.querySelector('.toledContainer.toledDescriptionSelect');
+
+    const detector = systemData.bus[index - 1]?.detector;
+
+    if (!detector) return;
+
+    if (detector.type === "TOLED") {
+      if (!existingToled) {
+        wrapper?.appendChild(createSegmentTOLEDDescriptionSelect());
+      }
+    } else {
+      if (existingToled) {
+        existingToled.remove();
+        systemData.bus[index - 1].description = "";
+      }
     }
   });
 }
@@ -508,15 +527,11 @@ function setSystemUsedPSU(supplyType) {
     class: "usedDeviceImageContainer",
   });
   const systemUsedPSUName = document.createElement("p");
-  const systemUsedPSUType = document.createElement("p");
   const systemUsedPSUBreak = document.createElement("br");
   const systemUsedPSUDocsLink = document.createElement("a");
   const systemUsedPSUImage = document.createElement("img");
   setAttributes(systemUsedPSUName, { class: "usedDeviceName" });
-  setAttributes(systemUsedPSUType, {
-    class: "systemUsedDeviceType",
-    "data-translate": "controlUnitModule",
-  });
+
   setAttributes(systemUsedPSUDocsLink, {
     class: "usedDeviceDocs",
     href: lang === `pl` ? "https://www.atestgaz.pl/produkt/modul-js-teta-mod-control-1" : "https://atestgaz.pl/en/produkt/teta-mod-control-1-control-unit-module/",
@@ -530,7 +545,6 @@ function setSystemUsedPSU(supplyType) {
   systemUsedPSUName.appendChild(document.createTextNode(supplyType));
   systemUsedPSUDocsLink.appendChild(document.createTextNode(`${TRANSLATION.appliedDevicesDocTech[lang]}`));
   df.appendChild(systemUsedPSUName);
-  df.appendChild(systemUsedPSUType);
   df.appendChild(systemUsedPSUBreak);
   df.appendChild(systemUsedPSUDocsLink);
   systemUsedPSUImageContainer.appendChild(systemUsedPSUImage);
@@ -622,9 +636,15 @@ function setSystemSegmentsLazy(bus) {
   function renderSegment(index) {
     const template = document.getElementById('actionsSegment1');
     const newSegment = template.cloneNode(true);
-    const toled = newSegment.querySelector('.toledContainer.toledDescriptionSelect');
-    if (toled) toled.remove();
     const newIndex = index + 1;
+    const detectorType = systemData.bus[index]?.detector?.type;
+    const wrapper = newSegment.querySelector('.deviceTypeWrapper');
+    const existingToled = wrapper?.querySelector('.toledContainer.toledDescriptionSelect');
+    if (existingToled && detectorType !== 'TOLED') {
+      existingToled.remove();
+    } else if (!existingToled && detectorType === 'TOLED') {
+      wrapper?.appendChild(createSegmentTOLEDDescriptionSelect());
+    }
     newSegment.style.display = '';
     newSegment.id = `actionsSegment${newIndex}`;
     newSegment.dataset.segmentindex = newIndex;
@@ -635,16 +655,21 @@ function setSystemSegmentsLazy(bus) {
       inputId.value = newIndex;
       inputId.id = `actionsSegmentIndex${newIndex}`;
     }
+    //Label selecta
+    const actionsSegmentDeviceLabel = newSegment.querySelector(`.segmentDeviceLabel`);
+    actionsSegmentDeviceLabel.setAttribute(`for`, `actionsSegmentDevice${newIndex}`)
     // Select urządzenia
     const select = newSegment.querySelector('.segmentDeviceSelect');
-    if (select && systemData.bus[newIndex] && systemData.bus[newIndex].detector) {
-      select.value = systemData.bus[newIndex].detector.type || "";
+    if (select && systemData.bus[index] && systemData.bus[index].detector) {
+      select.value = systemData.bus[index].detector.type || "";
       select.id = `actionsSegmentDevice${newIndex}`;
     }
+    const wireLengthLabel = newSegment.querySelector(`.segmentWireLengthLabel`);
+    wireLengthLabel.setAttribute(`for`, `actionsSegmentWireLength${newIndex}`)
     // Długość kabla
     const wireLengthInput = newSegment.querySelector('.segmentWireLength');
-    if (wireLengthInput && systemData.bus[newIndex] && systemData.bus[newIndex].wireLength) {
-      wireLengthInput.value = systemData.bus[newIndex].wireLength;
+    if (wireLengthInput && systemData.bus[index] && systemData.bus[index].wireLength) {
+      wireLengthInput.value = systemData.bus[index].wireLength;
       wireLengthInput.id = `actionsSegmentWireLength${newIndex}`;
     }
     // Przycisk duplikacji i usuwania

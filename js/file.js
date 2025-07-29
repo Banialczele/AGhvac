@@ -1,17 +1,29 @@
 // Wyeksportowanie danych systemu do pliku CSV
-function exportToCSV() {
-  const csvData = setDataToCSVFormat();
-  const url = "data:text/csv;charset=utf-8," + encodeURI(csvData);
-  downloadFile(url, "csv");
+// function exportToCSV() {
+//   const csvData = setDataToCSVFormat();
+//   const bom = "\uFEFF";
+//   const blob = new Blob([bom + csvData], { type: "text/csv;charset=utf-8;" });
+//   const url = URL.createObjectURL(blob);
+//   downloadFile(url, "csv");
+// }
+
+function exportToXLSX() {
+  const rows = getDataForExcel(); // analogiczne do CSV, tylko bez joinowania
+  const worksheet = XLSX.utils.aoa_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "System");
+
+  const fileName = prompt("Nazwa pliku?", `TetaSystem_${setDate()}.xlsx`);
+  XLSX.writeFile(workbook, fileName || `TetaSystem_${setDate()}.xlsx`);
 }
 
 // Konwersja danych systemu do formatu CSV
-function setDataToCSVFormat() {
+function getDataForExcel() {
   const rowsDescription = {
     device: ["RODZAJ URZADZENIA", "NAZWA URZĄDZENIA", "KOD PW", "ILOSC", "TOLEDOPIS"],
     deviceTotal: ["", "", "", "ILOSC URZADZEN"],
     accessories: ["KONEKTOR", "KOD PW", "RODZAJ PRZEWODU", "DŁUGOSC PRZEWODU"],
-    controlUnit: ["JEDNOSTKA STERUJACA", "PODTRZYMANIE ZASILANIA", "KOD PW", "ILOSC"],
+    controlUnit: ["JEDNOSTKA STERUJACA", "PODTRZYMANIE ZASILANIA", "KOD PW", "ILOSC", "DODATKOWE INFO"],
   };
   const rows = [];
 
@@ -32,90 +44,90 @@ function setDataToCSVFormat() {
   insertDeviceTypeData(reducedDevices.tCon, "quantityTotal", rows);
   rows.push([]);
 
+  rows.push(rowsDescription.controlUnit);
+  console.log(systemData.supplyType);
+
+  insertDeviceTypeData(systemData.supplyType, "Jednostka sterująca", rows);
+  rows.push([]);
+
   rows.push(rowsDescription.accessories);
   insertTconInCSV(reducedDevices.tCon, "quantityTotal", rows);
   rows.push([]);
-
-  rows.push(rowsDescription.controlUnit);
-  insertDeviceTypeData(systemData.supplyType, "Jednostka sterująca", rows);
-  rows.push([]);
-  rows.push([]);
-
-  // generuj CSV
-  const csvString = rows.map((row) => row.join(",")).join("\r\n");
-
-  return "sep=,\r\n" + csvString;
+  return rows;
 }
 
 function insertTconInCSV(devices, label, row) {
   const busLengthValue = systemData.bus.reduce((acc, device) => acc + device.wireLength, 0);
-  row.push([`${devices.TConnector}szt.`, `PW-122-S2`, systemData.wireType, busLengthValue]);
+  row.push([`${devices.TConnector}szt.`, `PW-122-S2`, `${systemData.wireType}`, busLengthValue]);
 }
 
 function reduceDevicesForFile() {
   const total = systemData.bus.reduce((accumulator, current) => {
-    const deviceClassDetector = `detector`;
     const deviceClassSignaller = `signaller`;
-    const deviceClassValve = `valveCtrl`;
-    accumulator[deviceClassDetector] ??= {};
     accumulator[deviceClassSignaller] ??= {};
-    accumulator[deviceClassValve] ??= {};
-
-    accumulator[`tCon`] ??= {};
-
+    accumulator.tCon ??= {};
+    accumulator.tCon.TConnector = (accumulator.tCon.TConnector || 0) + 1;
     const { class: detectorClass, type } = current.detector;
 
-    let bucket;
+    if (detectorClass === "signaller" && type === "TOLED") {
+      accumulator[deviceClassSignaller][type] ??= [];
+      const toledArray = accumulator[deviceClassSignaller][type];
 
-    if (detectorClass === "detector") {
-      bucket = accumulator[deviceClassDetector];
-    } else if (detectorClass === "signaller") {
-      bucket = accumulator[deviceClassSignaller];
+      // Szukamy w tablicy, czy taki opis już istnieje
+      let found = toledArray.find(
+        item => item.description === current.description
+      );
+
+      if (found) {
+        found.quantity++;
+      } else {
+        toledArray.push({
+          ...current.detector,
+          description: current.description,
+          quantity: 1,
+        });
+      }
     } else {
-      bucket = accumulator[deviceClassValve];
-    }
-
-    let entry = bucket[type];
-
-    if (!entry) {
-      entry = bucket[type] = {
-        ...current.detector,
-        quantity: 1,
-        ...(detectorClass === "signaller" &&
-          type === "TOLED" && {
-          description: [current.description],
-        }),
-      };
-    } else {
-      entry.quantity++;
-
-      if (detectorClass === "signaller" && type === "TOLED") {
-        if (!entry.description.includes(current.description)) {
-          entry.description.push(current.description);
-        }
+      // Pozostałe typy: po staremu, możesz je zgrupować wg własnych reguł
+      const bucket = accumulator[detectorClass] ??= {};
+      let entry = bucket[type];
+      if (!entry) {
+        entry = bucket[type] = {
+          ...current.detector,
+          quantity: 1,
+        };
+      } else {
+        entry.quantity++;
       }
     }
-    accumulator[`tCon`][`TConnector`] = (accumulator[`tCon`][`TConnector`] || 0) + 1;
+
     return accumulator;
   }, {});
   return total;
 }
 
-// Wstawienie wierszy z danymi dot. użytych w systemie typów urządzeń
+function translateUPS(type) {
+  return type === `no` ? `nie` : `tak`;
+}
+
+// Wstawienie wierszy z danymi dot. użytych w systemie typów urządzeńs
 function insertDeviceTypeData(devices, label, store) {
-  if (label === `Jednostka sterująca`) {
-    store.push([label, devices.type, devices.productKey, `1szt`]);
-  } else if (label === `quantityTotal`) {
-    store.push(["", "", "", `${devices.TConnector}szt.`]);
-  } else {
-    for (let [key, value] of Object.entries(devices)) {
-      if (key === `Teta EcoWent+MiniDet`) {
-        store.push([label, key, (value.productKey.CO, value.productKey.LPG), `${value.quantity} szt.`]);
-      }
-      if (key === `TOLED`) {
-        store.push([label, key, value.productKey, `${value.quantity} szt.`, value.description]);
-      } else {
-        store.push([label, key, value.productKey, `${value.quantity} szt.`]);
+  if (devices) {
+    if (label === `Jednostka sterująca`) {
+      store.push([ devices.type, translateUPS(devices.possibleUPS), devices.productKey, `1szt`, TRANSLATION.modControltooltip[lang]]);
+    } else if (label === `quantityTotal`) {
+      store.push(["", "", "", `${devices.TConnector}szt.`]);
+    } else {
+      for (let [key, value] of Object.entries(devices)) {
+        if (key === `Teta EcoWent+MiniDet`) {
+          store.push([label, key, `${value.productKey.CO}, ${value.productKey.LPG}`, `${value.quantity} szt.`]);
+        } else if (key === `TOLED`) {
+          value.forEach(elem => {
+            store.push([label, key, elem.productKey, `${elem.quantity} szt.`, elem.description]);
+          })
+        } else {
+          store.push([label, key, value.productKey, `${value.quantity} szt.`]);
+        }
       }
     }
   }
@@ -184,7 +196,7 @@ function convertAndLoadFileData(file) {
     reader.onload = function () {
       const data = reader.result;
       const formattedData = JSON.parse(data);
-      systemData = formattedData;
+      createSystemDataFromAFile(formattedData);
       setSystem();
       system.scrollIntoView({ behavior: "smooth", block: "start" });
     };

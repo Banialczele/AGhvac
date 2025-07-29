@@ -50,13 +50,16 @@ function createDetectedGasListSelect() {
   structure.detection.forEach((gas, i) => {
     const device = structure.devices[i];
     if (device.class !== "detector") return;
-    const option = createOption(gas, gas, {
+
+    const option = createOption(gas, `${gas} - ${structure.detectionDescription[i][lang]}`, {
       class: "gasOption",
       "data-devicename": device.type,
       "data-devicetype": device.class,
       selected: gas === initSystem.gasDetected,
     });
     fragment.appendChild(option);
+
+
   });
 
   select.appendChild(fragment);
@@ -115,44 +118,11 @@ function formInit() {
   setInputDefaultData();
 }
 
-function handleErrorPopup(message) {
-  const popupcontainer = document.querySelector(".configuratorPanel ");
-  const df = document.createDocumentFragment();
-  const paragraph = document.createElement(`p`);
-  const paragraphContainer = document.createElement(`div`);
-  const closeButton = document.createElement(`button`);
-  closeButton.classList.add(`formPopUpParagraphCloseButton`);
-  closeButton.classList.add(`formButton`);
-  closeButton.innerText = "X";
-  paragraph.classList.add(`formPopupParagraph`);
-  paragraphContainer.classList.add(`formPopupContainer`);
-
-  paragraphContainer.classList.add("formPopupContainerToggle");
-  paragraphContainer.classList.add("panelContainer");
-  paragraph.innerHTML = message;
-  closeButton.addEventListener(`click`, () => {
-    paragraphContainer.replaceChildren();
-    paragraphContainer.classList.remove(`formPopupContainerToggle`);
-    paragraphContainer.classList.remove(`panelContainer`);
-  });
-  paragraphContainer.appendChild(closeButton);
-  paragraphContainer.appendChild(paragraph);
-  df.appendChild(paragraphContainer);
-  popupcontainer.appendChild(df);
-}
-
-function findControlUnit() {
-  const batteryBackUp = document.getElementById("batteryBackUp").value;
-  const backUpOption =
-    batteryBackUp === `Nie`
-      ? CONTROLUNITLIST.find((unit) => unit.possibleUPS === `no`)
-      : CONTROLUNITLIST.find((unit) => unit.possibleUPS === `yes`);
-  return backUpOption;
-}
 // Przetwarzanie formularza dot. systemu
 function handleFormSubmit() {
   //Zatwierdzenie formularza, przypisanie wybranych przez użytkownika parametrów do obiektu inicjującego podgląd systemu i wygenerowanie podglądu
   const form = document.querySelector(".form");
+  const container = document.getElementById("system");
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     if (initSystem.systemIsGenerated) {
@@ -164,13 +134,16 @@ function handleFormSubmit() {
         devicesTypes: { detectors: [], signallers: [] },
         bus: [],
       };
+      container.removeEventListener("change", changeEvent);
+      container.removeEventListener("click", clickEvent);
     }
 
-    systemData.supplyType = findControlUnit(batteryBackUp);
+    initSystem.backup = document.getElementById("batteryBackUp").value;
     initSystem.amountOfDetectors = parseInt(document.getElementById("amountOfDetectors").value);
     systemData.devicesTypes = { detectors: [], signallers: [] };
     systemData.bus = [];
     systemData.amountOfDetectors = initSystem.amountOfDetectors;
+    initSystem.EWL = document.getElementById("EWL").value;
     for (let i = 0; i < initSystem.amountOfDetectors; i++) {
       systemData.bus.push({
         index: i + 1,
@@ -180,24 +153,29 @@ function handleFormSubmit() {
       });
     }
     systemData.selectedStructure = initSystem.selectedStructure;
-    validateSystem()
     setSystem();
     system.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
 function validateSystem() {
   const result = findValidControlUnitsWithCables(CONTROLUNITLIST, systemData.bus, Cables);
-  console.log(result)
-  let controlUnit = result.units[0].controlUnit;
-  let cable = result.units[0].validCables[0];
+  let controlUnit;
+  let cable;
+  controlUnit = result.units.find(unit => {
+    if (initSystem.backup === `Tak` || initSystem.backup === `Yes`) {
+      return unit.controlUnit.possibleUPS === `yes`;
+    } else {
+      return unit.controlUnit.possibleUPS === `no`;
+    }
+  });
+  cable = controlUnit.validCables[0];
   const nextUnit = result.units[1];
   const higherPriorityCable = nextUnit.validCables.find(validCable => validCable.cable.priority < cable.cable.priority);
   if (higherPriorityCable !== undefined) {
-    controlUnit = nextUnit.controlUnit;
+    controlUnit = nextUnit;
     cable = higherPriorityCable;
   }
-  const powerSupply = controlUnit;
-  systemData.supplyType = powerSupply;
+  systemData.supplyType = controlUnit.controlUnit;
   systemData.wireType = cable.cable.type
   systemData.totalPower = Math.ceil(cable.powerW);
   systemData.errorList = result.error;

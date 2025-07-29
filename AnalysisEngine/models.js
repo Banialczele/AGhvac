@@ -58,8 +58,8 @@ const controlUnitS2460W = {
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
-   supplyVoltage: 24,
-   power: 60
+    supplyVoltage: 24,
+    power: 60
   },
   productKey: "PW-086-Control1-S24",
 };
@@ -79,8 +79,8 @@ const controlUnitS48100W = {
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
-   supplyVoltage:  48,
-   power: 100
+    supplyVoltage: 48,
+    power: 100
   },
   productKey: "PW-086-Control1-S48-100",
 };
@@ -90,8 +90,8 @@ const controlUnitS48150W = {
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
-   supplyVoltage:  48,
-   power: 150
+    supplyVoltage: 48,
+    power: 150
   },
   productKey: "PW-086-Control1-S48-150",
 }
@@ -101,7 +101,7 @@ const controlUnitSUPS300 = {
   img: "Teta MOD Control 1",
   possibleUPS: `yes`,
   description: {
-    supplyVoltage:  48,
+    supplyVoltage: 48,
     power: 300
   },
   productKey: "PW-086-Control1-S-UP300",
@@ -130,6 +130,10 @@ const tetaEcoWentDevice = {
   minVoltage_V: 12,
   class: DeviceCl.detector,
   gasDetected: "CO",
+  gasDetectedDescription: {
+    pl: "Tlenek węgla",
+    en: "Carbon monoxide"
+  },
   productKey: "PW-105-CO",
   doc: {
     pl: "https://www.atestgaz.pl/produkt/czujnik-gazu-teta-ecowent",
@@ -144,6 +148,10 @@ const tetaEcoDetDevice = {
   minVoltage_V: 12,
   class: DeviceCl.detector,
   gasDetected: "LPG",
+  gasDetectedDescription: {
+    pl: "Propan-butan",
+    en: "Propane-butane"
+  },
   doc: {
     pl: "https://www.atestgaz.pl/produkt/czujnik-gazu-teta-ecodet",
     en: "https://atestgaz.pl/en/produkt/gas-detector-teta-ecodet/"
@@ -159,6 +167,10 @@ const tetaEcoWentMiniDetDevice = {
   isBig: true,
   class: DeviceCl.detector,
   gasDetected: "CO+LPG",
+  gasDetectedDescription: {
+    pl: "",
+    en: ""
+  },
   productKey: {
     CO: "PW-105-CO",
     LPG: "PW-107-LPG",
@@ -183,6 +195,10 @@ const tetaEcoTermDevice = {
   minVoltage_V: 12,
   class: DeviceCl.detector,
   gasDetected: "NG",
+  gasDetectedDescription: {
+    pl: "Gaz ziemny",
+    en: "Natural gas"
+  },
   productKey: "PW-113-NG",
   doc: {
     pl: "https://atestgaz.pl/produkt/czujnik-gazu-teta-ecoterm/",
@@ -198,6 +214,10 @@ const tetaEcoHDevice = {
   class: DeviceCl.detector,
   gasDetected: "H2",
   productKey: "PW-123-H2",
+  gasDetectedDescription: {
+    pl: "Wodór",
+    en: "Hydrogen"
+  },
   doc: {
     pl: "https://atestgaz.pl/produkt/czujnik-gazu-teta-ecoh/",
     en: "https://atestgaz.pl/en/produkt/gas-detector-teta-ecoh/"
@@ -212,6 +232,10 @@ const tetaEcoNDevice = {
   class: DeviceCl.detector,
   gasDetected: "NO2",
   productKey: "PW-111-NO2",
+  gasDetectedDescription: {
+    pl: "Dwutlenek azotu",
+    en: "Nitrogen dioxide"
+  },
   doc: {
     pl: "https://www.atestgaz.pl/produkt/czujnik-gazu-teta-econ",
     en: "https://atestgaz.pl/en/produkt/gas-detector-teta-econ/"
@@ -271,7 +295,7 @@ const tetaControlVDevice = {
 const facilityTypeGarage = {
   type: {
     pl: "Garaże i parkingi podziemne",
-    en: "Garage or underground parking",
+    en: "Underground car park",
   },
   devices: [
     tetaEcoWentDevice,
@@ -287,6 +311,12 @@ const facilityTypeGarage = {
     tetaEcoWentMiniDetDevice.gasDetected,
     tetaEcoNDevice.gasDetected,
   ],
+  detectionDescription: [
+    tetaEcoWentDevice.gasDetectedDescription,
+    tetaEcoDetDevice.gasDetectedDescription,
+    tetaEcoWentMiniDetDevice.gasDetectedDescription,
+    tetaEcoNDevice.gasDetectedDescription
+  ]
 };
 
 const facilityTypeBattery = {
@@ -296,6 +326,9 @@ const facilityTypeBattery = {
   },
   devices: [tetaEcoHDevice, tetaSOLERTDevice, toledDevice],
   detection: [tetaEcoHDevice.gasDetected],
+  detectionDescription: [
+    tetaEcoHDevice.gasDetectedDescription,
+  ]
 };
 
 const facilityTypeHall = {
@@ -305,6 +338,10 @@ const facilityTypeHall = {
   },
   devices: [tetaEcoDetDevice, tetaEcoTermDevice, tetaSOLERTDevice, toledDevice, tetaControlVDevice],
   detection: [tetaEcoDetDevice.gasDetected, tetaEcoTermDevice.gasDetected],
+  detectionDescription: [
+    tetaEcoDetDevice.gasDetectedDescription,
+    tetaEcoTermDevice.gasDetectedDescription
+  ]
 };
 
 //TCON PW-99 - XT
@@ -317,8 +354,9 @@ const facilityTypeOther = {
   },
   devices: [
     tetaEcoWentDevice,
-    tetaEcoWentMiniDetDevice,
     tetaEcoDetDevice,
+    tetaEcoWentMiniDetDevice,
+
     tetaEcoTermDevice,
     tetaEcoHDevice,
     tetaEcoNDevice,
@@ -328,12 +366,22 @@ const facilityTypeOther = {
   ],
   detection: [
     tetaEcoWentDevice.gasDetected,
-    tetaEcoWentMiniDetDevice.gasDetected,
     tetaEcoDetDevice.gasDetected,
+    tetaEcoWentMiniDetDevice.gasDetected,
+
     tetaEcoTermDevice.gasDetected,
     tetaEcoHDevice.gasDetected,
     tetaEcoNDevice.gasDetected,
   ],
+  detectionDescription: [
+    tetaEcoWentDevice.gasDetectedDescription,
+    tetaEcoDetDevice.gasDetectedDescription,
+    tetaEcoWentMiniDetDevice.gasDetectedDescription,
+
+    tetaEcoTermDevice.gasDetectedDescription,
+    tetaEcoHDevice.gasDetectedDescription,
+    tetaEcoNDevice.gasDetectedDescription,
+  ]
 };
 
 const Devices = [
@@ -355,21 +403,21 @@ const TOLED_OPTIONS = [
     translate: "toledLabelWe",
     type: {
       pl: "NADMIAR SPALIN NIE WCHODZIĆ",
-      en: "EXCESS EXHAUST GASES DO NOT ENTER",
+      en: "EXCESS EXHAUST FUMES / DO NOT ENTER",
     },
   },
   {
     translate: "toledLabelWj",
     type: {
       pl: "NADMIAR SPALIN NIE WJEŻDŻAĆ",
-      en: "EXCESS EXHAUST GASES DO NOT DRIVE IN",
+      en: "EXCESS EXHAUST FUMES / DO NOT DRIVE IN",
     },
   },
   {
     translate: "toledLabelOp",
     type: {
       pl: "NADMIAR SPALIN OPUŚĆ GARAŻ",
-      en: "EXCESS EXHAUST GASES LEAVE THE GARAGE",
+      en: "EXCESS EXHAUST FUMES / LEAVE THE GARAGE",
     },
   },
   {

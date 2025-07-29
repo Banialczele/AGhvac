@@ -25,16 +25,17 @@
     padding-bottom: 12px; 
 }
 
-.usedDeviceItem:first-child .usedDeviceName {
+.usedDeviceItem:first-child .usedDeviceName{
   grid-area: modControlDescription;
 }
 
-.usedDeviceItem:first-child .usedDeviceDocs {
+.usedDeviceItem:first-child .usedDeviceDocs{
   grid-area: modControlDocTech;
 }
 
-.usedDeviceItem:first-child .usedDeviceImageContainer {
+.usedDeviceItem:first-child .usedDeviceImageContainer{
   grid-area: modControlImage;
+  place-self: center end;
 }
 
 #usedDevicesContainer .usedDeviceItem:last-child {

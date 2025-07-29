@@ -1,27 +1,9 @@
-﻿- ilość sygnalizatorów z 12 na 26 !
-- ilość możliwych control v - 8szt !
-- zintegrować silnik z nowym systemem !
-- dodać przydatne linki ...
-
-
-- brakuje mechanizmu obliczania zasialacza/ dedykowanej JS optymalnie
-
-
-
-
-
-- dorobić guziczki analogicznie jak w starym konfiguratorze ... checkboxy :) ✔
- - guziczki po prawej 'zapis system' 'pobierz zestawienie urządzeń' - maja zamienione funkcjonalności 
-mechanizm obliczania kabla jest zrobiony ✔
-- aktualizacja produktów ✔
-
-- pamiętać o wersji ENG  ✔
-
-
-
-
-
-Uwagi od Tomasza - konfigurator działa wybiórczo, 
+﻿Uwagi od Tomasza - konfigurator działa wybiórczo, 
 potestować i upewnić się, żę się wszystko odpowiednio aktualizuje i odpowiednio zmienia.
 Wygląda na to, że silnik działa dobrze, aczkolwiek nie zawsze się aktualizuje. Przemyśleć temat nadania wag do kabli i jednostek sterujących. 
 Upewnić się, że wszystko jest ok.
+
+"Ukryć cene dla jednostki sterującej i robić porównania np sqrt(ln(cena1)) > sqrt(ln(cena2)) ;
+
+
+Dodać przycisk do powrotu na stronę główńą

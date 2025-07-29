@@ -1,14 +1,28 @@
 .system {
-  /* display: flex; */
+  display: flex;
   justify-content: center;
   column-gap: 25px;
   row-gap: 17px;
   margin-bottom: 17px;
   position: relative;
+  /* flex-wrap: wrap; */
+}
+
+.system .systemStatus {
+  order: 3;
+}
+
+.system .systemPreview {
+  order: 2;
+}
+
+.system .wrapper {
+  order: 1;
 }
 
 .system .panelContainer {
   padding: 15px 20px 40px 10px;
+  margin-bottom: 15px;
 }
 
 .system .panelContentContainer {
@@ -46,7 +60,8 @@
 .system .systemStatus {
   width: 100%;
   max-width: 325px;
-  max-height: calc(100vh - 118px);
+  height: 100%;
+  /* max-height: calc(100vh - 118px); */
   overflow-y: scroll;
 }
 
@@ -236,15 +251,13 @@
   }
 }
 
-@media (min-width: 1800px) {
+@media screen and (min-width: 700px) and (max-width: 1015px) {
   .system {
-    max-width: 1920px; 
+    max-width: 700px;
   }
-}
 
-@media screen and (min-width: 700px) {
-  .system {
-    max-width: 1800px;
+  .system .systemStatus { 
+   max-height: calc(100vh - 200px);
   }
 }
 
@@ -254,14 +267,18 @@
   }
 }
 
-@media screen and (min-width: 700px) and (max-width: 2800px ){
+@media screen and (min-width: 700px) and (max-width: 1642px) {
   .system {
     display: grid;
     grid-template-areas:
-      "wrapper systemPreview systemStatus";
-    grid-template-columns: 1fr 2fr 1fr;
-    padding: 0 30px;
+      "systemPreview systemPreview"
+      "wrapper systemStatus";
+    grid-template-columns: 1fr 1fr;
+    padding: 0 8px;
     margin: 0 auto 17px;
+  }
+   .system .systemStatus { 
+   max-height: calc(100vh - 200px);
   }
 }
 

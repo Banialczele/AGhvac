@@ -22,20 +22,20 @@ const TRANSLATION = {
     en: "Yes",
   },
   buildingInformation: {
-    pl: "Proszę wybrać rodzaj obiektu na jakim zostanie zamontowany system",
-    en: "Please choose structure in which the system will be operating"
+    pl: "Proszę wybrać rodzaj instalacji",
+    en: "Please choose the type of installation"
   },
   detectedGasInformation: {
-    pl: "Proszę wybrać główny gaz jaki będzie mierzony przez system",
-    en: "Please choose main gas to be detected by the system"
+    pl: "Proszę wybrać gaz jaki będzie wykrywany przez system",
+    en: "Please select main gas to be detected"
   },
   batteryBackUpInformation: {
     pl: "Proszę wybrać czy jednostka sterująca powinna mieć akumulatorowe podtrzymanie pracy",
     en: "Please choose if control unit module should have built-in UPS. "
   },
   wireLengthInformation: {
-    pl: "Orientacyjna odleglość pomiędzy urządeniami",
-    en: "Estimated distance amongst devices"
+    pl: "Orientacyjna odległość ( długość przewodu ) pomiędzy urządeniami na magistrali. Przykładowo, w garażach podziemnych pomiędzy dwoma czujnikami CO przyjmuje się średnio 20m. ",
+    en: "Approximate distance ( cable length ) between two devices on the bus. For example, in underground garages, the average distance between two CO detectors is 20m."
   },
   batteryBackUpNo: {
     pl: "Nie",
@@ -46,7 +46,7 @@ const TRANSLATION = {
     en: "DWG schemes for designer",
   },
   contact: { pl: "Kontakt", en: "Contact" },
-  shop: { pl: "Sklep", en: "Shop" },
+  shop: { pl: "Sklep", en: "Main Page" },
   confirmButton: { pl: "Zatwierdź ▶", en: "Confirm ▶" },
   defaultHeader: { pl: "Dane podstawowe", en: "Default data" },
   detectorAmountsLabel: { pl: "Ilość czujników", en: "Detector quantity" },
@@ -74,7 +74,7 @@ const TRANSLATION = {
     en: "Finally, the configurator will select the control unit and the optimal cable for the system, and will allow you to save and generate a list of devices with product codes.",
   },
   aboutAppDescriptionInf: {
-    pl: "Konfigurator prezentuje system na podstawie konfigurowalnych segmentów zawierających urządzenia. Aktualnie możliwe jest dodanie 50 segmentów do systemu - np 40 segmentów zawierających czujniki gazu oraz 10 segmentów zawierających sygnalizatory.",
+    pl: "Konfigurator prezentuje system detekcji gazu TetaGas w postaci konfigurowalnych segmentów zawierających urządzenia. Obecnie do systemu można dodać maksymalnie 50 segmentów - na przykład 40 segmentów zawierających detektory gazu i 10 segmentów zawierających sygnalizatory.",
     en: "The configurator presents the TetaGas gas detection system based on configurable segments containing devices. Currently, you can add up to 50 segments to the system – for example, 40 segments containing gas detectors and 10 segments containing signaling devices",
   },
   aboutAppDescriptionAbout: {
@@ -114,7 +114,7 @@ const TRANSLATION = {
   mainSystemSaveFile: { pl: "Zapisz system", en: "Save system" },
   mainSystemDownloadFactsheet: {
     pl: "Pobierz zestawienie urządzeń",
-    en: "Download datasheet",
+    en: "Download the device list",
   },
   mainSystemUsedDevices: {
     pl: "Zastosowane urządzenia",
@@ -202,5 +202,9 @@ const TRANSLATION = {
   hvacGuidance: {
     pl: "https://doc.atestgaz.pl/AG/POD/POD-047-PLWydruk.pdf",
     en: "https://doc.atestgaz.pl/AG/POD/POD-047-ENGPrint.pdf"
+  },
+  modControltooltip: {
+    pl: "Zestawienie zawiera kompletną, okablowaną jednostkę sterującą Teta MOD Control 1 z układem zasilania, w obudowie, przeznaczoną do montażu na ścianie. W przypadku zabudowy w istniejącej szafie na szynie TH35 możesz zastosować: Teta MOD Control 1 (zakres napięc zasilania 15-50V DC)",
+    en: "The equipment list includes a fully wired Teta MOD Control 1 control unit with power supply, housed in a wall-mounted enclosure. For installation in an existing cabinet on a TH35 rail, you can use: Teta MOD Control 1 (supply voltage range 15-50V DC)"
   }
 };
