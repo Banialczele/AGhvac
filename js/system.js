@@ -8,7 +8,7 @@ function createSystemDataFromAFile(fileData = null) {
   }
 }
 
-function copyImageSegmentOnFormSubmit(index) {
+function copyImageSegmentOnFormSubmit() {
   const parentNode = document.querySelector(`.systemDiagram`);
   const firstSegment = document.getElementById(`segmentDiagram1`);
   const segmentsDiagrams = document.querySelectorAll(`.deviceSegment`);
@@ -297,18 +297,18 @@ function setSystem() {
   Array.from(actionsList.children).forEach((child, idx) => {
     if (!keep.includes(idx)) actionsList.removeChild(child);
   });
-  funtionToUpdateSystem();
 
   setSystemSegmentsLazy(systemData.bus);
-  copyImageSegmentOnFormSubmit(1);
+  copyImageSegmentOnFormSubmit();
+  functionToUpdateSystem();
+
   fillData();
   setupSystemEventHandlers();
 }
 
 // To powinno być wywoływane zawsze po zmianie w systemie:
-function funtionToUpdateSystem() {
+function functionToUpdateSystem() {
   validateSystem();
-  busImageController();
   updateWireLength();
   setSystemStateBusLength();
   updateModControl();
@@ -317,12 +317,13 @@ function funtionToUpdateSystem() {
   setSystemStateCableDim();
   createSystemUsedDevicesPanel();
   setSystemStateLists();
+  busImageController() 
 }
 
 function handleButton(index) {
-  copyImageSegmentOnFormSubmit(index);
+  copyImageSegmentOnFormSubmit();
   copyActionsSegmentOnFormSubmit(index);
-  funtionToUpdateSystem();
+  functionToUpdateSystem();
 }
 
 function checkboxChecked() {

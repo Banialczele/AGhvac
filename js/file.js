@@ -20,10 +20,10 @@ function exportToXLSX() {
 // Konwersja danych systemu do formatu CSV
 function getDataForExcel() {
   const rowsDescription = {
-    device: ["RODZAJ URZADZENIA", "NAZWA URZĄDZENIA", "KOD PW", "ILOSC", "TOLEDOPIS"],
-    deviceTotal: ["", "", "", "ILOSC URZADZEN"],
-    accessories: ["KONEKTOR", "KOD PW", "RODZAJ PRZEWODU", "DŁUGOSC PRZEWODU"],
-    controlUnit: ["JEDNOSTKA STERUJACA", "PODTRZYMANIE ZASILANIA", "KOD PW", "ILOSC", "DODATKOWE INFO"],
+    device: ["RODZAJ URZADZENIA", "NAZWA URZĄDZENIA", "KOD PW", "ILOŚĆ", "TOLEDOPIS"],
+    deviceTotal: ["", "", "", "ILOŚĆ URZĄDZEŃ"],
+    accessories: ["KONEKTOR", "KOD PW", "RODZAJ PRZEWODU", "DŁUGOŚĆ PRZEWODU"],
+    controlUnit: ["JEDNOSTKA STERUJACA", "PODTRZYMANIE ZASILANIA", "KOD PW", "ILOŚĆ"],
   };
   const rows = [];
 
@@ -53,6 +53,8 @@ function getDataForExcel() {
   rows.push(rowsDescription.accessories);
   insertTconInCSV(reducedDevices.tCon, "quantityTotal", rows);
   rows.push([]);
+
+  rows.push(TRANSLATION.modControltooltip[lang]);
   return rows;
 }
 
@@ -114,7 +116,7 @@ function translateUPS(type) {
 function insertDeviceTypeData(devices, label, store) {
   if (devices) {
     if (label === `Jednostka sterująca`) {
-      store.push([ devices.type, translateUPS(devices.possibleUPS), devices.productKey, `1szt`, TRANSLATION.modControltooltip[lang]]);
+      store.push([devices.type, translateUPS(devices.possibleUPS), devices.productKey, `1szt`]);
     } else if (label === `quantityTotal`) {
       store.push(["", "", "", `${devices.TConnector}szt.`]);
     } else {
