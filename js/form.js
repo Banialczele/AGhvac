@@ -196,7 +196,6 @@ function errorHandling() {
     item.innerText = error.message;
     errorList.appendChild(item);
   });
-  console.log(systemData.errorList.length)
   if(systemData.errorList.length > 0){
     errorContainer.classList.add("errorActive");
   } else {

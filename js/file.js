@@ -1,21 +1,23 @@
-// Wyeksportowanie danych systemu do pliku CSV
-// function exportToCSV() {
-//   const csvData = setDataToCSVFormat();
-//   const bom = "\uFEFF";
-//   const blob = new Blob([bom + csvData], { type: "text/csv;charset=utf-8;" });
-//   const url = URL.createObjectURL(blob);
-//   downloadFile(url, "csv");
-// }
-
 function exportToXLSX() {
   const rows = getDataForExcel(); // analogiczne do CSV, tylko bez joinowania
   const worksheet = XLSX.utils.aoa_to_sheet(rows);
+  worksheet['!cols'] = [
+    { wch: 25 },
+    { wch: 25 },
+    { wch: 25 },
+    { wch: 25 },
+    { wch: 30 },
+  ]
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "System");
 
   const fileName = prompt("Nazwa pliku?", `TetaSystem_${setDate()}.xlsx`);
   XLSX.writeFile(workbook, fileName || `TetaSystem_${setDate()}.xlsx`);
 }
+
+//320px/300/270/240/350px
+
+//20/25/30                   30 znakow
 
 // Konwersja danych systemu do formatu CSV
 function getDataForExcel() {
@@ -54,7 +56,7 @@ function getDataForExcel() {
   insertTconInCSV(reducedDevices.tCon, "quantityTotal", rows);
   rows.push([]);
 
-  rows.push(TRANSLATION.modControltooltip[lang]);
+  rows.push([TRANSLATION.modControltooltip[lang]]);
   return rows;
 }
 
