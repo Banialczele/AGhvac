@@ -187,6 +187,7 @@ function errorHandling() {
   if (systemData.bus.length > 50 && !systemData.errorList.find(error => error.code === `TOO_MANY_DEVICES`)) {
     systemData.errorList.push({ code: `TOO_MANY_DEVICES`, message: `${TRANSLATION.busWarning[lang]}` })
   }
+  const errorContainer = document.querySelector(`.errors`);
   const errorList = document.querySelector(`.errorList`);
   errorList.innerHTML = ""
   systemData.errorList.forEach(error => {
@@ -194,5 +195,11 @@ function errorHandling() {
     item.setAttribute(`id`, error.code);
     item.innerText = error.message;
     errorList.appendChild(item);
-  })
+  });
+  console.log(systemData.errorList.length)
+  if(systemData.errorList.length > 0){
+    errorContainer.classList.add("errorActive");
+  } else {
+     errorContainer.classList.remove("errorActive");
+  }
 }

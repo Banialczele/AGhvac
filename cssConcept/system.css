@@ -571,3 +571,9 @@
     font-size: 0.98rem;
   }
 }
+
+.errors.errorActive {
+  padding: 5px 10px;
+  background: rgba(213, 96, 96, 0.7);
+  border-radius: 15px;
+}

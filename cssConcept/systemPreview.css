@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: 45% 55%;
   height: 100%;
-  overflow: auto;
+  overflow: visible;
 }
 
 .systemPreview .systemActions input {
@@ -337,7 +337,7 @@
   place-self: center;
 }
 
-#actionsSegment0  .tooltip {
+#actionsSegment0 .tooltip {
   position: relative;
   display: inline-block;
   padding: 0 6px;

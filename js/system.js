@@ -418,7 +418,7 @@ function setupSystemEventHandlers() {
         }
       });
     }
-    funtionToUpdateSystem();
+    functionToUpdateSystem();
     checkIfToledExists();
   });
 
@@ -431,7 +431,7 @@ function setupSystemEventHandlers() {
       const copy = JSON.parse(JSON.stringify(systemData.bus[index - 1]));
       systemData.bus.splice(index, 0, copy);
       handleButton(index);
-      funtionToUpdateSystem();
+      functionToUpdateSystem();
       checkIfToledExists();
     }
     // Usunięcie segmentu
@@ -439,7 +439,7 @@ function setupSystemEventHandlers() {
       systemData.bus.splice(index - 1, 1);
       handleButton(index);
       checkIfToledExists();
-      funtionToUpdateSystem();
+      functionToUpdateSystem();
     }
     // Zaznacz wszystkie
     if (btn.matches(".checkAll")) {
