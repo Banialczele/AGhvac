@@ -56,7 +56,7 @@ function getDataForExcel() {
   insertTconInCSV(reducedDevices.tCon, "quantityTotal", rows);
   rows.push([]);
 
-  rows.push([TRANSLATION.modControltooltip[lang]]);
+  rows.push([TRANSLATION.modControlFileInfo[lang]]);
   return rows;
 }
 

@@ -203,7 +203,11 @@ const TRANSLATION = {
     pl: "https://doc.atestgaz.pl/AG/POD/POD-047-PLWydruk.pdf",
     en: "https://doc.atestgaz.pl/AG/POD/POD-047-ENGPrint.pdf"
   },
-  modControltooltip: {
+   modControltooltip: {
+    pl: "Dostępne wykoania do montażu na szynie TH35, szczegóły w podręczniku użytkownika",
+    en: "Available versions for mounting on a TH35 rail, details in the user manual"
+  },
+  modControlFileInfo: {
     pl: "Zestawienie zawiera kompletną, okablowaną jednostkę sterującą Teta MOD Control 1 z układem zasilania, w obudowie, przeznaczoną do montażu na ścianie. W przypadku zabudowy w istniejącej szafie na szynie TH35 możesz zastosować: Teta MOD Control 1 (zakres napięc zasilania 15-50V DC)",
     en: "The equipment list includes a fully wired Teta MOD Control 1 control unit with power supply, housed in a wall-mounted enclosure. For installation in an existing cabinet on a TH35 rail, you can use: Teta MOD Control 1 (supply voltage range 15-50V DC)"
   }
