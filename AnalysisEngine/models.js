@@ -131,8 +131,8 @@ const tetaEcoWentDevice = {
   class: DeviceCl.detector,
   gasDetected: "CO",
   gasDetectedDescription: {
-    pl: "Tlenek węgla",
-    en: "Carbon monoxide"
+    pl: "- Tlenek węgla",
+    en: "- Carbon monoxide"
   },
   productKey: "PW-105-CO",
   doc: {
@@ -149,8 +149,8 @@ const tetaEcoDetDevice = {
   class: DeviceCl.detector,
   gasDetected: "LPG",
   gasDetectedDescription: {
-    pl: "Propan-butan",
-    en: "Propane-butane"
+    pl: "- Propan-butan",
+    en: "- Propane-butane"
   },
   doc: {
     pl: "https://www.atestgaz.pl/produkt/czujnik-gazu-teta-ecodet",
@@ -196,8 +196,8 @@ const tetaEcoTermDevice = {
   class: DeviceCl.detector,
   gasDetected: "NG",
   gasDetectedDescription: {
-    pl: "Gaz ziemny",
-    en: "Natural gas"
+    pl: "- Gaz ziemny",
+    en: "- Natural gas"
   },
   productKey: "PW-113-NG",
   doc: {
@@ -215,8 +215,8 @@ const tetaEcoHDevice = {
   gasDetected: "H2",
   productKey: "PW-123-H2",
   gasDetectedDescription: {
-    pl: "Wodór",
-    en: "Hydrogen"
+    pl: "- Wodór",
+    en: "- Hydrogen"
   },
   doc: {
     pl: "https://atestgaz.pl/produkt/czujnik-gazu-teta-ecoh/",
@@ -233,8 +233,8 @@ const tetaEcoNDevice = {
   gasDetected: "NO2",
   productKey: "PW-111-NO2",
   gasDetectedDescription: {
-    pl: "Dwutlenek azotu",
-    en: "Nitrogen dioxide"
+    pl: "- Dwutlenek azotu",
+    en: "- Nitrogen dioxide"
   },
   doc: {
     pl: "https://www.atestgaz.pl/produkt/czujnik-gazu-teta-econ",

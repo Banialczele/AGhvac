@@ -51,7 +51,7 @@ function createDetectedGasListSelect() {
     const device = structure.devices[i];
     if (device.class !== "detector") return;
 
-    const option = createOption(gas, `${gas} - ${structure.detectionDescription[i][lang]}`, {
+    const option = createOption(gas, `${gas} ${structure.detectionDescription[i][lang]}`, {
       class: "gasOption",
       "data-devicename": device.type,
       "data-devicetype": device.class,

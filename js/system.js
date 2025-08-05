@@ -30,7 +30,7 @@ function updateModControl() {
 }
 
 function copyActionsSegmentOnFormSubmit() {
-  const parentNode = document.querySelector(`.actionsList`);
+  const parentNode = document.querySelector(".actionsList");
   const firstSegment = document.getElementById(`actionsSegment1`);
   document.querySelectorAll('.actionsSegment').forEach((segment, i) => {
     const detectorType = systemData.bus[i]?.detector?.type;
@@ -297,7 +297,16 @@ function setSystem() {
   Array.from(actionsList.children).forEach((child, idx) => {
     if (!keep.includes(idx)) actionsList.removeChild(child);
   });
-
+  document.querySelectorAll('.actionsSegment').forEach((segment, i) => {
+    const detectorType = systemData.bus[i]?.detector?.type;
+    const wrapper = segment.querySelector('.deviceTypeWrapper');
+    const existingToled = wrapper?.querySelector('.toledContainer.toledDescriptionSelect');
+    if (existingToled && detectorType !== 'TOLED') {
+      existingToled.remove();
+    } else if (!existingToled && detectorType === 'TOLED') {
+      wrapper?.appendChild(createSegmentTOLEDDescriptionSelect());
+    }
+  });
   setSystemSegmentsLazy(systemData.bus);
   copyImageSegmentOnFormSubmit();
   functionToUpdateSystem();
@@ -317,7 +326,7 @@ function functionToUpdateSystem() {
   setSystemStateCableDim();
   createSystemUsedDevicesPanel();
   setSystemStateLists();
-  busImageController() 
+  busImageController()
 }
 
 function handleButton(index) {
@@ -365,95 +374,98 @@ function hideOverlayPanel() {
   document.getElementById('overlayPanel').classList.add('hidden');
 }
 
-function setupSystemEventHandlers() {
-  const container = document.getElementById("system");
-  container.addEventListener("change", (event) => {
-    const changeElement = event.target;
-    if (!changeElement.matches("select.cable-select")) {
-      if (changeElement.matches("input[type='checkbox']")) return;
-      //Dane odnośnie segmentu
-      const indexes = checkboxChecked();
-      const isMulti = indexes.length > 0;
-      const elements = isMulti
-        ? indexes.map((i) => ({
-          index: parseInt(i),
-          segment: document.querySelector(`.systemActions #actionsSegment${i}`),
-        }))
-        : [
-          {
-            index: parseInt(event.target.closest(`.actionsSegment`).dataset.segmentindex),
-            segment: event.target.closest(`.actionsSegment`),
-          },
-        ];
+changeEvent = function (event) {
+  const changeElement = event.target;
+  if (!changeElement.matches("select.cable-select")) {
+    if (changeElement.matches("input[type='checkbox']")) return;
+    //Dane odnośnie segmentu
+    const indexes = checkboxChecked();
+    const isMulti = indexes.length > 0;
+    const elements = isMulti
+      ? indexes.map((i) => ({
+        index: parseInt(i),
+        segment: document.querySelector(`.systemActions #actionsSegment${i}`),
+      }))
+      : [
+        {
+          index: parseInt(event.target.closest(`.actionsSegment`).dataset.segmentindex),
+          segment: event.target.closest(`.actionsSegment`),
+        },
+      ];
 
-      elements.forEach(({ index, segment }) => {
-        if (changeElement.matches("select#actionsSegmentDevice0")) {
-          const selecetedModControl = CONTROLUNITLIST.find(unit => unit.productKey === changeElement.value);
-          const modControlInput = segment.querySelector("#modControlBatteryBackUp");
-          const inputTranslation =
-            selecetedModControl.possibleUPS === "no" ? TRANSLATION.batteryBackUpNo[lang] : TRANSLATION.batteryBackUpYes[lang];
-          systemData.supplyType = selecetedModControl;
-          modControlInput.value = inputTranslation;
-        } else {
-          if (changeElement.matches("select.segmentDeviceSelect")) {
-            const selected = systemData.selectedStructure.devices.find((device) => device.type === changeElement.value);
+    elements.forEach(({ index, segment }) => {
+      if (changeElement.matches("select#actionsSegmentDevice0")) {
+        const selecetedModControl = CONTROLUNITLIST.find(unit => unit.productKey === changeElement.value);
+        const modControlInput = segment.querySelector("#modControlBatteryBackUp");
+        const inputTranslation =
+          selecetedModControl.possibleUPS === "no" ? TRANSLATION.batteryBackUpNo[lang] : TRANSLATION.batteryBackUpYes[lang];
+        systemData.supplyType = selecetedModControl;
+        modControlInput.value = inputTranslation;
+      } else {
+        if (changeElement.matches("select.segmentDeviceSelect")) {
+          const selected = systemData.selectedStructure.devices.find((device) => device.type === changeElement.value);
 
-            if (selected?.type === "TOLED") {
-              const container = segment.querySelector(".deviceTypeWrapper");
-              const wrapper = segment.querySelector('.deviceTypeWrapper');
-              const toled = wrapper.querySelector('.toledContainer.toledDescriptionSelect');
-              if (toled) toled.remove();
-              container.appendChild(createSegmentTOLEDDescriptionSelect());
-              const toledSelect = segment.querySelector(`.toledDescriptionSelect select`);
-              systemData.bus[index - 1].description = toledSelect.value;
-            }
-            systemData.bus[index - 1].detector = { ...selected };
+          if (selected?.type === "TOLED") {
+            const container = segment.querySelector(".deviceTypeWrapper");
+            const wrapper = segment.querySelector('.deviceTypeWrapper');
+            const toled = wrapper.querySelector('.toledContainer.toledDescriptionSelect');
+            if (toled) toled.remove();
+            container.appendChild(createSegmentTOLEDDescriptionSelect());
+            const toledSelect = segment.querySelector(`.toledDescriptionSelect select`);
+            systemData.bus[index - 1].description = toledSelect.value;
           }
-          if (changeElement.matches("select.toledSelect")) {
-            systemData.bus[index - 1].description = changeElement.value;
-          }
-          if (changeElement.matches("input.segmentWireLength")) {
-            systemData.bus[index - 1].wireLength = parseInt(changeElement.value);
-          }
+          systemData.bus[index - 1].detector = { ...selected };
         }
-      });
-    }
+        if (changeElement.matches("select.toledSelect")) {
+          systemData.bus[index - 1].description = changeElement.value;
+        }
+        if (changeElement.matches("input.segmentWireLength")) {
+          systemData.bus[index - 1].wireLength = parseInt(changeElement.value);
+        }
+      }
+    });
+  }
+  functionToUpdateSystem();
+  checkIfToledExists();
+}
+
+clickEvent = function (event) {
+  const btn = event.target;
+  const segmentEl = btn.closest(".actionsSegment");
+  let index = segmentEl ? parseInt(segmentEl.dataset.segmentindex, 10) : null;
+  if (btn.matches("button.duplicateDeviceButton")) {
+    const copy = JSON.parse(JSON.stringify(systemData.bus[index - 1]));
+    systemData.bus.splice(index, 0, copy);
+    handleButton(index);
     functionToUpdateSystem();
     checkIfToledExists();
-  });
+  }
+  // Usunięcie segmentu
+  if (btn.matches("button.removeDeviceButton")) {
+    systemData.bus.splice(index - 1, 1);
+    handleButton(index);
+    checkIfToledExists();
+    functionToUpdateSystem();
+  }
+  // Zaznacz wszystkie
+  if (btn.matches(".checkAll")) {
+    document.querySelectorAll(".segmentCheckbox").forEach((cb) => (cb.checked = true));
+  }
+  // Odznacz wszystkie
+  if (btn.matches(".unCheckAll")) {
+    document.querySelectorAll(".segmentCheckbox").forEach((cb) => (cb.checked = false));
+  } else if (btn.matches("button#exportToCSV")) {
+    exportToXLSX();
+  } else if (btn.matches("button#exportToJSON")) {
+    exportToJSON();
+  }
+}
 
-  container.addEventListener("click", (event) => {
-    // event.preventDefault();
-    const btn = event.target;
-    const segmentEl = btn.closest(".actionsSegment");
-    let index = segmentEl ? parseInt(segmentEl.dataset.segmentindex, 10) : null;
-    if (btn.matches("button.duplicateDeviceButton")) {
-      const copy = JSON.parse(JSON.stringify(systemData.bus[index - 1]));
-      systemData.bus.splice(index, 0, copy);
-      handleButton(index);
-      functionToUpdateSystem();
-      checkIfToledExists();
-    }
-    // Usunięcie segmentu
-    if (btn.matches("button.removeDeviceButton")) {
-      systemData.bus.splice(index - 1, 1);
-      handleButton(index);
-      checkIfToledExists();
-      functionToUpdateSystem();
-    }
-    // Zaznacz wszystkie
-    if (btn.matches(".checkAll")) {
-      document.querySelectorAll(".segmentCheckbox").forEach((cb) => (cb.checked = true));
-    }
-    // Odznacz wszystkie
-    if (btn.matches(".unCheckAll")) {
-      document.querySelectorAll(".segmentCheckbox").forEach((cb) => (cb.checked = false));
-    } else if (btn.matches("button#exportToCSV")) {
-      exportToXLSX();
-    } else if (btn.matches("button#exportToJSON")) {
-      exportToJSON();
-    }
-  });
+function setupSystemEventHandlers() {
+  const container = document.getElementById("system");
+  container.addEventListener("change", changeEvent);
+
+  container.addEventListener("click", clickEvent);
 }
 
 function checkIfToledExists() {

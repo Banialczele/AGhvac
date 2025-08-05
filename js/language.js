@@ -190,7 +190,7 @@ const TRANSLATION = {
   popupCurrent: {
     pl: "Prąd",
     en: "Current"
-  }, 
+  },
   popupVoltage: {
     pl: "Napięcie",
     en: "Voltage"
@@ -203,12 +203,60 @@ const TRANSLATION = {
     pl: "https://doc.atestgaz.pl/AG/POD/POD-047-PLWydruk.pdf",
     en: "https://doc.atestgaz.pl/AG/POD/POD-047-ENGPrint.pdf"
   },
-   modControltooltip: {
+  modControltooltip: {
     pl: "Dostępne wykoania do montażu na szynie TH35, szczegóły w podręczniku użytkownika",
     en: "Available versions for mounting on a TH35 rail, details in the user manual"
   },
   modControlFileInfo: {
     pl: "Zestawienie zawiera kompletną, okablowaną jednostkę sterującą Teta MOD Control 1 z układem zasilania, w obudowie, przeznaczoną do montażu na ścianie. W przypadku zabudowy w istniejącej szafie na szynie TH35 możesz zastosować: Teta MOD Control 1 (zakres napięc zasilania 15-50V DC)",
     en: "The equipment list includes a fully wired Teta MOD Control 1 control unit with power supply, housed in a wall-mounted enclosure. For installation in an existing cabinet on a TH35 rail, you can use: Teta MOD Control 1 (supply voltage range 15-50V DC)"
+  },
+  fileDeviceType: {
+    pl: "RODZAJ URZĄDZENIA",
+    en: "DEVICE TYPE"
+  },
+  fileDeviceName: {
+    pl: "NAZWA URZĄDZENIA",
+    en: "DEVICE NAME"
+  }, filePW: {
+    pl: "KOD PW",
+    en: "PW CODE"
+  }, fileQuantity: {
+    pl: "ILOŚĆ",
+    en: "QUANTITY"
+  }, fileToled: {
+    pl: "TOLED OPIS",
+    en: "TOLED DESCRIPTION"
+  }, fileDeviceQuantity: {
+    pl: "ILOŚĆ URZĄDZEŃ",
+    en: "DEVICE QUANTITY"
+  }, fileConnector: {
+    pl: "KONEKTOR",
+    en: "CONNECTOR"
+  }, fileWireType: {
+    pl: "RODZAJ PRZEWODU",
+    en: "WIRE TYPE"
+  }, fileWireLength: {
+    pl: "DŁUGOŚĆ PRZEWODU",
+    en: "WIRE LENGTH"
+  }, fileControlUnit: {
+    pl: "JEDNOSTKA STERUJĄCA",
+    en: "CONTROL UNIT"
+  }, fileUPS: {
+    pl: "PODTRZYMANIE ZASILANIA",
+    en: "UNINTERRUPTIBLE POWER SUPPLY"
+  },
+  fileDetector: {
+    pl: "Czujnik gazu",
+    en: "Gas detector"
+  }, fileSignaller: {
+    pl: "Sygnalizator",
+    en: "Signaller"
+  }, fileValve: {
+    pl: "Zawór",
+    en: "Valve"
+  }, fileCU: {
+    pl: "Jednostka sterująca",
+    en: "Control Unit"
   }
 };
