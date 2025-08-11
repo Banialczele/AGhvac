@@ -84,8 +84,13 @@ function setSelectInSegment(segment) {
   if (select === firstSegment) {
     const labelSelect = select.closest(`.segmentDeviceLabel`);
     const batteryBackUpInput = labelSelect.querySelector(`#modControlBatteryBackUp`);
-    const description = document.createTextNode(`${TRANSLATION.systemSegmentDescription[lang]}`);
-    labelSelect.insertBefore(description, labelSelect.querySelector("br"));
+    const before = labelSelect.querySelector("br");
+    const text = TRANSLATION.systemSegmentDescription[lang];
+    const prev = before && before.previousSibling;
+
+    if (!(prev && prev.nodeType === Node.TEXT_NODE && prev.nodeValue === text)) {
+      labelSelect.insertBefore(document.createTextNode(text), before);
+    }
 
     const batteryTranslation =
       systemData.supplyType.possibleUPS === "no"
