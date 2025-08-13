@@ -31,35 +31,37 @@ const valvesTooMany = {
 }
 
 //sprawdzić description w controlUnitModule oraz controlUnitS
-//Zgodnie z wytycznymi "usuwam" na razie te jednostki sterujące z systemu
-// const controlUnitModule = {
-//   type: "Teta Mod Control 1",
-//   img: "Teta MOD Control 1",
-//   possibleUPS: `no`,
-//   description: {
-//     supplyVoltage: 24,
-//     power: 0
-//   },
-//   productKey: "PW-108A",
-// };
+const controlUnitModule = {
+  type: "Teta Mod Control 1",
+  img: "Teta MOD Control 1",
+  possibleUPS: `yes`,
+  description: {
+    supplyVoltage: 24,
+    power: 0,
+    powerDemand: 2.5
+  },
+  productKey: "PW-108A",
+};
 
-// const controlUnitS = {
-//   type: "Teta Mod Control 1-S",
-//   img: "Teta MOD Control 1",
-//   possibleUPS: `yes`,
-//   description: {
-//    supplyVoltage: 24,
-//    power: 0
-//   },
-//   productKey: "PW-086-Control1-S",
-// };
+const controlUnitS = {
+  type: "Teta Mod Control 1-S",
+  img: "Teta MOD Control 1",
+  possibleUPS: `yes`,
+  description: {
+    supplyVoltage: 24,
+    power: 0,
+    powerDemand: 2.5
+  },
+  productKey: "PW-086-Control1-S",
+};
 const controlUnitS2460W = {
   type: "Teta Mod Control 1-S24-60W",
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
     supplyVoltage: 24,
-    power: 60
+    power: 60,
+    powerDemand: 2.5
   },
   productKey: "PW-086-Control1-S24",
 };
@@ -70,7 +72,8 @@ const controlUnitS4860W = {
   possibleUPS: `no`,
   description: {
     supplyVoltage: 48,
-    power: 60
+    power: 60,
+    powerDemand: 2.5
   },
   productKey: "PW-086-Control1-S48-60",
 };
@@ -80,7 +83,8 @@ const controlUnitS48100W = {
   possibleUPS: `no`,
   description: {
     supplyVoltage: 48,
-    power: 100
+    power: 100,
+    powerDemand: 2.5
   },
   productKey: "PW-086-Control1-S48-100",
 };
@@ -91,7 +95,8 @@ const controlUnitS48150W = {
   possibleUPS: `no`,
   description: {
     supplyVoltage: 48,
-    power: 150
+    power: 150,
+    powerDemand: 2.5
   },
   productKey: "PW-086-Control1-S48-150",
 }
@@ -102,19 +107,20 @@ const controlUnitSUPS300 = {
   possibleUPS: `yes`,
   description: {
     supplyVoltage: 48,
-    power: 300
+    power: 300,
+    powerDemand: 2.5
   },
   productKey: "PW-086-Control1-S-UP300",
 };
 
 const CONTROLUNITLIST = [
-  // controlUnitS,
+  controlUnitS,
   controlUnitS2460W,
   controlUnitS4860W,
   controlUnitS48100W,
   controlUnitS48150W,
   controlUnitSUPS300,
-  // controlUnitModule,
+  controlUnitModule,
 ];
 
 const DeviceCl = {

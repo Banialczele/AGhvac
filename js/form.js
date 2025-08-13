@@ -158,7 +158,7 @@ function handleFormSubmit() {
   });
 }
 function validateSystem() {
-  const result = findValidControlUnitsWithCables(CONTROLUNITLIST, systemData.bus, Cables);
+  const result = findValidControlUnitsWithCables(CONTROLUNITLIST, systemData.bus, Cables, initSystem, powersupplyTMC1, powersupplyMC);
   let controlUnit;
   let cable;
   controlUnit = result.units.find(unit => {
@@ -169,6 +169,7 @@ function validateSystem() {
     }
   });
   cable = controlUnit.validCables[0];
+  systemData.minimalSupply = controlUnit.minimalSupply;
   const nextUnit = result.units[1];
   const higherPriorityCable = nextUnit.validCables.find(validCable => validCable.cable.priority < cable.cable.priority);
   if (higherPriorityCable !== undefined) {

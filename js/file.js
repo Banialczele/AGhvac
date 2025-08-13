@@ -54,6 +54,7 @@ function getDataForExcel() {
   rows.push([]);
 
   rows.push([TRANSLATION.modControlFileInfo[lang]]);
+  rows.push([`${TRANSLATION.modControlTMC1TH35Info[lang]} ${systemData.minimalSupply.description}`]);
   return rows;
 }
 
