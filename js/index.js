@@ -9,7 +9,7 @@ let systemData = {
 	wiretype: '',
 	devicesTypes: { detectors: [], signallers: [] },
 	bus: [],
-	errorList: []
+	errorList: [],
 };
 
 let initSystem = {

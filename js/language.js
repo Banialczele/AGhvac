@@ -208,12 +208,20 @@ const TRANSLATION = {
     en: "Available versions for mounting on a TH35 rail, details in the user manual"
   },
   modControlFileInfo: {
-    pl: "Zestawienie zawiera kompletną, okablowaną jednostkę sterującą Teta MOD Control 1 z układem zasilania, w obudowie, przeznaczoną do montażu na ścianie.",
-    en: "The equipment list includes a fully wired Teta MOD Control 1 control unit with power supply, housed in a wall-mounted enclosure."
+    pl: "Zestawienie zawiera kompletną, okablowaną jednostkę sterującą",
+    en: "The equipment list includes a fully wired "
   },
-  modControlTMC1TH35Info: {
-    pl: "W przypadku zabudowy w istniejącej szafie na szynie TH35 możesz zastosować: Teta MOD Control 1 (zakres napięc zasilania 15-50V DC) z zasilaczem: ",
-    en: "For installation in an existing cabinet on a TH35 rail, you can use: Teta MOD Control 1 (supply voltage range 15-50V DC) with power supply: "
+  modControlFileInfoEnd: {
+    pl: "z układem zasilania, w obudowie, przeznaczoną do montażu na ścianie.",
+    en: "control unit with power supply, housed in a wall-mounted enclosure."
+  },
+  modControl35Info: {
+    pl: "W przypadku zabudowy w istniejącej szafie na szynie TH35 możesz zastosować: ",
+    en: "For installation in an existing cabinet on a TH35 rail, you can use: "
+  },
+  modControl35InfoEnd: {
+    pl: "(zakres napięć zasilania 15-50V DC) z zasilaczem: ",
+    en: "(supply voltage range 15-50V DC) with power supply: "
   },
   fileDeviceType: {
     pl: "RODZAJ URZĄDZENIA",
@@ -262,5 +270,20 @@ const TRANSLATION = {
   }, fileCU: {
     pl: "Jednostka sterująca",
     en: "Control Unit"
+  }, filePSU: {
+    pl: "Zasilacz",
+    en: "Power supply"
+  },
+  fileBufferPSU: {
+    pl: "Zasilacz buforowy",
+    en: "Buffer power supply"
+  },
+  TCON: {
+    pl: "T-Konektor",
+    en: "T-Connector"
+  },
+  powerSupplyNotRequired: {
+    pl: "Nie wymaga dodatkowego zasilania",
+    en: `Do not require additional power supply`
   }
 };

@@ -32,7 +32,7 @@ const valvesTooMany = {
 
 //sprawdzić description w controlUnitModule oraz controlUnitS
 const controlUnitModule = {
-  type: "Teta Mod Control 1",
+  type: "Teta MOD Control 1",
   img: "Teta MOD Control 1",
   possibleUPS: `yes`,
   description: {
@@ -44,7 +44,7 @@ const controlUnitModule = {
 };
 
 const controlUnitS = {
-  type: "Teta Mod Control 1-S",
+  type: "Teta MOD Control 1-S",
   img: "Teta MOD Control 1",
   possibleUPS: `yes`,
   description: {
@@ -55,7 +55,7 @@ const controlUnitS = {
   productKey: "PW-086-Control1-S",
 };
 const controlUnitS2460W = {
-  type: "Teta Mod Control 1-S24-60W",
+  type: "Teta MOD Control 1-S24-60W",
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
@@ -67,7 +67,7 @@ const controlUnitS2460W = {
 };
 
 const controlUnitS4860W = {
-  type: "Teta Mod Control 1-S48-60W",
+  type: "Teta MOD Control 1-S48-60W",
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
@@ -78,7 +78,7 @@ const controlUnitS4860W = {
   productKey: "PW-086-Control1-S48-60",
 };
 const controlUnitS48100W = {
-  type: "Teta Mod Control 1-S48-100W",
+  type: "Teta MOD Control 1-S48-100W",
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
@@ -90,7 +90,7 @@ const controlUnitS48100W = {
 };
 
 const controlUnitS48150W = {
-  type: "Teta Mod Control 1-S48-150W",
+  type: "Teta MOD Control 1-S48-150W",
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
@@ -102,7 +102,7 @@ const controlUnitS48150W = {
 }
 
 const controlUnitSUPS300 = {
-  type: "Teta Mod Control 1-S-UP300W",
+  type: "Teta MOD Control 1-S-UP300W",
   img: "Teta MOD Control 1",
   possibleUPS: `yes`,
   description: {
@@ -254,7 +254,7 @@ const toledDevice = {
   current_A: -0.005,
   minVoltage_V: 15,
   class: DeviceCl.signaller,
-  productKey: "PW-127-X",
+  productKey: "PW-127-TETA-X",
   doc: {
     pl: "https://www.atestgaz.pl/produkt/tablica-ostrzegawcza-toled",
     en: 'https://atestgaz.pl/en/produkt/warning-led-display-toled/'

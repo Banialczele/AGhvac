@@ -130,7 +130,6 @@ function handleFormSubmit() {
       if (!confirmRegenerate) return;
       systemData = {
         supplyType: ``,
-        wiretype: '',
         devicesTypes: { detectors: [], signallers: [] },
         bus: [],
       };
@@ -158,28 +157,16 @@ function handleFormSubmit() {
   });
 }
 function validateSystem() {
-  const result = findValidControlUnitsWithCables(CONTROLUNITLIST, systemData.bus, Cables, initSystem, powersupplyTMC1, powersupplyMC);
-  let controlUnit;
-  let cable;
-  controlUnit = result.units.find(unit => {
-    if (initSystem.backup === `Tak` || initSystem.backup === `Yes`) {
-      return unit.controlUnit.possibleUPS === `yes`;
-    } else {
-      return unit.controlUnit.possibleUPS === `no`;
-    }
-  });
-  cable = controlUnit.validCables[0];
-  systemData.minimalSupply = controlUnit.minimalSupply;
-  const nextUnit = result.units[1];
-  const higherPriorityCable = nextUnit.validCables.find(validCable => validCable.cable.priority < cable.cable.priority);
-  if (higherPriorityCable !== undefined) {
-    controlUnit = nextUnit;
-    cable = higherPriorityCable;
-  }
-  systemData.supplyType = controlUnit.controlUnit;
-  systemData.wireType = cable.cable.type
-  systemData.totalPower = Math.ceil(cable.powerW);
-  systemData.errorList = result.error;
+  const [errors, result] = findConfigsByBackupPolicy(CONTROLUNITLIST, systemData.bus, Cables, initSystem, powersupplyTMC1, powersupplyMC);
+  
+  const controlUnit = result.controlUnitWithBuiltInSupply.controlUnit;
+  const cable = result.controlUnitWithBuiltInSupply.cables[0];
+  console.log(result);
+  systemData.supplyType = controlUnit;
+  systemData.res = result;
+  systemData.wireType = cable.type
+  systemData.totalPower = Math.ceil(cable.power);
+  systemData.errorList = errors;
   initSystem.systemIsGenerated = true;
   errorHandling()
 }

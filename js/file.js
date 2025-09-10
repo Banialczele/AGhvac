@@ -1,8 +1,11 @@
+let i = 3;
+
 function exportToXLSX() {
   const rows = getDataForExcel(); // analogiczne do CSV, tylko bez joinowania
   const worksheet = XLSX.utils.aoa_to_sheet(rows);
   worksheet['!cols'] = [
-    { wch: 25 },
+    { wch: 5 },
+    { wch: 30 },
     { wch: 35 },
     { wch: 25 },
     { wch: 25 },
@@ -19,10 +22,9 @@ function exportToXLSX() {
 // Konwersja danych systemu do formatu CSV
 function getDataForExcel() {
   const rowsDescription = {
-    device: [`${TRANSLATION.fileDeviceType[lang]}`,`${TRANSLATION.fileDeviceName[lang]}`, `${TRANSLATION.filePW[lang]}`,`${TRANSLATION.fileQuantity[lang]}`, `${TRANSLATION.fileToled[lang]}`],
-    deviceTotal: ["", "", "", `${TRANSLATION.fileDeviceQuantity[lang]}`],
-    accessories: [`${TRANSLATION.fileConnector[lang]}`, `${TRANSLATION.filePW[lang]}`, `${TRANSLATION.fileWireType[lang]}`, `${TRANSLATION.fileWireLength[lang]}`],
-    controlUnit: [`${TRANSLATION.fileControlUnit[lang]}`,`${TRANSLATION.fileUPS[lang]}`, `${TRANSLATION.filePW[lang]}`, `${TRANSLATION.fileQuantity[lang]}`],
+    device: [`LP.`, `${TRANSLATION.fileDeviceType[lang]}`, `${TRANSLATION.fileDeviceName[lang]}`, `${TRANSLATION.filePW[lang]}`, `${TRANSLATION.fileQuantity[lang]}`, `${TRANSLATION.fileToled[lang]}`],
+    // deviceTotal: ["", "", "", `${TRANSLATION.fileDeviceQuantity[lang]}`],
+    accessories: ["", `${TRANSLATION.fileWireType[lang]}`, `${TRANSLATION.fileWireLength[lang]}`],
   };
   const rows = [];
 
@@ -30,37 +32,43 @@ function getDataForExcel() {
   // dodaj nagłówek urządzeń
   rows.push(rowsDescription.device);
 
+  //DODAĆ SYTUACJĘ GDY BACKUP NIE, ZAKTUALIZOWAĆ SILNIK, ABY W controlUnitWithoutSupply BRAŁ POD UWAGĘ TYLKO pod uwagę Teta MOD Control 1. Bez dopisków
+  if (initSystem.backup === `Tak` || initSystem.backup === `Yes`) {
+    const controlUnitWithSupply = systemData.res.controlUnitWithBuiltInSupply;
+    const supply = controlUnitWithSupply.powerSupply.supply;
+    insertDeviceTypeData(`1.`, controlUnitWithSupply.controlUnit, `${TRANSLATION.fileCU[lang]}`, rows);
+    insertDeviceTypeData(`2.`, supply, `${TRANSLATION.fileBufferPSU[lang]}`, rows);
+  } else {
+    const controlUnitWithSupply = systemData.res.controlUnitWithBuiltInSupply;
+    // const supply = controlUnitWithSupply.powerSupply.supply;
+    insertDeviceTypeData(`1.`, controlUnitWithSupply.controlUnit, `${TRANSLATION.fileCU[lang]}`, rows);
+    insertDeviceTypeData("2.", `-`, `${TRANSLATION.powerSupplyNotRequired[lang]}`, rows);
+  }
+
   // dodaj wiersze urządzeń
-  insertDeviceTypeData(reducedDevices.detector, `${TRANSLATION.fileDetector[lang]}`, rows);
-  insertDeviceTypeData(reducedDevices.signaller, `${TRANSLATION.fileSignaller[lang]}`, rows);
-  insertDeviceTypeData(reducedDevices.valveCtrl, `${TRANSLATION.fileValve[lang]}`, rows);
+  insertDeviceTypeData(i, reducedDevices.detector, `${TRANSLATION.fileDetector[lang]}`, rows);
+  insertDeviceTypeData(i, reducedDevices.signaller, `${TRANSLATION.fileSignaller[lang]}`, rows);
+  insertDeviceTypeData(i, reducedDevices.valveCtrl, `${TRANSLATION.fileValve[lang]}`, rows);
+  insertTconInCSV(i, reducedDevices.tCon, "quantityTotal", rows);
 
   rows.push([]);
   rows.push([]);
-
-  // dodaj nagłówek i sumę
-  rows.push(rowsDescription.deviceTotal);
-  insertDeviceTypeData(reducedDevices.tCon, "quantityTotal", rows);
-  rows.push([]);
-
-  rows.push(rowsDescription.controlUnit);
-  console.log(systemData.supplyType);
-
-  insertDeviceTypeData(systemData.supplyType, `${TRANSLATION.fileCU[lang]}`, rows);
-  rows.push([]);
-
   rows.push(rowsDescription.accessories);
-  insertTconInCSV(reducedDevices.tCon, "quantityTotal", rows);
+  const busLengthValue = systemData.bus.reduce((acc, device) => acc + device.wireLength, 0);
+
+  rows.push(["", `${systemData.wireType}`, busLengthValue]);
+  rows.push([]);
   rows.push([]);
 
-  rows.push([TRANSLATION.modControlFileInfo[lang]]);
-  rows.push([`${TRANSLATION.modControlTMC1TH35Info[lang]} ${systemData.minimalSupply.description}`]);
+  const controlUnitWithoutSupply = systemData.res.controlUnitWithoutSupply;
+  const supply = controlUnitWithoutSupply.powerSupply.supply;
+  rows.push([`${TRANSLATION.modControlFileInfo[lang]} ${systemData.supplyType.type} ${TRANSLATION.modControlFileInfoEnd[lang]}`]);
+  rows.push([`${TRANSLATION.modControl35Info[lang]} ${controlUnitWithoutSupply.controlUnit.type} ${TRANSLATION.modControl35InfoEnd[lang]} ${supply.description}`]);
   return rows;
 }
 
-function insertTconInCSV(devices, label, row) {
-  const busLengthValue = systemData.bus.reduce((acc, device) => acc + device.wireLength, 0);
-  row.push([`${devices.TConnector}${TRANSLATION.quantity[lang]}`, `PW-122-S2`, `${systemData.wireType}`, busLengthValue]);
+function insertTconInCSV(iterator, devices, label, row) {
+  row.push([`${iterator}.`, `${TRANSLATION.TCON[lang]}`, `T-Con-X`, `PW-122-S2`, `${devices.TConnector}${TRANSLATION.quantity[lang]}`,]);
 }
 
 function reduceDevicesForFile() {
@@ -114,22 +122,24 @@ function CUUPS() {
 
 
 // Wstawienie wierszy z danymi dot. użytych w systemie typów urządzeńs
-function insertDeviceTypeData(devices, label, store) {
+function insertDeviceTypeData(iterator, devices, label, store) {
   if (devices) {
     if (label === `Jednostka sterująca` || label === `Control Unit`) {
-      store.push([devices.type, CUUPS(), devices.productKey, `1${TRANSLATION.quantity[lang]}`]);
-    } else if (label === `quantityTotal`) {
-      store.push(["", "", "", `${devices.TConnector}${TRANSLATION.quantity[lang]}`]);
-    } else {
+      store.push([iterator, label, devices.type, devices.productKey, `1${TRANSLATION.quantity[lang]}`]);
+    } else if (label === `Zasilacz buforowy` || label === `Zasilacz`) {
+      store.push([`${iterator}.`, label, devices.type, devices.description, `1${TRANSLATION.quantity[lang]}`]);
+    }
+    else {
       for (let [key, value] of Object.entries(devices)) {
         if (key === `Teta EcoWent+MiniDet`) {
-          store.push([label, key, `${value.productKey.CO}, ${value.productKey.LPG}`, `${value.quantity}${TRANSLATION.quantity[lang]}`]);
+          store.push([`${iterator}.`, label, key, `${value.productKey.CO}, ${value.productKey.LPG}`, `${value.quantity}${TRANSLATION.quantity[lang]}`]);
         } else if (key === `TOLED`) {
           value.forEach(elem => {
-            store.push([label, key, elem.productKey, `${elem.quantity}${TRANSLATION.quantity[lang]}`, elem.description]);
+            store.push([`${iterator}.`, label, key, elem.productKey, `${elem.quantity}${TRANSLATION.quantity[lang]}`, elem.description]);
           })
         } else {
-          store.push([label, key, value.productKey, `${value.quantity}${TRANSLATION.quantity[lang]}`]);
+          const quantity = value.quantity === undefined ? 0 : value.quantity;
+          store.push([`${iterator}.`, label, key, value.productKey, `${quantity}${TRANSLATION.quantity[lang]}`]);
         }
       }
     }
