@@ -74,8 +74,8 @@ const TRANSLATION = {
     en: "Finally, the configurator will select the control unit and the optimal cable for the system, and will allow you to save and generate a list of devices with product codes.",
   },
   aboutAppDescriptionInf: {
-    pl: "Konfigurator prezentuje system detekcji gazu TetaGas w postaci konfigurowalnych segmentów zawierających urządzenia. Obecnie do systemu można dodać maksymalnie 50 segmentów - na przykład 40 segmentów zawierających detektory gazu i 10 segmentów zawierających sygnalizatory.",
-    en: "The configurator presents the TetaGas gas detection system based on configurable segments containing devices. Currently, you can add up to 50 segments to the system – for example, 40 segments containing gas detectors and 10 segments containing signaling devices",
+    pl: "Konfigurator prezentuje system detekcji gazu TetaGas w postaci konfigurowalnych segmentów zawierających urządzenia. Obecnie do systemu można dodać maksymalnie 50 segmentów - na przykład 40 segmentów zawierających detektory gazu i 10 segmentów zawierających sygnalizatory. System domyślnie przyjmuje 15% zapasu mocy przy doborze jednostki sterującej i/lub zasilacza w zależności od konfiguracji.",
+    en: "The configurator presents the TetaGas gas detection system based on configurable segments containing devices. Currently, you can add up to 50 segments to the system – for example, 40 segments containing gas detectors and 10 segments containing signaling devices. By default, the system assumes a 15% power reserve when selecting the control unit and/or power supply depending on the configuration.",
   },
   aboutAppDescriptionAbout: {
     pl: "Więcej informacji znajdziecie Państwo w dokumencie ",

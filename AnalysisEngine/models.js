@@ -44,7 +44,7 @@ const controlUnitModule = {
 };
 
 const controlUnitS = {
-  type: "Teta MOD Control 1-S",
+  type: "Teta Control 1-S",
   img: "Teta MOD Control 1",
   possibleUPS: `yes`,
   description: {
@@ -55,7 +55,7 @@ const controlUnitS = {
   productKey: "PW-086-Control1-S",
 };
 const controlUnitS2460W = {
-  type: "Teta MOD Control 1-S24-60W",
+  type: "Teta Control 1-S24-60W",
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
@@ -67,7 +67,7 @@ const controlUnitS2460W = {
 };
 
 const controlUnitS4860W = {
-  type: "Teta MOD Control 1-S48-60W",
+  type: "Teta Control 1-S48-60W",
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
@@ -78,19 +78,19 @@ const controlUnitS4860W = {
   productKey: "PW-086-Control1-S48-60",
 };
 const controlUnitS48100W = {
-  type: "Teta MOD Control 1-S48-100W",
+  type: "Teta Control 1-S48-100W",
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
-    supplyVoltage: 48,
-    power: 100,
-    powerDemand: 2.5
+      supplyVoltage: 48,
+      power: 100,
+      powerDemand: 2.5
   },
   productKey: "PW-086-Control1-S48-100",
 };
 
 const controlUnitS48150W = {
-  type: "Teta MOD Control 1-S48-150W",
+  type: "Teta Control 1-S48-150W",
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
@@ -102,7 +102,7 @@ const controlUnitS48150W = {
 }
 
 const controlUnitSUPS300 = {
-  type: "Teta MOD Control 1-S-UP300W",
+  type: "Teta Control 1-S-UP300W",
   img: "Teta MOD Control 1",
   possibleUPS: `yes`,
   description: {
@@ -362,7 +362,6 @@ const facilityTypeOther = {
     tetaEcoWentDevice,
     tetaEcoDetDevice,
     tetaEcoWentMiniDetDevice,
-
     tetaEcoTermDevice,
     tetaEcoHDevice,
     tetaEcoNDevice,

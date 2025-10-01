@@ -1,423 +1,294 @@
-// Zwraca stabilny identyfikator zasilacza używany jako klucz mapy (id/sku lub zlep cech)
-function supplyIdentityKey(s) {
-  // Zwróć id jeżeli istnieje, inaczej sku, inaczej sklejone cechy tekstowe
-  return (
-    s.id ??
-    s.sku ??
-    [
-      s.brand ?? "",
-      s.model ?? "",
-      s.supplyVoltage ?? "",
-      s.power ?? "",
-      s.type ?? ""
-    ].join("|")
-  );
+// ---- Konfiguracja globalna ----
+const POWER_RESERVE = 0.15;       // +15% zapasu mocy (PSU i limit wyjściowy CU)
+const CU_UTILIZATION_MAX = 0.90;  // maks. wykorzystanie wyjścia CU (90% limitu po rezerwie)
+
+// ---- Pomocnicze ----
+function supplyIdentityKey(psu) {
+  return `${psu.type}-${psu.description}-${psu.power}-${psu.supplyVoltage}-${psu.batteryCapacity_Ah || 'noBat'}`;
 }
 
-// Usuwa duplikaty zasilaczy (po kluczu z supplyIdentityKey), zachowując pierwszy napotkany
-function uniqSuppliesStable(list) {
-  // Tworzy pustą mapę do deduplikacji
-  const map = new Map();
-  // Iteruje po wszystkich elementach listy
-  for (const s of list) {
-    // Wylicza klucz tożsamości dla danego zasilacza
-    const key = supplyIdentityKey(s);
-    // Dodaje do mapy tylko jeśli klucz nie występuje (pierwsze wystąpienie wygrywa)
-    if (!map.has(key)) map.set(key, s);
+function uniqSuppliesStable(powersupplies) {
+  const seen = new Set();
+  return (powersupplies || []).filter(psu => {
+    const key = supplyIdentityKey(psu);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+// UWAGA: pickMatchingSupplies używamy dla alternatywnych CU.
+// PW-108A NIE filtrujemy tutaj (stosujemy prostą regułę HDR / ZBF>20 w main).
+function pickMatchingSupplies(controlUnit, powersupplies, isBackupDesired) {
+  const list = uniqSuppliesStable(powersupplies);
+  if (!list || !list.length) return [];
+
+  // S-UP300 traktujemy jak z przetwornicą 24→48V, więc dobór PSU do niej robimy jak dla 24 V
+  let cuRequiredSupplyVoltage = controlUnit.description?.supplyVoltage;
+  if (controlUnit.productKey === "PW-086-Control1-S-UP300") {
+    cuRequiredSupplyVoltage = 24;
   }
-  // Zwraca tablicę unikalnych zasilaczy
-  return Array.from(map.values());
+
+  return list.filter(psu => {
+    if (isBackupDesired ? psu.type !== "ZBF" : psu.type !== "HDR") return false;
+    const v = psu.supplyVoltage;
+    if (v > 40) return true;                        // np. 42V zasili dowolne CU (48V class po deratingu)
+    if (v > 10 && v < 30) return cuRequiredSupplyVoltage === 24; // 21V (24V class) → tylko CU 24V (i S-UP300)
+    return false;
+  });
 }
 
-// Dobiera zasilacze spełniające wymagania U i P oraz opcjonalnie runtime (dla bateryjnych)
-function pickMatchingSupplies(
-  suppliesList,
-  requiredVoltage,
-  requiredPowerW,
-  { isBatteryList = false, minBackupHours = 0, powerHeadroom = 1.0 } = {}
-) {
-  // Gdy brak poprawnej listy – zwróć pustą tablicę
-  if (!Array.isArray(suppliesList)) return [];
-  // Wylicza zapotrzebowanie mocy powiększone o zapas
-  const needPowerW = requiredPowerW * powerHeadroom;
+// --- Model elektryczny magistrali (obciążenie rozłożone wzdłuż przewodu)
+// Założenia: urządzenia równomiernie rozmieszczone:
+//   spadek na końcu ~ I_total * R_total / 2
+//   straty miedzi ~ I_total^2 * R_total / 3
+function computeBusElectricals(busSegments, cable, cuBusVoltage_V) {
+  const totalBusLength_m = (busSegments || []).reduce((s, seg) => s + (seg.wireLength || 0), 0);
+  const R_total_Ohm = (cable.resistivity_OhmPerMeter || 0) * totalBusLength_m;
 
-  // Filtruje listę po U i P oraz wylicza runtime dla bateryjnych
-  const augmented = suppliesList
-    // Przepuszcza tylko zasilacze z wystarczającym napięciem i mocą
-    .filter(s => (s.supplyVoltage ?? 0) >= requiredVoltage && (s.power ?? 0) >= needPowerW)
-    // Dla list bateryjnych dociąża obiekt o szacowany runtime, dla pozostałych zwraca kopię
-    .map(s => {
-      // Dla zwykłych zasilaczy zwróć kopię obiektu bez runtime
-      if (!isBatteryList) return { ...s };
-      // Odczytuje pojemność, dopuszczalne rozładowanie i sprawność
-      const Ah = s.batteryCapacity_Ah;
-      const DoD = (s.usableDoD ?? 0.8);
-      const eff = (s.efficiency ?? 0.9);
-      // Jeżeli brak danych o pojemności – runtime nieznany
-      if (Ah == null) return { ...s, estimatedRuntime_h: null };
-      // Oblicza przybliżony runtime z równania energetycznego
-      const runtime = (Ah * DoD * s.supplyVoltage * eff) / needPowerW;
-      // Zwraca kopię zasilacza z zaokrąglonym runtime
-      return { ...s, estimatedRuntime_h: Number(runtime.toFixed(2)) };
-    });
+  const powerDevicesOnly_W = (busSegments || []).reduce(
+    (s, seg) => s + (seg?.detector?.power_W || 0),
+    0
+  );
 
-  // Jeśli wymagamy runtime – filtruje po minimalnym czasie podtrzymania, inaczej zostawia jak jest
-  const filtered = (isBatteryList && minBackupHours > 0)
-    ? augmented.filter(s => s.estimatedRuntime_h != null && s.estimatedRuntime_h >= minBackupHours)
-    : augmented;
+  const I_total_A = cuBusVoltage_V > 0 ? powerDevicesOnly_W / cuBusVoltage_V : 0;
 
-  // Sortuje rosnąco po mocy i zwraca
-  return filtered.sort((a, b) => (a.power ?? 0) - (b.power ?? 0));
+  const V_drop_end_V = I_total_A * R_total_Ohm * 0.5;
+  const V_end_V = cuBusVoltage_V - V_drop_end_V;
+
+  const busVoltageOk = (busSegments || []).every(seg => {
+    const vMin = seg?.detector?.minVoltage_V ?? 0;
+    return V_end_V >= vMin;
+  });
+
+  const P_losses_W = (I_total_A * I_total_A) * R_total_Ohm / 3;
+
+  return {
+    powerDevicesOnly_W,
+    I_bus_A: I_total_A,
+    V_drop_V: V_drop_end_V,
+    V_end_V,
+    P_losses_W,
+    busVoltageOk
+  };
 }
 
-// Sprawdza konfiguracje kabli dla CU: czy napięciowo i mocowo domyka się linia
-function checkSystemForPowerSupplyAndCable(controlUnit, busSegments, cables) {
-  // Przy pustej magistrali nie ma co liczyć – zwróć pustą tablicę
-  if (!Array.isArray(busSegments) || busSegments.length === 0) return [];
+// --- Walidacja: CU z ZEWNĘTRZNYM zasilaczem + dobór kabla (z 15% zapasem)
+// Działa dla PW-108A oraz S/S-UP300 w trybie z ZBF.
+function validateSystemWithExternalPSUAndCable(controlUnit, busSegments, cables, externalPSU_W) {
+  if (!cables || !cables.length) return null;
 
-  // Pobiera napięcie zasilania z opisu jednostki
-  const supplyVoltage = controlUnit.description.supplyVoltage;
-  // Ustala limit mocy CU (0/null oznacza brak limitu – Infinity)
-  const rawMaxPower = controlUnit.description.power;
-  // Ustala maksymalną moc dozwoloną przez CU
-  const maxPower = (rawMaxPower === 0 || rawMaxPower == null) ? Infinity : rawMaxPower;
+  const cuBusVoltage_V = controlUnit.description.supplyVoltage;
+  const cuOwnPower_W = (controlUnit.description.powerDemand || 0);
 
-  // Definiuje stałą strat mocy CU (W)
-  const CONTROL_UNIT_LOSSES_W = 3;
-  // Tworzy kolekcję poprawnych konfiguracji kabli
-  const validCables = [];
+  const sortedCables = [...cables].sort((a, b) => a.priority - b.priority);
 
-  // Iteruje po wszystkich typach kabli
-  for (const cable of cables) {
-    // Pobiera ostatnie urządzenie na linii
-    const lastDevice = busSegments[busSegments.length - 1].detector;
-    // Startuje skan napięcia końca linii od max(minV urządzenia, połowy napięcia zasilania)
-    let endVoltage = Math.max(lastDevice.minVoltage_V, supplyVoltage / 2);
-    // Ustala krok skanowania napięcia
-    const voltageStep = 0.1;
+  for (const cable of sortedCables) {
+    const e = computeBusElectricals(busSegments, cable, cuBusVoltage_V);
+    if (!e.busVoltageOk) continue;
 
-    // Flaga znalezienia punktu pracy dla danego kabla
-    let foundWorkingPoint = false;
-    // Struktura podsumowania dla znalezionego punktu
-    let summary = null;
+    // PSU pokrywa: (urządzenia + straty + własny pobór CU) z rezerwą
+    const totalFromPSU_noReserve_W   = e.powerDevicesOnly_W + e.P_losses_W + cuOwnPower_W;
+    const totalFromPSU_withReserve_W = totalFromPSU_noReserve_W * (1 + POWER_RESERVE);
 
-    // Przesuwa napięcie końca linii w górę aż do napięcia zasilania
-    while (endVoltage < supplyVoltage) {
-      // Ustawia napięcie w aktualnym węźle na końcowe
-      let voltageAtNode = endVoltage;
-      // Ustawia prąd w aktualnym węźle na zero
-      let currentAtNode = 0;
-      // Zakłada, że konfiguracja jest poprawna, dopóki nie znajdziemy naruszenia
-      let isValid = true;
+    if (externalPSU_W < totalFromPSU_withReserve_W) continue;
 
-      // Idzie od końca magistrali do początku, sumując prądy i spadki
-      for (let i = busSegments.length - 1; i >= 0; i--) {
-        // Pobiera segment linii
-        const segment = busSegments[i];
-        // Pobiera urządzenie na tym segmencie
-        const device = segment.detector;
-
-        // Inicjuje prąd urządzenia
-        let deviceCurrent = 0;
-        // Gdy mamy zarówno prąd, jak i moc – sumuje prąd bezpośredni i wynik z mocy/U
-        if (device.current_A != null && device.power_W != null) {
-          deviceCurrent = device.current_A + (device.power_W / voltageAtNode);
-          // Gdy mamy tylko prąd – używa go wprost
-        } else if (device.current_A != null) {
-          deviceCurrent = device.current_A;
-          // Gdy mamy tylko moc – przelicza na prąd przez dzielenie przez U
-        } else if (device.power_W != null) {
-          deviceCurrent = device.power_W / voltageAtNode;
-        }
-
-        // Sumuje prąd na węźle (bieżący + urządzenia)
-        const totalCurrent = currentAtNode + deviceCurrent;
-        // Oblicza rezystancję odcinka przewodu
-        const resistance = cable.resistivity_OhmPerMeter * segment.wireLength;
-        // Liczy spadek napięcia na dwóch żyłach
-        const voltageDrop = 2 * resistance * totalCurrent;
-        // Oblicza napięcie wejściowe do poprzedniego węzła
-        const inputVoltage = voltageAtNode + voltageDrop;
-
-        // Weryfikuje, czy napięcie na urządzeniu nie spadło poniżej minimalnego
-        if (voltageAtNode < device.minVoltage_V) { isValid = false; break; }
-
-        // Przenosi punkt obliczeń na poprzedni węzeł
-        voltageAtNode = inputVoltage;
-        // Zapamiętuje prąd skumulowany na poprzednim węźle
-        currentAtNode = totalCurrent;
-      }
-
-      // Jeżeli napięcie na początku przekroczy zasilanie – kończy skan
-      if (voltageAtNode > supplyVoltage) break;
-
-      // Jeśli konfiguracja spełniła warunki napięciowe – podsumuj punkt pracy
-      if (isValid) {
-        // Liczy moc linii na początku (bez strat CU)
-        const powerW = voltageAtNode * currentAtNode;
-        // Dodaje straty CU do mocy linii
-        const powerWithLossesW = powerW + CONTROL_UNIT_LOSSES_W;
-
-        // Sprawdza, czy moc z uwzględnieniem strat mieści się w limicie CU
-        if (powerWithLossesW <= maxPower) {
-          // Zaznacza, że znaleziono działający punkt
-          foundWorkingPoint = true;
-          // Zapisuje podsumowanie działającej konfiguracji
-          summary = {
-            cable,
-            requiredSupplyVoltage: voltageAtNode,
-            requiredSupplyCurrent: currentAtNode,
-            powerW,
-            controlUnitLossesW: CONTROL_UNIT_LOSSES_W,
-            powerWithLossesW
-          };
-        }
-        // Kończy skanowanie dla tego kabla po pierwszym poprawnym punkcie
-        break;
-      }
-
-      // Zwiększa napięcie końca linii o krok i próbuje ponownie
-      endVoltage += voltageStep;
+    // Limit wyjściowy CU (jeżeli CU go ma) dotyczy tylko magistrali: (urządzenia + straty), z rezerwą
+    // oraz dodatkowym headroomem (CU_UTILIZATION_MAX) aby nie dobierać „na styk”.
+    const cuLimit_W = (controlUnit.power ?? controlUnit.description?.power ?? 0);
+    if (cuLimit_W > 0) {
+      const requiredBus_withReserve_W = (e.powerDevicesOnly_W + e.P_losses_W) * (1 + POWER_RESERVE);
+      const cuAllowed_W = cuLimit_W * CU_UTILIZATION_MAX;
+      if (requiredBus_withReserve_W > cuAllowed_W) continue;
     }
 
-    // Jeżeli znaleziono działający punkt – dodaje konfigurację do wyniku
-    if (foundWorkingPoint && summary) validCables.push(summary);
+    return {
+      cable,
+      powerW_devicesOnly: e.powerDevicesOnly_W,
+      powerW_totalWithLossesAndReserve: totalFromPSU_withReserve_W,
+      voltageAtEnd_V: e.V_end_V
+    };
   }
-
-  // Zwraca listę działających konfiguracji kabli dla tej CU
-  return validCables;
+  return null;
 }
 
-// Buduje wynik wg polityki backupu i zwraca w oczekiwanym kształcie dokumentu
-// Buduje wynik wg polityki backupu i dokleja do każdego controlUnit tablicę kabli
-// backup === NIE/NO
-//  • JS z power>0, które SAME zasilą system (po teście kablowym).
-//  • JS z power===0 + HDR (lista powersupplyTMC1) – retakt przy napięciu HDR.
-//
-// backup === TAK/YES
-//  • JS z power>0, które SAME zasilą system + LISTA ZBF/MC (lista powersupplyMC) do PODTRZYMANIA,
-//    selekcja TYLKO po mocy (z headroomem) i runtime — IGNORUJEMY napięcie linii.
-//    (Tu CU dalej zasila 48 V, MC to wyłącznie backup energii.)
-//  • JS z power===0 + MC (lista powersupplyMC) – retakt przy napięciu MC i wymóg runtime (bo MC zasila linię).
-//
+// --- Walidacja: CU ze WBUDOWANYM zasilaniem + dobór kabla (z 15% zapasem)
+// Działa dla S24 / S48-60 / S48-100 / S48-150
+function validateSystemWithSelfPoweredCUAndCable(controlUnit, busSegments, cables) {
+  // Najpierw normalizujemy limit mocy (pole top-level albo description.power)
+  const cuOutputLimit_W = (controlUnit.power ?? controlUnit.description?.power ?? 0);
+  if (cuOutputLimit_W <= 0) return null;
+
+  const cuBusVoltage_V = controlUnit.description.supplyVoltage;
+  const sortedCables = [...cables].sort((a, b) => a.priority - b.priority);
+
+  for (const cable of sortedCables) {
+    const e = computeBusElectricals(busSegments, cable, cuBusVoltage_V);
+    if (!e.busVoltageOk) continue;
+
+    // Wbudowany zasilacz CU musi pokryć (urządzenia + straty) z rezerwą oraz headroomem
+    const required_withReserve_W = (e.powerDevicesOnly_W + e.P_losses_W) * (1 + POWER_RESERVE);
+    const cuAllowed_W = cuOutputLimit_W * CU_UTILIZATION_MAX;
+
+    if (required_withReserve_W <= cuAllowed_W) {
+      return {
+        cable,
+        powerW_devicesOnly: e.powerDevicesOnly_W,
+        powerW_totalWithLossesAndReserve: required_withReserve_W,
+        voltageAtEnd_V: e.V_end_V
+      };
+    }
+  }
+  return null;
+}
+
+// --- Najlepsza konfiguracja CU+PSU (pełna iteracja PSU×kabel; minimalna wymagana moc + najcieńszy działający kabel)
+function findBestConfigForExternalPSUCU(controlUnit, powerSupplies, busSegments, cables) {
+  const sortedPSU = [...(powerSupplies || [])].sort((a, b) => (a.power || 0) - (b.power || 0));
+  let bestCfg = null;
+
+  for (const psu of sortedPSU) {
+    for (const cable of [...cables].sort((a, b) => a.priority - b.priority)) {
+      const cfg = validateSystemWithExternalPSUAndCable(controlUnit, busSegments, [cable], psu.power);
+      if (cfg) {
+        const candidate = {
+          controlUnit,
+          powerSupply: { supply: psu, powerRating: psu.power },
+          cables: [cable],
+          power: cfg.powerW_totalWithLossesAndReserve,
+          power_devicesOnly: cfg.powerW_devicesOnly
+        };
+        if (!bestCfg || candidate.power < bestCfg.power) {
+          bestCfg = candidate;
+        }
+        // dla tego PSU znaleźliśmy najcieńszy działający kabel → nie testujemy grubszych
+        break;
+      }
+    }
+  }
+  return bestCfg;
+}
+
+// --- Najlepsza konfiguracja CU self-powered (z zapasem i headroomem)
+function findBestConfigForSelfPoweredCU(controlUnit, busSegments, cables) {
+  // Upewnij się, że limit jest na top-level (spójność z walidacją)
+  const normalizedCU = {
+    ...controlUnit,
+    power: (controlUnit.power ?? controlUnit.description?.power ?? 0),
+  };
+  const cfg = validateSystemWithSelfPoweredCUAndCable(normalizedCU, busSegments, cables);
+  if (!cfg) return null;
+
+  return {
+    controlUnit: normalizedCU,
+    powerSupply: null,
+    cables: [cfg.cable],
+    power: cfg.powerW_totalWithLossesAndReserve,
+    power_devicesOnly: cfg.powerW_devicesOnly
+  };
+}
+
+// --- Główna funkcja ---
 function findConfigsByBackupPolicy(
   CONTROLUNITLIST,
   busSegments,
   cables,
   initSystem,
-  powersupplyTMC1,
-  powersupplyMC
+  powersupplyTMC1, // HDR
+  powersupplyMC    // ZBF
 ) {
-  // === MODYFIKACJA: Dodatkowe filtrowanie jednostek bez wbudowanego zasilacza ===
-  const filteredControlUnitList = CONTROLUNITLIST.filter(cu => 
-    (cu.description.power ?? 0) > 0 || cu.type === "Teta MOD Control 1"
-  );
-  
-  // === Walidacje jak wcześniej ===
-  const errors = [];
-  const totalLength = Array.isArray(busSegments)
-    ? busSegments.reduce((sum, seg) => sum + (seg.wireLength ?? 0), 0)
-    : 0;
-  if (totalLength > 1000) {
-    errors.push({ code: "BUS_TOO_LONG", message: "Zbyt długa magistrala! Max 1000m!" });
-  }
-
-  const signallerCount = Array.isArray(busSegments)
-    ? busSegments.filter(seg => seg?.detector?.class === "signaller").length
-    : 0;
-  if (signallerCount > 26) {
-    errors.push({ code: "TOO_MANY_SIGNALLERS", message: "Za dużo sygnalizatorów! Max 26 szt." });
-  }
-
-  const valveCount = Array.isArray(busSegments)
-    ? busSegments.filter(seg => seg?.detector?.type === "valveCtrl").length
-    : 0;
-  if (valveCount > 8) {
-    errors.push({ code: "TOO_MANY_VALVES", message: "Za dużo sterowników zaworu! Max 8 szt." });
-  }
-
-  // === Logika doboru (bez zmian) ===
-  const b = String(initSystem?.backup || "").trim().toLowerCase();
-  const wantsBackup = (b === "tak" || b === "yes");
-  const mode = wantsBackup ? "Yes" : "No";
-
-  const minBackupHours = initSystem?.minBackupHours ?? 0;
-  const powerHeadroom = initSystem?.powerHeadroom ?? 1.0;
-
-  const sortByCablePriority = (a, b) =>
-    (a?.cable?.priority ?? Number.POSITIVE_INFINITY) - (b?.cable?.priority ?? Number.POSITIVE_INFINITY);
-
-  const recheckWithSupplyVoltage = (js, psu) => {
-    const cloned = { ...js, description: { ...js.description, supplyVoltage: psu.supplyVoltage, power: Infinity } };
-    return checkSystemForPowerSupplyAndCable(cloned, busSegments, cables);
+  let errors = [];
+  let result = {
+    pw108AConfig: null,
+    alternativeConfig: null,
+    systemPower: 0,
+    powerForDevicesOnly: 0
   };
 
-  let builtInCandidates = [];     // { js, cable, cables, bestPowerW, maxPowerW }
-  let moduleHDRCandidates = [];   // { js, supply, cable, cables, powerW }
-  let moduleMCCandidates = [];    // { js, supply, cable, cables, powerW }
-  let builtInMCCandidates = [];   // { js, supply }
+  // Proste limity topologii
+  const totalBusLength = (busSegments || []).reduce((sum, s) => sum + (s.wireLength || 0), 0);
+  const totalSignallers = (busSegments || []).filter(s => s?.detector?.class === "signaller").length;
+  const totalValves = (busSegments || []).filter(s => s?.detector?.class === "valveCtrl").length;
 
-  for (const js of filteredControlUnitList) { // Zmienione: iteracja po przefiltrowanej liście
-    const hasBuiltInPower = (js?.description?.power ?? 0) > 0;
+  if (busSegments?.length > 0 && totalBusLength > 1000) {
+    errors.push({ code: "TOO_LONG_BUS", message: "Za długa magistrala! Max 1000m." });
+  }
+  if (totalSignallers > 26) {
+    errors.push({ code: "TOO_MANY_SIGNALLERS", message: "Za dużo sygnalizatorów! Max 26 szt." });
+  }
+  if (totalValves > 8) {
+    errors.push({ code: "TOO_MANY_VALVES", message: "Za dużo zaworów! Max 8 szt." });
+  }
+  if (errors.length) return [errors, result];
 
-    if (hasBuiltInPower) {
-      const cfgs = checkSystemForPowerSupplyAndCable(js, busSegments, cables);
-      if (Array.isArray(cfgs) && cfgs.length > 0) {
-        const sorted = [...cfgs].sort(sortByCablePriority);
-        const bestCfg = sorted[0];
+  const isBackupDesired = String(initSystem?.backup).toLowerCase() === "tak";
 
-        const cablesWithPower = cfgs.map(c => ({
-          ...c.cable,
-          power: Math.ceil(c.powerWithLossesW)
-        }));
-
-        const bestPowerW = bestCfg.powerWithLossesW;
-        const maxPowerW = cfgs.reduce((m, c) => Math.max(m, c.powerWithLossesW), 0);
-
-        builtInCandidates.push({
-          js,
-          cable: bestCfg.cable,
-          cables: cablesWithPower,
-          bestPowerW,
-          maxPowerW
-        });
-
-        if (wantsBackup) {
-          const needBackupW = maxPowerW * powerHeadroom;
-          const mcOptions = [...powersupplyMC]
-            .sort((a, b) => (a.power ?? 0) - (b.power ?? 0))
-            .filter(psu => (psu.power ?? 0) >= needBackupW)
-            .filter(psu => {
-              if (minBackupHours <= 0) return true;
-              return pickMatchingSupplies([psu], 0, needBackupW, {
-                isBatteryList: true, minBackupHours, powerHeadroom: 1.0
-              }).length > 0;
-            })
-            .map(psu => ({ js, supply: psu }));
-          builtInMCCandidates.push(...mcOptions);
-        }
-      }
+  // --- PW-108A (Teta MOD Control 1): zawsze liczona konfiguracja ---
+  const cu108A = (CONTROLUNITLIST || []).find(cu => cu.productKey === "PW-108A");
+  if (cu108A) {
+    let suppliesFor108A = [];
+    if (isBackupDesired) {
+      // backup = TAK → ZBF 24V-class (po deratingu) → supplyVoltage > 20
+      suppliesFor108A = uniqSuppliesStable((powersupplyMC || []).filter(psu => (psu.supplyVoltage || 0) > 20));
     } else {
-      if (!wantsBackup) {
-        for (const psu of powersupplyTMC1) {
-          const cfgs = recheckWithSupplyVoltage(js, psu);
-          if (!Array.isArray(cfgs) || cfgs.length === 0) continue;
-          const sorted = [...cfgs].sort(sortByCablePriority);
-          const chosenCfg = sorted.find(cfg => (psu.power ?? 0) >= (cfg.powerWithLossesW * powerHeadroom));
-          if (chosenCfg) {
-            const cablesWithPower = cfgs.map(c => ({
-              ...c.cable,
-              power: Math.ceil(c.powerWithLossesW)
-            }));
-            moduleHDRCandidates.push({
-              js,
-              supply: psu,
-              cable: chosenCfg.cable,
-              cables: cablesWithPower,
-              powerW: chosenCfg.powerWithLossesW
-            });
-          }
-        }
-      } else {
-        for (const psu of powersupplyMC) {
-          const cfgs = recheckWithSupplyVoltage(js, psu);
-          if (!Array.isArray(cfgs) || cfgs.length === 0) continue;
-          const sorted = [...cfgs].sort(sortByCablePriority);
-          const chosenCfg = sorted.find(cfg => {
-            const needW = cfg.powerWithLossesW * powerHeadroom;
-            if ((psu.power ?? 0) < needW) return false;
-            return pickMatchingSupplies([psu], cfg.requiredSupplyVoltage, cfg.powerWithLossesW, {
-              isBatteryList: true, minBackupHours, powerHeadroom
-            }).length > 0;
-          });
-          if (chosenCfg) {
-            const cablesWithPower = cfgs.map(c => ({
-              ...c.cable,
-              power: Math.ceil(c.powerWithLossesW)
-            }));
-            moduleMCCandidates.push({
-              js,
-              supply: psu,
-              cable: chosenCfg.cable,
-              cables: cablesWithPower,
-              powerW: chosenCfg.powerWithLossesW
-            });
-          }
-        }
-      }
+      // backup = NIE → wszystkie HDR
+      suppliesFor108A = uniqSuppliesStable(powersupplyTMC1 || []);
+    }
+    result.pw108AConfig = findBestConfigForExternalPSUCU(cu108A, suppliesFor108A, busSegments, cables);
+  }
+
+  // --- Alternatywa ---
+  let alternativeCUCandidates = [];
+  let alternativeConfig = null;
+
+  if (isBackupDesired) {
+    // Backup TAK → alternatywa: Teta Control 1-S (24V) lub Teta Control 1-S-UP300 (48V z przetwornicą 24→48)
+    const cuS       = (CONTROLUNITLIST || []).find(cu => cu.productKey === "PW-086-Control1-S");
+    const cuSUPS300 = (CONTROLUNITLIST || []).find(cu => cu.productKey === "PW-086-Control1-S-UP300");
+    if (cuS)       alternativeCUCandidates.push(cuS);
+    if (cuSUPS300) alternativeCUCandidates.push(cuSUPS300);
+
+    const zbf24Class = uniqSuppliesStable((powersupplyMC || []).filter(psu => (psu.supplyVoltage || 0) > 20));
+    for (const cu of alternativeCUCandidates) {
+      const cfg = findBestConfigForExternalPSUCU(cu, zbf24Class, busSegments, cables);
+      if (cfg) { alternativeConfig = cfg; break; } // „najmniejsza spełniająca” wg kolejności kandydatów
+    }
+  } else {
+    // Backup NIE → alternatywa to self-powered: S24, S48-60, S48-100, S48-150 (najmniejsza spełniająca)
+    const cuS24     = (CONTROLUNITLIST || []).find(cu => cu.productKey === "PW-086-Control1-S24");
+    const cuS48_60  = (CONTROLUNITLIST || []).find(cu => cu.productKey === "PW-086-Control1-S48-60");
+    const cuS48_100 = (CONTROLUNITLIST || []).find(cu => cu.productKey === "PW-086-Control1-S48-100");
+    const cuS48_150 = (CONTROLUNITLIST || []).find(cu => cu.productKey === "PW-086-Control1-S48-150");
+
+    if (cuS24)     alternativeCUCandidates.push(cuS24);
+    if (cuS48_60)  alternativeCUCandidates.push(cuS48_60);
+    if (cuS48_100) alternativeCUCandidates.push(cuS48_100);
+    if (cuS48_150) alternativeCUCandidates.push(cuS48_150);
+
+    // sort po limicie wyjściowym (rosnąco), normalizując power z description.power
+    alternativeCUCandidates.sort((a, b) =>
+      ((a.power ?? a.description?.power ?? 0) - (b.power ?? b.description?.power ?? 0))
+    );
+
+    for (const cu of alternativeCUCandidates) {
+      const norm = { ...cu, power: (cu.power ?? cu.description?.power ?? 0) };
+      const cfg = findBestConfigForSelfPoweredCU(norm, busSegments, cables);
+      if (cfg) { alternativeConfig = cfg; break; }
     }
   }
 
-  const byPsuPowerAsc = (a, b) => ((a?.supply?.power ?? Infinity) - (b?.supply?.power ?? Infinity));
-  const byCableThenPower = (a, b) => {
-    const cp = sortByCablePriority(a, b);
-    if (cp !== 0) return cp;
-    return byPsuPowerAsc(a, b);
+  result.alternativeConfig = alternativeConfig;
+
+  // --- Podsumowanie mocy systemu (wybierz mniejszą z dwóch, już z rezerwą) ---
+  const pick = (a, b) => {
+    if (a && b) return a.power <= b.power ? a : b;
+    return a || b || null;
   };
+  const chosen = pick(result.pw108AConfig, result.alternativeConfig);
+  if (chosen) {
+    result.systemPower = chosen.power;                 // zawiera +15% rezerwy
+    result.powerForDevicesOnly = chosen.power_devicesOnly; // suma mocy urządzeń (bez rezerwy i strat CU)
+  }
 
-  const bestBuiltIn = [...builtInCandidates].sort((a, b) => sortByCablePriority(a, b))[0] || null;
-  const bestHDR = !wantsBackup ? ([...moduleHDRCandidates].sort(byCableThenPower)[0] || null) : null;
-  const bestMC_forModule = wantsBackup ? ([...moduleMCCandidates].sort(byCableThenPower)[0] || null) : null;
-
-  const builtInMCOptionsForBest =
-    wantsBackup && bestBuiltIn
-      ? [...builtInMCCandidates].filter(x => x.js === bestBuiltIn.js).sort(byPsuPowerAsc)
-      : [];
-  const bestBuiltInMC = builtInMCOptionsForBest[0] || null;
-
-  const builtInPowerW = (bestBuiltIn && typeof bestBuiltIn.bestPowerW === "number")
-    ? Math.ceil(bestBuiltIn.bestPowerW)
-    : null;
-
-  const hdrPowerW = (bestHDR && typeof bestHDR.powerW === "number")
-    ? Math.ceil(bestHDR.powerW)
-    : null;
-
-  const mcPowerW = (bestMC_forModule && typeof bestMC_forModule.powerW === "number")
-    ? Math.ceil(bestMC_forModule.powerW)
-    : null;
-
-  const systemPower =
-    !wantsBackup
-      ? (builtInPowerW ?? hdrPowerW ?? null)
-      : (builtInPowerW ?? mcPowerW ?? null);
-
-  // === Złożenie wyniku ===
-  const result =
-    !wantsBackup
-      ? {
-        mode: "No",
-        systemPower,
-        controlUnitWithBuiltInSupply: {
-          controlUnit: bestBuiltIn ? { ...bestBuiltIn.js } : {},
-          cables: bestBuiltIn ? bestBuiltIn.cables : [],
-          powerSupply: bestBuiltIn ? { supply: bestBuiltIn.js.description, cable: bestBuiltIn.cable} : {},
-          power: builtInPowerW
-        },
-        controlUnitWithoutSupply: {
-          controlUnit: bestHDR ? { ...bestHDR.js } : {},
-          cables: bestHDR ? bestHDR.cables : [],
-          powerSupply: bestHDR ? { supply: bestHDR.supply, cable: bestHDR.cable } : {},
-          power: hdrPowerW
-        }
-      }
-      : {
-        mode: "Yes",
-        systemPower,
-        controlUnitWithBuiltInSupply: {
-          controlUnit: bestBuiltIn ? { ...bestBuiltIn.js } : {},
-          cables: bestBuiltIn ? bestBuiltIn.cables : [],
-          powerSupply: bestBuiltInMC ? { supply: bestBuiltInMC.supply, cable: bestBuiltInMC.cable } : {},
-          power: builtInPowerW
-        },
-        controlUnitWithoutSupply: {
-          controlUnit: bestMC_forModule ? { ...bestMC_forModule.js } : {},
-          cables: bestMC_forModule ? bestMC_forModule.cables : [],
-          powerSupply: bestMC_forModule ? { supply: bestMC_forModule.supply, cable: bestMC_forModule.cable } : {},
-          power: mcPowerW
-        }
-      };
-
-  // === Kompatybilny zwrot: [errors, result] ===
   return [errors, result];
 }
