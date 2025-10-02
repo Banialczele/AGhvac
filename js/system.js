@@ -1,6 +1,8 @@
 function createSystemDataFromAFile(fileData = null) {
   if (fileData) {
+    console.log(fileData)
     systemData.supplyType = fileData.supplyType;
+    initSystem.backup=fileData.backup;
     systemData.selectedStructure = fileData.selectedStructure;
     systemData.bus = fileData.bus;
     systemData.batteryBackUp = fileData.batteryBackUp;

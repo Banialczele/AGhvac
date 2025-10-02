@@ -205,7 +205,7 @@ function findConfigsByBackupPolicy(
     powerForDevicesOnly: 0
   };
 
-  // Proste limity topologii
+  // Proste limity topologii – "miękkie" (nie przerywają liczenia)
   const totalBusLength = (busSegments || []).reduce((sum, s) => sum + (s.wireLength || 0), 0);
   const totalSignallers = (busSegments || []).filter(s => s?.detector?.class === "signaller").length;
   const totalValves = (busSegments || []).filter(s => s?.detector?.class === "valveCtrl").length;
@@ -219,7 +219,8 @@ function findConfigsByBackupPolicy(
   if (totalValves > 8) {
     errors.push({ code: "TOO_MANY_VALVES", message: "Za dużo zaworów! Max 8 szt." });
   }
-  if (errors.length) return [errors, result];
+
+  // UWAGA: nie ma żadnego "return przy błędach" – liczymy dalej!
 
   const isBackupDesired = String(initSystem?.backup).toLowerCase() === "tak";
 
@@ -235,6 +236,11 @@ function findConfigsByBackupPolicy(
       suppliesFor108A = uniqSuppliesStable(powersupplyTMC1 || []);
     }
     result.pw108AConfig = findBestConfigForExternalPSUCU(cu108A, suppliesFor108A, busSegments, cables);
+    if (!result.pw108AConfig) {
+      errors.push({ code: "PW108A_NO_CONFIG", message: "Nie udało się dobrać konfiguracji PW-108A (PSU/kabel)." });
+    }
+  } else {
+    errors.push({ code: "PW108A_MISSING", message: "Brak jednostki PW-108A w CONTROLUNITLIST." });
   }
 
   // --- Alternatywa ---
@@ -248,10 +254,15 @@ function findConfigsByBackupPolicy(
     if (cuS)       alternativeCUCandidates.push(cuS);
     if (cuSUPS300) alternativeCUCandidates.push(cuSUPS300);
 
+    // PSU: ZBF 24V-class (po deratingu)
     const zbf24Class = uniqSuppliesStable((powersupplyMC || []).filter(psu => (psu.supplyVoltage || 0) > 20));
+
+    // Testuj kandydatów i znajdź pierwszą/najmniejszą spełniającą
     for (const cu of alternativeCUCandidates) {
-      const cfg = findBestConfigForExternalPSUCU(cu, zbf24Class, busSegments, cables);
-      if (cfg) { alternativeConfig = cfg; break; } // „najmniejsza spełniająca” wg kolejności kandydatów
+      // Uwaga: S-UP300 ma specjalne traktowanie napięcia w pickMatchingSupplies (24→48)
+      const matching = pickMatchingSupplies(cu, zbf24Class, true);
+      const cfg = findBestConfigForExternalPSUCU(cu, matching, busSegments, cables);
+      if (cfg) { alternativeConfig = cfg; break; }
     }
   } else {
     // Backup NIE → alternatywa to self-powered: S24, S48-60, S48-100, S48-150 (najmniejsza spełniająca)
@@ -277,6 +288,9 @@ function findConfigsByBackupPolicy(
     }
   }
 
+  if (!alternativeConfig) {
+    errors.push({ code: "ALT_NO_CONFIG", message: "Nie udało się dobrać alternatywnej konfiguracji." });
+  }
   result.alternativeConfig = alternativeConfig;
 
   // --- Podsumowanie mocy systemu (wybierz mniejszą z dwóch, już z rezerwą) ---

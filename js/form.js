@@ -158,6 +158,7 @@ function handleFormSubmit() {
 }
 function validateSystem() {
   const [errors, result] = findConfigsByBackupPolicy(CONTROLUNITLIST, systemData.bus, Cables, initSystem, powersupplyTMC1, powersupplyMC);
+  console.log(result)
   const controlUnit = result.alternativeConfig.controlUnit;
   const cable = result.alternativeConfig.cables[0];
   systemData.supplyType = controlUnit;

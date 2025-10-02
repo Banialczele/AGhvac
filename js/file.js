@@ -64,7 +64,7 @@ function getDataForExcel() {
     // dodaj wiersze urządzeń
     currentLp = insertDeviceTypeData(currentLp, reducedDevices.detector, `${TRANSLATION.fileDetector[lang]}`, rows);
     currentLp = insertDeviceTypeData(currentLp, reducedDevices.signaller, `${TRANSLATION.fileSignaller[lang]}`, rows);
-    currentLp = insertDeviceTypeData(currentLp, reducedDevices.valveCtrl, `${TRANSLATION.fileDeviceType[lang]}`, rows); // Zmieniono label na ogólniejszy, bo to dla różnych urządzeń
+    currentLp = insertDeviceTypeData(currentLp, reducedDevices.valveCtrl, `${TRANSLATION.fileValve[lang]}`, rows); // Zmieniono label na ogólniejszy, bo to dla różnych urządzeń
     currentLp = insertTconInCSV(currentLp, reducedDevices.tCon, "quantityTotal", rows);
 
     rows.push([]);
@@ -176,6 +176,8 @@ function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
                         devicesAdded++;
                     } else if (key === `TOLED`) {
                         value.forEach(elem => {
+                            console.log(elem.description);
+                            console.log(elem);
                             store.push([`${iterator + devicesAdded}${lpPrefix}`, label, key, elem.productKey, `${elem.quantity}${TRANSLATION.quantity[lang]}`, elem.description]);
                             devicesAdded++;
                         });
@@ -199,6 +201,7 @@ function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
 
 // Wyeksportowanie danych systemu do pliku JSON
 function exportToJSON() {
+    systemData.backup = initSystem.backup;
     const stringData = JSON.stringify(systemData);
     const blob = new Blob([stringData], { type: "text/javascript" });
     const url = URL.createObjectURL(blob);
