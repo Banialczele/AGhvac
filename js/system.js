@@ -327,28 +327,31 @@ function handleSegmentCheckboxClick(e) {
   const checkboxes = Array.from(document.querySelectorAll('.segmentCheckbox'));
   const current = e.target;
 
-  // Pierwsze kliknięcie – zapamiętaj i wyjdź
+  // Jeśli to pierwsze kliknięcie – zapamiętaj i wyjdź
   if (!lastCheckedSegment) {
     lastCheckedSegment = current;
     return;
   }
 
-  // Jeśli trzymamy SHIFT i kliknięto checkbox
+  // Jeśli trzymamy SHIFT
   if (e.shiftKey) {
-    const start = checkboxes.indexOf(current);
-    const end = checkboxes.indexOf(lastCheckedSegment);
+    const start = checkboxes.indexOf(lastCheckedSegment);
+    const end = checkboxes.indexOf(current);
 
-    const [from, to] = [Math.min(start, end), Math.max(start, end)];
-    const shouldCheck = current.checked; // jeśli kliknęliśmy na zaznaczony → zaznacz wszystko, jeśli odznaczony → odznacz
+    if (start === -1 || end === -1) return;
 
+    const shouldCheck = current.checked;
+    const [from, to] = start < end ? [start, end] : [end, start];
+
+    // Ustawienie wszystkich w zakresie niezależnie od kierunku
     for (let i = from; i <= to; i++) {
       checkboxes[i].checked = shouldCheck;
     }
   }
 
+  // Zaktualizuj ostatnio kliknięty
   lastCheckedSegment = current;
 }
-
 function setupRangeSelection() {
   const container = document.getElementById("system");
   if (!container) return;
