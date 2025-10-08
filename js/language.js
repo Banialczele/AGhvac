@@ -285,5 +285,9 @@ const TRANSLATION = {
   powerSupplyNotRequired: {
     pl: "Nie wymaga dodatkowego zasilania",
     en: `Do not require additional power supply`
+  },
+  structureType: {
+    pl: "Wybrano obiekt",
+    en: "Selected structure"
   }
 };

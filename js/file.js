@@ -35,26 +35,50 @@ function getDataForExcel() {
 
     rows.push(rowsDescription.device);
 
-    // === Dane z silnika ===
-    const controlUnitWithSupply = systemData.res.powerSupply;
-    const controlUnitWithoutSupply = systemData.res.alternativeConfig;
-    const wantsBackup = (String(initSystem?.backup || "").trim().toLowerCase() === "tak" || String(initSystem?.backup || "").trim().toLowerCase() === "yes");
+    const controlUnitWithSupply = systemData.res?.powerSupply;
+    const alternativeConfig = systemData.res?.alternativeConfig;
+    const wantsBackup =
+        (String(initSystem?.backup || "").trim().toLowerCase() === "tak" ||
+            String(initSystem?.backup || "").trim().toLowerCase() === "yes");
 
     // ========================================================================
     // 1️⃣ – JEDNOSTKA STERUJĄCA GŁÓWNA (powerSupply)
     // ========================================================================
     if (controlUnitWithSupply && controlUnitWithSupply.controlUnit) {
-        currentLp = insertDeviceTypeData(currentLp, controlUnitWithSupply.controlUnit, `${TRANSLATION.fileCU[lang]}`, rows, { removeDotForOne: true });
+        // --- 1. Główna jednostka sterująca ---
+        currentLp = insertDeviceTypeData(
+            currentLp,
+            controlUnitWithSupply.controlUnit,
+            `${TRANSLATION.fileCU[lang]}`,
+            rows,
+            { removeDotForOne: true }
+        );
 
-        // === ZASILACZ ===
-        if (controlUnitWithSupply.psu && controlUnitWithSupply.psu.type) {
-            insertDeviceTypeData(currentLp++, controlUnitWithSupply.psu, `${TRANSLATION.fileBufferPSU[lang]}`, rows);
-        } else {
-            if (wantsBackup) {
-                insertDeviceTypeData(currentLp++, "-", `${TRANSLATION.powerSupplyBackupNotFound[lang]}`, rows);
+        // --- 2. Zasilacz / brak zasilacza ---
+        if (wantsBackup) {
+            const psuObj = controlUnitWithSupply.powerSupply?.supply || controlUnitWithSupply.psu;
+            if (psuObj) {
+                insertDeviceTypeData(
+                    currentLp++,
+                    psuObj,
+                    `${TRANSLATION.fileBufferPSU[lang]}`,
+                    rows
+                );
             } else {
-                insertDeviceTypeData(currentLp++, "-", `${TRANSLATION.powerSupplyNotRequired[lang]}`, rows);
+                insertDeviceTypeData(
+                    currentLp++,
+                    "-",
+                    `${TRANSLATION.powerSupplyBackupNotFound[lang]}`,
+                    rows
+                );
             }
+        } else {
+            insertDeviceTypeData(
+                currentLp++,
+                "-",
+                `${TRANSLATION.powerSupplyNotRequired[lang]}`,
+                rows
+            );
         }
     }
 
@@ -81,22 +105,35 @@ function getDataForExcel() {
     rows.push([]);
 
     // ========================================================================
-    // 4️⃣ – ALTERNATYWNA KONFIGURACJA (np. PW-108A)
+    // 🏗️ 3.5 – INFORMACJA O WYBRANYM OBIEKCIE
     // ========================================================================
-    if (controlUnitWithoutSupply && controlUnitWithoutSupply.controlUnit) {
-        const altCU = controlUnitWithoutSupply.controlUnit;
-        const altPSU = controlUnitWithoutSupply.powerSupply;
 
-        rows.push([`${TRANSLATION.modControlFileInfo[lang]} ${altCU.type} ${TRANSLATION.modControlFileInfoEnd[lang]}`]);
+    rows.push(["",
+        `${TRANSLATION.structureType[lang]}`, `${systemData.selectedStructure.type[lang]}`
+    ]);
+    rows.push([]);
 
-        if (altPSU && altPSU.type) {
-            rows.push([`${TRANSLATION.modControl35Info[lang]} ${altCU.type} ${TRANSLATION.modControl35InfoEnd[lang]} ${altPSU.description}`]);
-        } else {
-            console.log()
-            rows.push([`${TRANSLATION.powerSupplyNotRequired[lang]} (${altCU.type})`]);
-        }
+    // ========================================================================
+    // 4️⃣ – INFORMACJE O KONFIGURACJACH
+    // ========================================================================
+
+    // --- Główna konfiguracja ---
+    if (controlUnitWithSupply && controlUnitWithSupply.controlUnit) {
+        const psuMain = controlUnitWithSupply.powerSupply?.supply || controlUnitWithSupply.psu;
+        const psuDesc = psuMain ? ` (${psuMain.description})` : "";
+        rows.push([
+            `${TRANSLATION.modControlFileInfo[lang]} ${controlUnitWithSupply.controlUnit.type} ${TRANSLATION.modControlFileInfoEnd[lang]}${psuDesc}`
+        ]);
     }
 
+    // --- Alternatywna konfiguracja ---
+    if (alternativeConfig && alternativeConfig.controlUnit) {
+        const altPSU = alternativeConfig.powerSupply?.supply || alternativeConfig.psu;
+        const altDesc = altPSU?.description ? ` (${altPSU.description})` : "";
+        rows.push([
+            `${TRANSLATION.modControl35Info[lang]} ${alternativeConfig.controlUnit.type} ${TRANSLATION.modControl35InfoEnd[lang]}${altDesc}`
+        ]);
+    }
     return rows;
 }
 

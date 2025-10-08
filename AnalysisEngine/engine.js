@@ -23,7 +23,7 @@
 ============================================================================ */
 
 const POWER_RESERVE = 0.20
-const BACKUP_RESERVE = 0.40
+const BACKUP_RESERVE = 0.30
 const CU_UTILIZATION_MAX = 1.00
 const VOLTAGE_MARGIN = 1.05
 
@@ -58,13 +58,20 @@ function pickCablesByPriority(cables) {
 
 // Sprawdza zgodność napięciową PSU i jednostki sterującej
 function isPSUCompatibleWithCU(cu, psu) {
-  const cuKey = String(cu?.productKey || "")
-  const vPSU = toNumber(psu?.supplyVoltage, 0)
+  // Brak danych → odrzuć
+  if (!cu || !psu) return false
 
-  if (cuKey === "PW-086-Control1-S-UP300") return (vPSU > 10 && vPSU < 30)
-  if (cuKey === "PW-086-Control1-S") return (vPSU > 10 && vPSU < 30)
-  if (cuKey === "PW-108A") return (vPSU > 10 && vPSU < 30)
-  return false
+  // Brak informacji o mocy → odrzuć
+  if (!Number.isFinite(psu.power) || psu.power <= 0) return false
+
+  // Sprawdzenie typu – tylko jeśli system podaje błędne listy
+  const psuType = String(psu?.type || "").toUpperCase()
+  const isBackupCU = ["PW-086-Control1-S", "PW-086-Control1-S-UP300"].includes(cu.productKey)
+  const isPW108A = cu.productKey === "PW-108A"
+
+  // Logiczna spójność list (opcjonalnie)
+  if (isBackupCU || isPW108A) return psuType === "ZBF" || psuType === "HDR"
+  return true
 }
 
 // Oblicza parametry elektryczne magistrali: prąd, spadek napięcia, straty, stabilność
@@ -95,13 +102,12 @@ function computeBusElectricals(busSegments, cable, cuBusVoltage_V) {
     totalBusLength_m,
     powerDevicesOnly_W,
     I_bus_A: I_total_A,
-    V_drop_V,
+    V_drop_V: V_drop_end_V,
     V_end_V,
     P_losses_W,
     busVoltageOk
   }
 }
-
 // Walidacja dla jednostek samowystarczalnych (self-powered)
 function validateSelfPoweredCU(cu, busSegments, cable) {
   const cuOutLimit_W = toNumber(cu?.power ?? cu?.description?.power, 0)

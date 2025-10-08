@@ -74,7 +74,7 @@
   width: 100%;
   min-width: 943px;
   max-width: 1100px;
-  max-height: calc(100vh - 118px);
+  max-height: calc(100vh);
   overflow-y: scroll;
 }
 
