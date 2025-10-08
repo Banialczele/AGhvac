@@ -1,6 +1,5 @@
 function createSystemDataFromAFile(fileData = null) {
   if (fileData) {
-    console.log(fileData)
     systemData.supplyType = fileData.supplyType;
     initSystem.backup=fileData.backup;
     systemData.selectedStructure = fileData.selectedStructure;
@@ -322,6 +321,42 @@ function setSystem() {
   setupSystemEventHandlers();
 }
 
+let lastCheckedSegment = null;
+
+function handleSegmentCheckboxClick(e) {
+  const checkboxes = Array.from(document.querySelectorAll('.segmentCheckbox'));
+  const current = e.target;
+
+  // Pierwsze kliknięcie – zapamiętaj i wyjdź
+  if (!lastCheckedSegment) {
+    lastCheckedSegment = current;
+    return;
+  }
+
+  // Jeśli trzymamy SHIFT i kliknięto checkbox
+  if (e.shiftKey) {
+    const start = checkboxes.indexOf(current);
+    const end = checkboxes.indexOf(lastCheckedSegment);
+
+    const [from, to] = [Math.min(start, end), Math.max(start, end)];
+    const shouldCheck = current.checked; // jeśli kliknęliśmy na zaznaczony → zaznacz wszystko, jeśli odznaczony → odznacz
+
+    for (let i = from; i <= to; i++) {
+      checkboxes[i].checked = shouldCheck;
+    }
+  }
+
+  lastCheckedSegment = current;
+}
+
+function setupRangeSelection() {
+  const container = document.getElementById("system");
+  if (!container) return;
+  container.addEventListener("click", (e) => {
+    if (e.target.matches(".segmentCheckbox")) handleSegmentCheckboxClick(e);
+  });
+}
+
 // To powinno być wywoływane zawsze po zmianie w systemie:
 function functionToUpdateSystem() {
   validateSystem();
@@ -473,6 +508,7 @@ function setupSystemEventHandlers() {
   container.addEventListener("change", changeEvent);
 
   container.addEventListener("click", clickEvent);
+  setupRangeSelection();
 }
 
 function checkIfToledExists() {
@@ -727,3 +763,4 @@ function setSystemSegmentsLazy(bus) {
     }
   }, 100);
 }
+

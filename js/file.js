@@ -1,17 +1,19 @@
-// Ta zmienna globalna 'i' jest już niepotrzebna, zostanie usunięta
-// let i = 3;
+// ============================================================================
+// EXPORT XLSX / JSON – poprawiona wersja dla nowej struktury systemData.res
+// ============================================================================
 
 function exportToXLSX() {
-    const rows = getDataForExcel(); // analogiczne do CSV, tylko bez joinowania
+    const rows = getDataForExcel();
     const worksheet = XLSX.utils.aoa_to_sheet(rows);
     worksheet['!cols'] = [
-        { wch: 5 }, // LP.
+        { wch: 5 },  // LP.
         { wch: 30 }, // Typ urządzenia / Typ przewodu
         { wch: 35 }, // Nazwa urządzenia / Długość przewodu
         { wch: 25 }, // PW
         { wch: 25 }, // Ilość
-        { wch: 30 }, // Opis / TOLED (jeśli istnieje)
-    ]
+        { wch: 30 }, // Opis / TOLED
+    ];
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "System");
 
@@ -19,10 +21,11 @@ function exportToXLSX() {
     XLSX.writeFile(workbook, fileName || `TetaSystem_${setDate()}.xlsx`);
 }
 
-
-// Konwersja danych systemu do formatu CSV
+// ============================================================================
+// GŁÓWNA FUNKCJA – przygotowanie danych do eksportu
+// ============================================================================
 function getDataForExcel() {
-    let currentLp = 1; // Lokalna zmienna do numerowania pozycji
+    let currentLp = 1;
 
     const rowsDescription = {
         device: [`LP.`, `${TRANSLATION.fileDeviceType[lang]}`, `${TRANSLATION.fileDeviceName[lang]}`, `${TRANSLATION.filePW[lang]}`, `${TRANSLATION.fileQuantity[lang]}`, `${TRANSLATION.fileToled[lang]}`],
@@ -30,69 +33,80 @@ function getDataForExcel() {
     };
     const rows = [];
 
-    // dodaj nagłówek urządzeń
     rows.push(rowsDescription.device);
 
-    const controlUnitWithSupply = systemData.res.alternativeConfig;
-    const controlUnitWithoutSupply = systemData.res.pw108AConfig;
+    // === Dane z silnika ===
+    const controlUnitWithSupply = systemData.res.powerSupply;
+    const controlUnitWithoutSupply = systemData.res.alternativeConfig;
     const wantsBackup = (String(initSystem?.backup || "").trim().toLowerCase() === "tak" || String(initSystem?.backup || "").trim().toLowerCase() === "yes");
 
-    // === OBSŁUGA DLA controlUnitWithBuiltInSupply ===
-    if (controlUnitWithSupply && controlUnitWithSupply.controlUnit.type) {
-        // LP=1: Jednostka sterująca (CU z wbudowanym zasilaniem)
+    // ========================================================================
+    // 1️⃣ – JEDNOSTKA STERUJĄCA GŁÓWNA (powerSupply)
+    // ========================================================================
+    if (controlUnitWithSupply && controlUnitWithSupply.controlUnit) {
         currentLp = insertDeviceTypeData(currentLp, controlUnitWithSupply.controlUnit, `${TRANSLATION.fileCU[lang]}`, rows, { removeDotForOne: true });
 
-        // LP=2: Zasilacz (buforowy lub informacja o braku)
-        if (wantsBackup) {
-            // Tryb TAK/YES: Ma być ten sam zasilacz co dla Mod Control (MC)
-            const backupSupply = controlUnitWithoutSupply?.powerSupply?.supply || controlUnitWithSupply?.powerSupply?.supply; // Najpierw szukamy z Mod Control, potem z BuiltIn CU
-            if (backupSupply && backupSupply.type) {
-                insertDeviceTypeData(currentLp++, backupSupply, `${TRANSLATION.fileBufferPSU[lang]}`, rows);
-            } else {
-                // Jeśli nie znaleziono zasilacza backupowego (MC)
-                insertDeviceTypeData(currentLp++, `-`, `${TRANSLATION.powerSupplyBackupNotFound[lang]}`, rows);
-            }
+        // === ZASILACZ ===
+        if (controlUnitWithSupply.psu && controlUnitWithSupply.psu.type) {
+            insertDeviceTypeData(currentLp++, controlUnitWithSupply.psu, `${TRANSLATION.fileBufferPSU[lang]}`, rows);
         } else {
-            // Tryb NIE/NO: "Zasilacz nie wymagany"
-            insertDeviceTypeData(currentLp++, `-`, `${TRANSLATION.powerSupplyNotRequired[lang]}`, rows);
+            if (wantsBackup) {
+                insertDeviceTypeData(currentLp++, "-", `${TRANSLATION.powerSupplyBackupNotFound[lang]}`, rows);
+            } else {
+                insertDeviceTypeData(currentLp++, "-", `${TRANSLATION.powerSupplyNotRequired[lang]}`, rows);
+            }
         }
     }
 
-
+    // ========================================================================
+    // 2️⃣ – URZĄDZENIA SYSTEMOWE
+    // ========================================================================
     const reducedDevices = reduceDevicesForFile();
 
-    // dodaj wiersze urządzeń
     currentLp = insertDeviceTypeData(currentLp, reducedDevices.detector, `${TRANSLATION.fileDetector[lang]}`, rows);
     currentLp = insertDeviceTypeData(currentLp, reducedDevices.signaller, `${TRANSLATION.fileSignaller[lang]}`, rows);
-    currentLp = insertDeviceTypeData(currentLp, reducedDevices.valveCtrl, `${TRANSLATION.fileValve[lang]}`, rows); // Zmieniono label na ogólniejszy, bo to dla różnych urządzeń
+    currentLp = insertDeviceTypeData(currentLp, reducedDevices.valveCtrl, `${TRANSLATION.fileValve[lang]}`, rows);
     currentLp = insertTconInCSV(currentLp, reducedDevices.tCon, "quantityTotal", rows);
 
+    // ========================================================================
+    // 3️⃣ – PRZEWODY
+    // ========================================================================
     rows.push([]);
     rows.push([]);
     rows.push(rowsDescription.accessories);
-    const busLengthValue = systemData.bus.reduce((acc, device) => acc + device.wireLength, 0);
 
+    const busLengthValue = systemData.bus.reduce((acc, device) => acc + device.wireLength, 0);
     rows.push(["", `${systemData.wireType}`, busLengthValue]);
     rows.push([]);
     rows.push([]);
 
-    // === OBSŁUGA DLA controlUnitWithoutSupply (MOD Control lub podobne) ===
-    if (controlUnitWithoutSupply && controlUnitWithoutSupply.controlUnit.type === "Teta MOD Control 1") { // Upewnij się, że jednostka jest wybrana i jest to MOD Control
-        const supplyForCUWithout = controlUnitWithoutSupply.powerSupply.supply;
-        if (supplyForCUWithout && supplyForCUWithout.type) { // Upewnij się, że zasilacz też jest wybrany
-            rows.push([`${TRANSLATION.modControlFileInfo[lang]} ${controlUnitWithoutSupply.controlUnit.type} ${TRANSLATION.modControlFileInfoEnd[lang]}`]);
-            rows.push([`${TRANSLATION.modControl35Info[lang]} ${controlUnitWithoutSupply.controlUnit.type} ${TRANSLATION.modControl35InfoEnd[lang]} ${supplyForCUWithout.description}`]);
+    // ========================================================================
+    // 4️⃣ – ALTERNATYWNA KONFIGURACJA (np. PW-108A)
+    // ========================================================================
+    if (controlUnitWithoutSupply && controlUnitWithoutSupply.controlUnit) {
+        const altCU = controlUnitWithoutSupply.controlUnit;
+        const altPSU = controlUnitWithoutSupply.powerSupply;
+
+        rows.push([`${TRANSLATION.modControlFileInfo[lang]} ${altCU.type} ${TRANSLATION.modControlFileInfoEnd[lang]}`]);
+
+        if (altPSU && altPSU.type) {
+            rows.push([`${TRANSLATION.modControl35Info[lang]} ${altCU.type} ${TRANSLATION.modControl35InfoEnd[lang]} ${altPSU.description}`]);
+        } else {
+            console.log()
+            rows.push([`${TRANSLATION.powerSupplyNotRequired[lang]} (${altCU.type})`]);
         }
     }
 
     return rows;
 }
 
-// Funkcja pomocnicza dla T-Con (przystosowana do lokalnego 'iteratora')
+// ============================================================================
+// POMOCNICZE
+// ============================================================================
 function insertTconInCSV(iterator, devices, label, row) {
     if (devices && devices.TConnector !== undefined) {
-        const lpPrefix = iterator === 1 ? `` : `.`
-        row.push([`${iterator}${lpPrefix}`, `${TRANSLATION.TCON[lang]}`, `T-Con-X`, `PW-122-S2`, `${devices.TConnector}${TRANSLATION.quantity[lang]}`,]);
+        const lpPrefix = iterator === 1 ? `` : `.`;
+        row.push([`${iterator}${lpPrefix}`, `${TRANSLATION.TCON[lang]}`, `T-Con-X`, `PW-122-S2`, `${devices.TConnector}${TRANSLATION.quantity[lang]}`]);
         return iterator + 1;
     }
     return iterator;
@@ -104,15 +118,14 @@ function reduceDevicesForFile() {
         accumulator[deviceClassSignaller] ??= {};
         accumulator.tCon ??= {};
         accumulator.tCon.TConnector = (accumulator.tCon.TConnector || 0) + 1;
+
         const { class: detectorClass, type } = current.detector;
 
         if (detectorClass === "signaller" && type === "TOLED") {
             accumulator[deviceClassSignaller][type] ??= [];
             const toledArray = accumulator[deviceClassSignaller][type];
 
-            let found = toledArray.find(
-                item => item.description === current.description
-            );
+            let found = toledArray.find(item => item.description === current.description);
 
             if (found) {
                 found.quantity++;
@@ -127,10 +140,7 @@ function reduceDevicesForFile() {
             const bucket = accumulator[detectorClass] ??= {};
             let entry = bucket[type];
             if (!entry) {
-                entry = bucket[type] = {
-                    ...current.detector,
-                    quantity: 1,
-                };
+                entry = bucket[type] = { ...current.detector, quantity: 1 };
             } else {
                 entry.quantity++;
             }
@@ -141,12 +151,13 @@ function reduceDevicesForFile() {
     return total;
 }
 
+// ============================================================================
+// FUNKCJE EKSPORTU / POMOCNICZE
+// ============================================================================
 function CUUPS() {
-    return document.querySelector(`#modControlBatteryBackUp`).value
+    return document.querySelector(`#modControlBatteryBackUp`).value;
 }
 
-// Wstawienie wierszy z danymi dot. użytych w systemie typów urządzeń
-// Zmienione: teraz przyjmuje i zwraca iterator, dodano opcję removeDotForOne
 function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
     const { removeDotForOne = false } = options;
     const lpPrefix = removeDotForOne && iterator === 1 ? `` : `.`
@@ -156,16 +167,13 @@ function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
             store.push([`${iterator}${lpPrefix}`, label, devices.type, devices.productKey, `1${TRANSLATION.quantity[lang]}`]);
             return iterator + 1;
         } else if (label === `Zasilacz buforowy` || label === `Zasilacz`) {
-            // Zmieniono: devices może być stringiem "-" dla "nie wymagany"
             const deviceType = typeof devices === 'object' ? devices.type : devices;
             const deviceDescription = typeof devices === 'object' ? devices.description : '';
             const deviceProductKey = typeof devices === 'object' ? devices.productKey : '';
-
             store.push([`${iterator}${lpPrefix}`, label, deviceType, deviceProductKey || deviceDescription, `1${TRANSLATION.quantity[lang]}`]);
             return iterator + 1;
         } else if (typeof devices === 'string' && devices === '-') {
-            // Obsługa specjalnego przypadku dla "Zasilacz nie wymagany"
-            store.push([`${iterator}${lpPrefix}`, label, devices, '', '']); // Bez PW i ilości
+            store.push([`${iterator}${lpPrefix}`, label, devices, '', '']);
             return iterator + 1;
         } else {
             let devicesAdded = 0;
@@ -176,8 +184,6 @@ function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
                         devicesAdded++;
                     } else if (key === `TOLED`) {
                         value.forEach(elem => {
-                            console.log(elem.description);
-                            console.log(elem);
                             store.push([`${iterator + devicesAdded}${lpPrefix}`, label, key, elem.productKey, `${elem.quantity}${TRANSLATION.quantity[lang]}`, elem.description]);
                             devicesAdded++;
                         });
@@ -187,7 +193,7 @@ function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
                         devicesAdded++;
                     }
                 }
-            } else if (Array.isArray(devices)) { // Jeśli devices to tablica (np. dla TOLED bez key)
+            } else if (Array.isArray(devices)) {
                 devices.forEach(elem => {
                     store.push([`${iterator + devicesAdded}${lpPrefix}`, label, elem.type, elem.productKey, `${elem.quantity}${TRANSLATION.quantity[lang]}`, elem.description]);
                     devicesAdded++;
@@ -199,7 +205,6 @@ function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
     return iterator;
 }
 
-// Wyeksportowanie danych systemu do pliku JSON
 function exportToJSON() {
     systemData.backup = initSystem.backup;
     const stringData = JSON.stringify(systemData);
@@ -208,52 +213,40 @@ function exportToJSON() {
     downloadFile(url, "json");
 }
 
-// Wstawienie wierszy z danymi dot. kabli użytych w systemie
 function insertDeviceTypeWireLengthData(deviceType, deviceTypeLabel, store) {
-    const wireLength = systemData.bus.reduce((accumulator, device) => {
-        if (device.type === deviceType) {
-            return (accumulator += device.wireLength);
-        } else {
-            return accumulator;
-        }
+    const wireLength = systemData.bus.reduce((acc, device) => {
+        if (device.type === deviceType) return acc + device.wireLength;
+        else return acc;
     }, 0);
     store.push(["Kabel", deviceTypeLabel, `${wireLength} m`]);
 }
 
-// Ustawienie parametrów pliku i pobranie go przez użytkownika
 function downloadFile(url, fileType) {
     const defaultFileName = `TetaSystem_${setDate()}`;
     const fileName = prompt("Nazwa pliku?", defaultFileName);
     const anchor = document.createElement("a");
     anchor.style = "display: none";
-    if (!fileName) {
-        setAttributes(anchor, {
-            href: url,
-            download: `${defaultFileName}.${fileType}`,
-        });
-    } else {
-        setAttributes(anchor, { href: url, download: `${fileName}.${fileType}` });
-    }
+    setAttributes(anchor, {
+        href: url,
+        download: `${fileName || defaultFileName}.${fileType}`,
+    });
     anchor.click();
 }
 
-// Obsługa ładowania pliku przyciągniętego i upuszczonego na drop area
+// Drag & Drop / Input Loader
 function handleDropFile(event) {
     event.preventDefault();
     convertAndLoadFileData(event.dataTransfer.files[0]);
 }
 
-// Zatrzymanie domyślnej akcji przeglądarki przy ładowaniu pliku
 function handleDragOver(event) {
     event.preventDefault();
 }
 
-// Obsługa ładowania pliku przez inputa
 function handleInputLoadFile(event) {
     convertAndLoadFileData(event.target.files[0]);
 }
 
-// Konwersja pliku JSON do obiektu JS i wygenerowanie systemu
 function convertAndLoadFileData(file) {
     if (file.type.match("^application/json")) {
         const reader = new FileReader();

@@ -1,35 +1,10 @@
-const PowerSupplies = [
-  { type: "24V", supplyVoltage_V: 24 },
-  { type: "24V + UPS", supplyVoltage_V: 21 },
-  { type: "48V / 48V + UPS", supplyVoltage_V: 48 },
-];
-
 //Przypisałem wagi do każdego kabla - 1 najważniejszy numer, 4 najmniej istotny
 const Cables = [
-  { type: "2 x 1 mm2", resistivity_OhmPerMeter: 0.0181, priority: 1 },
-  { type: "2 x 1,5 mm2", resistivity_OhmPerMeter: 0.0121, priority: 2 },
-  { type: "2 x 2,5 mm2", resistivity_OhmPerMeter: 0.00741, priority: 3 },
-  { type: "2 x 4 mm2", resistivity_OhmPerMeter: 0.00461, priority: 4 },
+  { type: "2 x 1 mm2", resistivity_OhmPerMeter: 0.0181, priority: 1, pricePerM: "30" },
+  { type: "2 x 1,5 mm2", resistivity_OhmPerMeter: 0.0121, priority: 2, pricePerM: "50" },
+  { type: "2 x 2,5 mm2", resistivity_OhmPerMeter: 0.00741, priority: 3, pricePerM: "70" },
+  // { type: "2 x 4 mm2", resistivity_OhmPerMeter: 0.00461, priority: 4 },
 ];
-
-const busTooLong = {
-  code: `TOO_LONG_BUS`,
-  pl: `Za długa magistrala! Max 1000m!`,
-  en: `bus too long! 1000m`
-}
-
-const signallerToMany = {
-  code: `TOO_MANY_SIGNALLERS`,
-  pl: `Za dużo sygnalizatorów! Max 26szt!`,
-  en: `Too many signallers! Max 26pcs!`
-}
-
-const valvesTooMany = {
-  code: `TOO_MANY_VALVES`,
-  pl: `Za dużo zaworów! Max 8szt!`,
-  en: `Too many valves! Max 8pcs!`
-}
-
 //sprawdzić description w controlUnitModule oraz controlUnitS
 const controlUnitModule = {
   type: "Teta MOD Control 1",
@@ -41,6 +16,7 @@ const controlUnitModule = {
     powerDemand: 2.5
   },
   productKey: "PW-108A",
+  price: "1000"
 };
 
 const controlUnitS = {
@@ -53,6 +29,7 @@ const controlUnitS = {
     powerDemand: 2.5
   },
   productKey: "PW-086-Control1-S",
+  price: "1500"
 };
 const controlUnitS2460W = {
   type: "Teta Control 1-S24-60W",
@@ -64,6 +41,7 @@ const controlUnitS2460W = {
     powerDemand: 2.5
   },
   productKey: "PW-086-Control1-S24",
+  price: "1730"
 };
 
 const controlUnitS4860W = {
@@ -76,6 +54,7 @@ const controlUnitS4860W = {
     powerDemand: 2.5
   },
   productKey: "PW-086-Control1-S48-60",
+  price: "1750"
 };
 const controlUnitS48100W = {
   type: "Teta Control 1-S48-100W",
@@ -87,6 +66,7 @@ const controlUnitS48100W = {
       powerDemand: 2.5
   },
   productKey: "PW-086-Control1-S48-100",
+  price: "1700"
 };
 
 const controlUnitS48150W = {
@@ -99,6 +79,7 @@ const controlUnitS48150W = {
     powerDemand: 2.5
   },
   productKey: "PW-086-Control1-S48-150",
+  price: "1748"
 }
 
 const controlUnitSUPS300 = {
@@ -111,6 +92,7 @@ const controlUnitSUPS300 = {
     powerDemand: 2.5
   },
   productKey: "PW-086-Control1-S-UP300",
+  price: "2510"
 };
 
 const CONTROLUNITLIST = [

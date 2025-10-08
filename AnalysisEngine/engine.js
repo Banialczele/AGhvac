@@ -1,308 +1,312 @@
-// ---- Konfiguracja globalna ----
-const POWER_RESERVE = 0.15;       // +15% zapasu mocy (PSU i limit wyjściowy CU)
-const CU_UTILIZATION_MAX = 0.90;  // maks. wykorzystanie wyjścia CU (90% limitu po rezerwie)
+/* ============================================================================
+   ENGINE.JS — Silnik doboru jednostek sterujących (CU) i zasilaczy (PSU)
+   Wersja inżynierska — zoptymalizowana pod kątem fizyki, stabilności i zapasu mocy
 
-// ---- Pomocnicze ----
-function supplyIdentityKey(psu) {
-  return `${psu.type}-${psu.description}-${psu.power}-${psu.supplyVoltage}-${psu.batteryCapacity_Ah || 'noBat'}`;
+   PRZYJĘTE NORMY I ZAPASY BEZPIECZEŃSTWA:
+   ----------------------------------------
+   • Rezerwa mocy systemu:
+       - Systemy standardowe (backup = nie): +20% zapasu
+       - Systemy z podtrzymaniem (backup = tak): +40% zapasu (tryb 24/7, systemy bezpieczeństwa)
+   • Maksymalne wykorzystanie jednostki sterującej: 100%
+   • Margines napięcia magistrali: +5% (inżynierska tolerancja)
+   • Granica stabilności: napięcie na końcu magistrali (V_end) nie może spaść poniżej ½ napięcia zasilającego (po marginesie)
+   • Długość magistrali: maksymalnie 1000 m
+
+   Logika:
+   --------
+   - Iteruj po kablach wg priorytetu (od najlepszego do najgorszego)
+   - Dla każdego kabla:
+       • backup = nie → znajdź self-powered CU (Teta Control 1-S24 / 1-S48-x)
+       • backup = tak → znajdź CU (1-S lub S-UP300) z odpowiednim zasilaczem ZBF
+   - Niezależnie od backupu oblicz zawsze alternatywną konfigurację PW-108A + PSU
+   - Zwróć [errors, { alternativeConfig, powerSupply }]
+============================================================================ */
+
+const POWER_RESERVE = 0.20
+const BACKUP_RESERVE = 0.40
+const CU_UTILIZATION_MAX = 1.00
+const VOLTAGE_MARGIN = 1.05
+
+function toNumber(x, def = 0) {
+  const n = Number(x)
+  return Number.isFinite(n) ? n : def
 }
 
-function uniqSuppliesStable(powersupplies) {
-  const seen = new Set();
-  return (powersupplies || []).filter(psu => {
-    const key = supplyIdentityKey(psu);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-// UWAGA: pickMatchingSupplies używamy dla alternatywnych CU.
-// PW-108A NIE filtrujemy tutaj (stosujemy prostą regułę HDR / ZBF>20 w main).
-function pickMatchingSupplies(controlUnit, powersupplies, isBackupDesired) {
-  const list = uniqSuppliesStable(powersupplies);
-  if (!list || !list.length) return [];
-
-  // S-UP300 traktujemy jak z przetwornicą 24→48V, więc dobór PSU do niej robimy jak dla 24 V
-  let cuRequiredSupplyVoltage = controlUnit.description?.supplyVoltage;
-  if (controlUnit.productKey === "PW-086-Control1-S-UP300") {
-    cuRequiredSupplyVoltage = 24;
+// Usuwa duplikaty PSU bazując na kluczowych parametrach technicznych
+function uniqByKey(arr, keyFn) {
+  const seen = new Set()
+  const out = []
+  for (const x of arr || []) {
+    const k = keyFn(x)
+    if (!seen.has(k)) {
+      seen.add(k)
+      out.push(x)
+    }
   }
-
-  return list.filter(psu => {
-    if (isBackupDesired ? psu.type !== "ZBF" : psu.type !== "HDR") return false;
-    const v = psu.supplyVoltage;
-    if (v > 40) return true;                        // np. 42V zasili dowolne CU (48V class po deratingu)
-    if (v > 10 && v < 30) return cuRequiredSupplyVoltage === 24; // 21V (24V class) → tylko CU 24V (i S-UP300)
-    return false;
-  });
+  return out
 }
 
-// --- Model elektryczny magistrali (obciążenie rozłożone wzdłuż przewodu)
-// Założenia: urządzenia równomiernie rozmieszczone:
-//   spadek na końcu ~ I_total * R_total / 2
-//   straty miedzi ~ I_total^2 * R_total / 3
+// Generuje unikalny identyfikator zasilacza (dla eliminacji duplikatów)
+function supplyIdentityKey(psu) {
+  return `${psu.type}|${psu.description}|${psu.power}|${psu.supplyVoltage}|${psu.batteryCapacity_Ah || 'noBat'}`
+}
+
+// Sortuje kable po priorytecie (1 = najwyższy)
+function pickCablesByPriority(cables) {
+  return [...(cables || [])].sort((a, b) => (toNumber(a.priority, 9999) - toNumber(b.priority, 9999)))
+}
+
+// Sprawdza zgodność napięciową PSU i jednostki sterującej
+function isPSUCompatibleWithCU(cu, psu) {
+  const cuKey = String(cu?.productKey || "")
+  const vPSU = toNumber(psu?.supplyVoltage, 0)
+
+  if (cuKey === "PW-086-Control1-S-UP300") return (vPSU > 10 && vPSU < 30)
+  if (cuKey === "PW-086-Control1-S") return (vPSU > 10 && vPSU < 30)
+  if (cuKey === "PW-108A") return (vPSU > 10 && vPSU < 30)
+  return false
+}
+
+// Oblicza parametry elektryczne magistrali: prąd, spadek napięcia, straty, stabilność
 function computeBusElectricals(busSegments, cable, cuBusVoltage_V) {
-  const totalBusLength_m = (busSegments || []).reduce((s, seg) => s + (seg.wireLength || 0), 0);
-  const R_total_Ohm = (cable.resistivity_OhmPerMeter || 0) * totalBusLength_m;
+  const totalBusLength_m = (busSegments || []).reduce((s, seg) => s + (toNumber(seg?.wireLength, 0)), 0)
+  const R_total_Ohm = toNumber(cable?.resistivity_OhmPerMeter, 0) * totalBusLength_m
 
   const powerDevicesOnly_W = (busSegments || []).reduce(
-    (s, seg) => s + (seg?.detector?.power_W || 0),
+    (s, seg) => s + (toNumber(seg?.detector?.power_W, 0)),
     0
-  );
+  )
 
-  const I_total_A = cuBusVoltage_V > 0 ? powerDevicesOnly_W / cuBusVoltage_V : 0;
+  const I_total_A = cuBusVoltage_V > 0 ? (powerDevicesOnly_W / cuBusVoltage_V) : 0
+  const V_drop_end_V = I_total_A * R_total_Ohm * 0.5
+  let V_end_V = cuBusVoltage_V - V_drop_end_V
+  V_end_V = Math.ceil(V_end_V * 10) / 10
 
-  const V_drop_end_V = I_total_A * R_total_Ohm * 0.5;
-  const V_end_V = cuBusVoltage_V - V_drop_end_V;
+  const minDeviceVoltage = (busSegments || []).reduce((mx, seg) => {
+    const v = toNumber(seg?.detector?.minVoltage_V, 0)
+    return Math.max(mx, v)
+  }, 0)
 
-  const busVoltageOk = (busSegments || []).every(seg => {
-    const vMin = seg?.detector?.minVoltage_V ?? 0;
-    return V_end_V >= vMin;
-  });
-
-  const P_losses_W = (I_total_A * I_total_A) * R_total_Ohm / 3;
+  const stabilityThreshold = Math.max(minDeviceVoltage, cuBusVoltage_V / 2)
+  const busVoltageOk = (V_end_V * VOLTAGE_MARGIN) >= stabilityThreshold
+  const P_losses_W = (I_total_A * I_total_A) * R_total_Ohm / 3
 
   return {
+    totalBusLength_m,
     powerDevicesOnly_W,
     I_bus_A: I_total_A,
-    V_drop_V: V_drop_end_V,
+    V_drop_V,
     V_end_V,
     P_losses_W,
     busVoltageOk
-  };
+  }
 }
 
-// --- Walidacja: CU z ZEWNĘTRZNYM zasilaczem + dobór kabla (z 15% zapasem)
-// Działa dla PW-108A oraz S/S-UP300 w trybie z ZBF.
-function validateSystemWithExternalPSUAndCable(controlUnit, busSegments, cables, externalPSU_W) {
-  if (!cables || !cables.length) return null;
+// Walidacja dla jednostek samowystarczalnych (self-powered)
+function validateSelfPoweredCU(cu, busSegments, cable) {
+  const cuOutLimit_W = toNumber(cu?.power ?? cu?.description?.power, 0)
+  if (cuOutLimit_W <= 0) return null
 
-  const cuBusVoltage_V = controlUnit.description.supplyVoltage;
-  const cuOwnPower_W = (controlUnit.description.powerDemand || 0);
+  const cuBusVoltage_V = toNumber(cu?.description?.supplyVoltage, 0)
+  const e = computeBusElectricals(busSegments, cable, cuBusVoltage_V)
+  if (!e.busVoltageOk) return null
 
-  const sortedCables = [...cables].sort((a, b) => a.priority - b.priority);
+  const requiredWithReserve_W = (e.powerDevicesOnly_W + e.P_losses_W) * (1 + POWER_RESERVE)
+  const cuAllowed_W = cuOutLimit_W * CU_UTILIZATION_MAX
 
-  for (const cable of sortedCables) {
-    const e = computeBusElectricals(busSegments, cable, cuBusVoltage_V);
-    if (!e.busVoltageOk) continue;
-
-    // PSU pokrywa: (urządzenia + straty + własny pobór CU) z rezerwą
-    const totalFromPSU_noReserve_W   = e.powerDevicesOnly_W + e.P_losses_W + cuOwnPower_W;
-    const totalFromPSU_withReserve_W = totalFromPSU_noReserve_W * (1 + POWER_RESERVE);
-
-    if (externalPSU_W < totalFromPSU_withReserve_W) continue;
-
-    // Limit wyjściowy CU (jeżeli CU go ma) dotyczy tylko magistrali: (urządzenia + straty), z rezerwą
-    // oraz dodatkowym headroomem (CU_UTILIZATION_MAX) aby nie dobierać „na styk”.
-    const cuLimit_W = (controlUnit.power ?? controlUnit.description?.power ?? 0);
-    if (cuLimit_W > 0) {
-      const requiredBus_withReserve_W = (e.powerDevicesOnly_W + e.P_losses_W) * (1 + POWER_RESERVE);
-      const cuAllowed_W = cuLimit_W * CU_UTILIZATION_MAX;
-      if (requiredBus_withReserve_W > cuAllowed_W) continue;
-    }
-
+  if (requiredWithReserve_W <= cuAllowed_W) {
     return {
       cable,
       powerW_devicesOnly: e.powerDevicesOnly_W,
-      powerW_totalWithLossesAndReserve: totalFromPSU_withReserve_W,
-      voltageAtEnd_V: e.V_end_V
-    };
-  }
-  return null;
-}
-
-// --- Walidacja: CU ze WBUDOWANYM zasilaniem + dobór kabla (z 15% zapasem)
-// Działa dla S24 / S48-60 / S48-100 / S48-150
-function validateSystemWithSelfPoweredCUAndCable(controlUnit, busSegments, cables) {
-  // Najpierw normalizujemy limit mocy (pole top-level albo description.power)
-  const cuOutputLimit_W = (controlUnit.power ?? controlUnit.description?.power ?? 0);
-  if (cuOutputLimit_W <= 0) return null;
-
-  const cuBusVoltage_V = controlUnit.description.supplyVoltage;
-  const sortedCables = [...cables].sort((a, b) => a.priority - b.priority);
-
-  for (const cable of sortedCables) {
-    const e = computeBusElectricals(busSegments, cable, cuBusVoltage_V);
-    if (!e.busVoltageOk) continue;
-
-    // Wbudowany zasilacz CU musi pokryć (urządzenia + straty) z rezerwą oraz headroomem
-    const required_withReserve_W = (e.powerDevicesOnly_W + e.P_losses_W) * (1 + POWER_RESERVE);
-    const cuAllowed_W = cuOutputLimit_W * CU_UTILIZATION_MAX;
-
-    if (required_withReserve_W <= cuAllowed_W) {
-      return {
-        cable,
-        powerW_devicesOnly: e.powerDevicesOnly_W,
-        powerW_totalWithLossesAndReserve: required_withReserve_W,
-        voltageAtEnd_V: e.V_end_V
-      };
+      powerW_totalWithLossesAndReserve: requiredWithReserve_W,
+      voltageAtEnd_V: e.V_end_V,
+      P_losses_W: e.P_losses_W
     }
   }
-  return null;
+  return null
 }
 
-// --- Najlepsza konfiguracja CU+PSU (pełna iteracja PSU×kabel; minimalna wymagana moc + najcieńszy działający kabel)
-function findBestConfigForExternalPSUCU(controlUnit, powerSupplies, busSegments, cables) {
-  const sortedPSU = [...(powerSupplies || [])].sort((a, b) => (a.power || 0) - (b.power || 0));
-  let bestCfg = null;
+// Walidacja dla jednostek wymagających zewnętrznego zasilacza
+function validateCUWithExternalPSU(cu, psu, busSegments, cable, isBackup) {
+  if (!isPSUCompatibleWithCU(cu, psu)) return null
 
-  for (const psu of sortedPSU) {
-    for (const cable of [...cables].sort((a, b) => a.priority - b.priority)) {
-      const cfg = validateSystemWithExternalPSUAndCable(controlUnit, busSegments, [cable], psu.power);
-      if (cfg) {
-        const candidate = {
-          controlUnit,
-          powerSupply: { supply: psu, powerRating: psu.power },
-          cables: [cable],
-          power: cfg.powerW_totalWithLossesAndReserve,
-          power_devicesOnly: cfg.powerW_devicesOnly
-        };
-        if (!bestCfg || candidate.power < bestCfg.power) {
-          bestCfg = candidate;
-        }
-        // dla tego PSU znaleźliśmy najcieńszy działający kabel → nie testujemy grubszych
-        break;
-      }
-    }
+  const cuBusVoltage_V = toNumber(cu?.description?.supplyVoltage, 0)
+  const cuOwn_W = toNumber(cu?.description?.powerDemand, 0)
+  const cuOutLimit_W = toNumber(cu?.power ?? cu?.description?.power, 0)
+
+  const e = computeBusElectricals(busSegments, cable, cuBusVoltage_V)
+  if (!e.busVoltageOk) return null
+
+  const reserve = isBackup ? BACKUP_RESERVE : POWER_RESERVE
+  const totalFromPSU_noReserve_W = e.powerDevicesOnly_W + e.P_losses_W + cuOwn_W
+  const totalFromPSU_withReserve_W = totalFromPSU_noReserve_W * (1 + reserve)
+  const psuPower_W = toNumber(psu?.power, 0)
+
+  if (psuPower_W + 1e-9 < totalFromPSU_withReserve_W) return null
+  if (cuOutLimit_W > 0) {
+    const allowed = cuOutLimit_W * CU_UTILIZATION_MAX
+    if ((e.powerDevicesOnly_W + e.P_losses_W) * (1 + reserve) > allowed) return null
   }
-  return bestCfg;
-}
-
-// --- Najlepsza konfiguracja CU self-powered (z zapasem i headroomem)
-function findBestConfigForSelfPoweredCU(controlUnit, busSegments, cables) {
-  // Upewnij się, że limit jest na top-level (spójność z walidacją)
-  const normalizedCU = {
-    ...controlUnit,
-    power: (controlUnit.power ?? controlUnit.description?.power ?? 0),
-  };
-  const cfg = validateSystemWithSelfPoweredCUAndCable(normalizedCU, busSegments, cables);
-  if (!cfg) return null;
 
   return {
-    controlUnit: normalizedCU,
-    powerSupply: null,
-    cables: [cfg.cable],
-    power: cfg.powerW_totalWithLossesAndReserve,
-    power_devicesOnly: cfg.powerW_devicesOnly
-  };
+    cable,
+    powerW_devicesOnly: e.powerDevicesOnly_W,
+    powerW_totalWithoutReserve: totalFromPSU_noReserve_W,
+    powerW_totalWithLossesAndReserve: totalFromPSU_withReserve_W,
+    voltageAtEnd_V: e.V_end_V,
+    P_losses_W: e.P_losses_W
+  }
 }
 
-// --- Główna funkcja ---
+// Główna funkcja silnika doboru konfiguracji
 function findConfigsByBackupPolicy(
   CONTROLUNITLIST,
   busSegments,
   cables,
   initSystem,
-  powersupplyTMC1, // HDR
-  powersupplyMC    // ZBF
+  powersupplyTMC1,
+  powersupplyMC
 ) {
-  let errors = [];
-  let result = {
-    pw108AConfig: null,
-    alternativeConfig: null,
-    systemPower: 0,
-    powerForDevicesOnly: 0
-  };
+  const errors = []
+  const isBackupDesired = String(initSystem?.backup || "").trim().toLowerCase() === "tak"
 
-  // Proste limity topologii – "miękkie" (nie przerywają liczenia)
-  const totalBusLength = (busSegments || []).reduce((sum, s) => sum + (s.wireLength || 0), 0);
-  const totalSignallers = (busSegments || []).filter(s => s?.detector?.class === "signaller").length;
-  const totalValves = (busSegments || []).filter(s => s?.detector?.class === "valveCtrl").length;
+  const totalBusLength_m = (busSegments || []).reduce((s, seg) => s + toNumber(seg?.wireLength, 0), 0)
+  if (totalBusLength_m > 1000)
+    errors.push({ code: "BUS_TOO_LONG", message: "Za długa magistrala (>1000 m)." })
 
-  if (busSegments?.length > 0 && totalBusLength > 1000) {
-    errors.push({ code: "TOO_LONG_BUS", message: "Za długa magistrala! Max 1000m." });
-  }
-  if (totalSignallers > 26) {
-    errors.push({ code: "TOO_MANY_SIGNALLERS", message: "Za dużo sygnalizatorów! Max 26 szt." });
-  }
-  if (totalValves > 8) {
-    errors.push({ code: "TOO_MANY_VALVES", message: "Za dużo zaworów! Max 8 szt." });
-  }
+  const cablesByPriority = pickCablesByPriority(cables)
 
-  // UWAGA: nie ma żadnego "return przy błędach" – liczymy dalej!
+  const SELF_POWERED_KEYS = [
+    "PW-086-Control1-S24",
+    "PW-086-Control1-S48-60",
+    "PW-086-Control1-S48-100",
+    "PW-086-Control1-S48-150"
+  ]
 
-  const isBackupDesired = String(initSystem?.backup).toLowerCase() === "tak";
+  const BACKUP_CU_KEYS = [
+    "PW-086-Control1-S",
+    "PW-086-Control1-S-UP300"
+  ]
 
-  // --- PW-108A (Teta MOD Control 1): zawsze liczona konfiguracja ---
-  const cu108A = (CONTROLUNITLIST || []).find(cu => cu.productKey === "PW-108A");
-  if (cu108A) {
-    let suppliesFor108A = [];
-    if (isBackupDesired) {
-      // backup = TAK → ZBF 24V-class (po deratingu) → supplyVoltage > 20
-      suppliesFor108A = uniqSuppliesStable((powersupplyMC || []).filter(psu => (psu.supplyVoltage || 0) > 20));
+  const cuCandidates = isBackupDesired
+    ? BACKUP_CU_KEYS.map(k => (CONTROLUNITLIST || []).find(cu => cu?.productKey === k)).filter(Boolean)
+    : SELF_POWERED_KEYS.map(k => (CONTROLUNITLIST || []).find(cu => cu?.productKey === k)).filter(Boolean)
+
+  let powerSupply = null
+
+  // Dobór głównej konfiguracji (CU + PSU lub CU self-powered)
+  for (const cable of cablesByPriority) {
+    if (!cable) continue
+
+    if (!isBackupDesired) {
+      const feasible = []
+      for (const cu of cuCandidates) {
+        const cfg = validateSelfPoweredCU(cu, busSegments, cable)
+        if (cfg) {
+          const totalCost = toNumber(cable.pricePerM, 0) * totalBusLength_m + toNumber(cu.price, 0)
+          feasible.push({
+            controlUnit: cu,
+            powerSupply: null,
+            cable,
+            totalCost,
+            systemPower: cfg.powerW_totalWithLossesAndReserve,
+            powerForDevicesOnly: cfg.powerW_devicesOnly,
+            V_end_V: cfg.voltageAtEnd_V,
+            P_losses_W: cfg.P_losses_W
+          })
+        }
+      }
+      if (feasible.length) {
+        feasible.sort((a, b) => (a.totalCost - b.totalCost) || (a.P_losses_W - b.P_losses_W))
+        powerSupply = feasible[0]
+        break
+      }
     } else {
-      // backup = NIE → wszystkie HDR
-      suppliesFor108A = uniqSuppliesStable(powersupplyTMC1 || []);
+      const suppliesZBF = uniqByKey(
+        (powersupplyMC || []).filter(psu => String(psu?.type).toUpperCase() === "ZBF"),
+        supplyIdentityKey
+      )
+
+      const feasible = []
+      for (const cu of cuCandidates) {
+        for (const psu of suppliesZBF) {
+          const cfg = validateCUWithExternalPSU(cu, psu, busSegments, cable, true)
+          if (!cfg) continue
+
+          const totalCost =
+            toNumber(cable.pricePerM, 0) * totalBusLength_m +
+            toNumber(cu.price, 0) +
+            toNumber(psu.price, 0)
+
+          feasible.push({
+            controlUnit: cu,
+            powerSupply: { supply: psu, powerRating: toNumber(psu.power, 0) },
+            cable,
+            totalCost,
+            systemPower: cfg.powerW_totalWithLossesAndReserve,
+            powerForDevicesOnly: cfg.powerW_devicesOnly,
+            V_end_V: cfg.voltageAtEnd_V,
+            P_losses_W: cfg.P_losses_W
+          })
+        }
+      }
+      if (feasible.length) {
+        feasible.sort((a, b) => (a.totalCost - b.totalCost) || (a.P_losses_W - b.P_losses_W))
+        powerSupply = feasible[0]
+        break
+      }
     }
-    result.pw108AConfig = findBestConfigForExternalPSUCU(cu108A, suppliesFor108A, busSegments, cables);
-    if (!result.pw108AConfig) {
-      errors.push({ code: "PW108A_NO_CONFIG", message: "Nie udało się dobrać konfiguracji PW-108A (PSU/kabel)." });
-    }
+  }
+
+  if (!powerSupply)
+    errors.push({ code: "NO_MAIN_CONFIG", message: "Nie udało się dobrać głównej konfiguracji (CU [+PSU])." })
+
+  // Dobór alternatywnej konfiguracji (PW-108A + PSU HDR/ZBF)
+  const cu108A = (CONTROLUNITLIST || []).find(cu => cu?.productKey === "PW-108A")
+  let alternativeConfig = null
+
+  if (!cu108A) {
+    errors.push({ code: "PW108A_MISSING", message: "Brak PW-108A w CONTROLUNITLIST." })
   } else {
-    errors.push({ code: "PW108A_MISSING", message: "Brak jednostki PW-108A w CONTROLUNITLIST." });
-  }
+    const suppliesFor108A = isBackupDesired
+      ? uniqByKey((powersupplyMC || []).filter(psu => String(psu?.type).toUpperCase() === "ZBF"), supplyIdentityKey)
+      : uniqByKey((powersupplyTMC1 || []).filter(psu => String(psu?.type).toUpperCase() === "HDR"), supplyIdentityKey)
 
-  // --- Alternatywa ---
-  let alternativeCUCandidates = [];
-  let alternativeConfig = null;
+    const altCandidates = []
+    for (const cable of cablesByPriority) {
+      for (const psu of suppliesFor108A) {
+        const cfg = validateCUWithExternalPSU(cu108A, psu, busSegments, cable, isBackupDesired)
+        if (!cfg) continue
 
-  if (isBackupDesired) {
-    // Backup TAK → alternatywa: Teta Control 1-S (24V) lub Teta Control 1-S-UP300 (48V z przetwornicą 24→48)
-    const cuS       = (CONTROLUNITLIST || []).find(cu => cu.productKey === "PW-086-Control1-S");
-    const cuSUPS300 = (CONTROLUNITLIST || []).find(cu => cu.productKey === "PW-086-Control1-S-UP300");
-    if (cuS)       alternativeCUCandidates.push(cuS);
-    if (cuSUPS300) alternativeCUCandidates.push(cuSUPS300);
+        const totalCost =
+          toNumber(cable.pricePerM, 0) * totalBusLength_m +
+          toNumber(cu108A.price, 0) +
+          toNumber(psu.price, 0)
 
-    // PSU: ZBF 24V-class (po deratingu)
-    const zbf24Class = uniqSuppliesStable((powersupplyMC || []).filter(psu => (psu.supplyVoltage || 0) > 20));
-
-    // Testuj kandydatów i znajdź pierwszą/najmniejszą spełniającą
-    for (const cu of alternativeCUCandidates) {
-      // Uwaga: S-UP300 ma specjalne traktowanie napięcia w pickMatchingSupplies (24→48)
-      const matching = pickMatchingSupplies(cu, zbf24Class, true);
-      const cfg = findBestConfigForExternalPSUCU(cu, matching, busSegments, cables);
-      if (cfg) { alternativeConfig = cfg; break; }
+        altCandidates.push({
+          controlUnit: cu108A,
+          powerSupply: { supply: psu, powerRating: toNumber(psu.power, 0) },
+          cable,
+          totalCost,
+          systemPower: cfg.powerW_totalWithLossesAndReserve,
+          powerForDevicesOnly: cfg.powerW_devicesOnly,
+          V_end_V: cfg.voltageAtEnd_V,
+          P_losses_W: cfg.P_losses_W
+        })
+      }
+      if (altCandidates.length) break
     }
-  } else {
-    // Backup NIE → alternatywa to self-powered: S24, S48-60, S48-100, S48-150 (najmniejsza spełniająca)
-    const cuS24     = (CONTROLUNITLIST || []).find(cu => cu.productKey === "PW-086-Control1-S24");
-    const cuS48_60  = (CONTROLUNITLIST || []).find(cu => cu.productKey === "PW-086-Control1-S48-60");
-    const cuS48_100 = (CONTROLUNITLIST || []).find(cu => cu.productKey === "PW-086-Control1-S48-100");
-    const cuS48_150 = (CONTROLUNITLIST || []).find(cu => cu.productKey === "PW-086-Control1-S48-150");
 
-    if (cuS24)     alternativeCUCandidates.push(cuS24);
-    if (cuS48_60)  alternativeCUCandidates.push(cuS48_60);
-    if (cuS48_100) alternativeCUCandidates.push(cuS48_100);
-    if (cuS48_150) alternativeCUCandidates.push(cuS48_150);
-
-    // sort po limicie wyjściowym (rosnąco), normalizując power z description.power
-    alternativeCUCandidates.sort((a, b) =>
-      ((a.power ?? a.description?.power ?? 0) - (b.power ?? b.description?.power ?? 0))
-    );
-
-    for (const cu of alternativeCUCandidates) {
-      const norm = { ...cu, power: (cu.power ?? cu.description?.power ?? 0) };
-      const cfg = findBestConfigForSelfPoweredCU(norm, busSegments, cables);
-      if (cfg) { alternativeConfig = cfg; break; }
+    if (altCandidates.length) {
+      altCandidates.sort((a, b) => (a.totalCost - b.totalCost) || (a.P_losses_W - b.P_losses_W))
+      alternativeConfig = altCandidates[0]
+    } else {
+      errors.push({
+        code: "PW108A_NO_CONFIG",
+        message: "Nie udało się dobrać alternatywy PW-108A + PSU."
+      })
     }
   }
 
-  if (!alternativeConfig) {
-    errors.push({ code: "ALT_NO_CONFIG", message: "Nie udało się dobrać alternatywnej konfiguracji." });
-  }
-  result.alternativeConfig = alternativeConfig;
-
-  // --- Podsumowanie mocy systemu (wybierz mniejszą z dwóch, już z rezerwą) ---
-  const pick = (a, b) => {
-    if (a && b) return a.power <= b.power ? a : b;
-    return a || b || null;
-  };
-  const chosen = pick(result.pw108AConfig, result.alternativeConfig);
-  if (chosen) {
-    result.systemPower = chosen.power;                 // zawiera +15% rezerwy
-    result.powerForDevicesOnly = chosen.power_devicesOnly; // suma mocy urządzeń (bez rezerwy i strat CU)
-  }
-
-  return [errors, result];
+  return [errors, { alternativeConfig, powerSupply }]
 }
