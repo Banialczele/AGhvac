@@ -164,7 +164,7 @@ function validateSystem() {
   systemData.supplyType = controlUnit;
   systemData.res = result;
   systemData.wireType = cable.type
-  systemData.totalPower = Math.ceil(result.powerSupply.systemPower);
+  systemData.totalPower = Math.ceil(result.powerSupply.systemPowerNoReserve);
   systemData.errorList = errors;
   initSystem.systemIsGenerated = true;
   errorHandling()
