@@ -318,6 +318,7 @@ function setSystem() {
   functionToUpdateSystem();
 
   fillData();
+  updateSelectValue();
   setupSystemEventHandlers();
 }
 

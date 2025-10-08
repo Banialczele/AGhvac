@@ -49,7 +49,7 @@ const TRANSLATION = {
   shop: { pl: "Sklep", en: "Main Page" },
   confirmButton: { pl: "Zatwierdź ▶", en: "Confirm ▶" },
   defaultHeader: { pl: "Dane podstawowe", en: "Default data" },
-  detectorAmountsLabel: { pl: "Ilość czujników", en: "Detector quantity" },
+  detectorAmountsLabel: { pl: "Ilość urządzeń", en: "Device quantity" },
   quantity: { pl: " szt.", en: " pcs." },
   shadedAmount: { pl: "(max 50szt.)", en: "(max 50pcs.)" },
   structureLabel: { pl: "Rodzaj obiektu", en: "Structure type" },
