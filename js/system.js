@@ -1,7 +1,7 @@
 function createSystemDataFromAFile(fileData = null) {
   if (fileData) {
     systemData.supplyType = fileData.supplyType;
-    initSystem.backup=fileData.backup;
+    initSystem.backup = fileData.backup;
     systemData.selectedStructure = fileData.selectedStructure;
     systemData.bus = fileData.bus;
     systemData.batteryBackUp = fileData.batteryBackUp;
@@ -550,6 +550,13 @@ function setSystemStateBusLength() {
 // Ustawienie wartości zużycia energii dla systemu w panelu stanu
 function setSystemStatePowerConsumption(value = 1) {
   const powerConsumption = document.getElementById("powerConsumption");
+  const powerSupplyDescription = document.getElementById("powerSupplyType");
+  if (systemData.generatedSupply === null) {
+    const powerSupplyGenerated = document.getElementById("powerSupplyGenerated")
+    powerSupplyGenerated.style.display = "none";
+  } else {
+    powerSupplyDescription.textContent = `${systemData.generatedSupply}W`;
+  }
   if (powerConsumption.textContent !== String(value)) {
     powerConsumption.textContent = systemData.totalPower;
   }

@@ -13,8 +13,8 @@
    • Długość magistrali: maksymalnie 1000 m
 ============================================================================ */
 
-const POWER_RESERVE = 0.20;
-const BACKUP_RESERVE = 0.30;
+const POWER_RESERVE = 0.20; //backup=nie
+const BACKUP_RESERVE = 0.30; //parametr backup=tak
 const CU_UTILIZATION_MAX = 1.00;
 const VOLTAGE_MARGIN = 1.05;
 
@@ -44,6 +44,7 @@ function pickCablesByPriority(cables) {
   return [...(cables || [])].sort((a, b) => (toNumber(a.priority, 9999) - toNumber(b.priority, 9999)));
 }
 
+// Sprawdza kompatybilność CU i PSU (opcjonalne zabezpieczenie)
 function isPSUCompatibleWithCU(cu, psu) {
   if (!cu || !psu) return false;
   if (!Number.isFinite(psu.power) || psu.power <= 0) return false;
@@ -54,6 +55,7 @@ function isPSUCompatibleWithCU(cu, psu) {
   return true;
 }
 
+// Obliczenia fizyczne magistrali: prąd, spadki napięć, straty miedzi
 function computeBusElectricals(busSegments, cable, cuBusVoltage_V) {
   const totalBusLength_m = (busSegments || []).reduce((s, seg) => s + (toNumber(seg?.wireLength, 0)), 0);
   const R_total_Ohm = toNumber(cable?.resistivity_OhmPerMeter, 0) * totalBusLength_m;
@@ -64,8 +66,8 @@ function computeBusElectricals(busSegments, cable, cuBusVoltage_V) {
   );
 
   const I_total_A = cuBusVoltage_V > 0 ? (powerDevicesOnly_W / cuBusVoltage_V) : 0;
-  const V_drop_end_V = I_total_A * R_total_Ohm * 0.5;
-  let V_end_V = cuBusVoltage_V - V_drop_end_V;
+  const V_drop_V = I_total_A * R_total_Ohm * 0.5;
+  let V_end_V = cuBusVoltage_V - V_drop_V;
   V_end_V = Math.ceil(V_end_V * 10) / 10;
 
   const minDeviceVoltage = (busSegments || []).reduce((mx, seg) => {
@@ -81,13 +83,14 @@ function computeBusElectricals(busSegments, cable, cuBusVoltage_V) {
     totalBusLength_m,
     powerDevicesOnly_W,
     I_bus_A: I_total_A,
-    V_drop_V: V_drop_end_V,
+    V_drop_V,
     V_end_V,
     P_losses_W,
     busVoltageOk
   };
 }
 
+// Walidacja CU z wbudowanym PSU
 function validateSelfPoweredCU(cu, busSegments, cable) {
   const cuOutLimit_W = toNumber(cu?.power ?? cu?.description?.power, 0);
   if (cuOutLimit_W <= 0) return null;
@@ -105,7 +108,7 @@ function validateSelfPoweredCU(cu, busSegments, cable) {
     return {
       cable,
       powerW_devicesOnly: e.powerDevicesOnly_W,
-      powerW_totalWithoutReserve: total_noReserve_W, // 🟢 nowa wartość
+      powerW_totalWithoutReserve: total_noReserve_W,
       powerW_totalWithLossesAndReserve: requiredWithReserve_W,
       voltageAtEnd_V: e.V_end_V,
       P_losses_W: e.P_losses_W
@@ -114,6 +117,7 @@ function validateSelfPoweredCU(cu, busSegments, cable) {
   return null;
 }
 
+// Walidacja CU z zewnętrznym PSU
 function validateCUWithExternalPSU(cu, psu, busSegments, cable, isBackup) {
   if (!isPSUCompatibleWithCU(cu, psu)) return null;
 
@@ -125,26 +129,30 @@ function validateCUWithExternalPSU(cu, psu, busSegments, cable, isBackup) {
   if (!e.busVoltageOk) return null;
 
   const reserve = isBackup ? BACKUP_RESERVE : POWER_RESERVE;
-  const totalFromPSU_noReserve_W = e.powerDevicesOnly_W + e.P_losses_W + cuOwn_W;
-  const totalFromPSU_withReserve_W = totalFromPSU_noReserve_W * (1 + reserve);
+  const total_noReserve_W = e.powerDevicesOnly_W + e.P_losses_W + cuOwn_W;
+  const total_withReserve_W = total_noReserve_W * (1 + reserve);
   const psuPower_W = toNumber(psu?.power, 0);
 
-  if (psuPower_W + 1e-9 < totalFromPSU_withReserve_W) return null;
+  // PSU musi pokryć pobór systemu z uwzględnieniem rezerwy (20% lub 30%)
+  if (psuPower_W + 1e-9 < total_withReserve_W) return null;
+
+  // Walidacja zapasu — system musi mieścić się z rezerwą
   if (cuOutLimit_W > 0) {
     const allowed = cuOutLimit_W * CU_UTILIZATION_MAX;
-    if ((e.powerDevicesOnly_W + e.P_losses_W) * (1 + reserve) > allowed) return null;
+    if (total_withReserve_W > allowed) return null;
   }
 
   return {
     cable,
     powerW_devicesOnly: e.powerDevicesOnly_W,
-    powerW_totalWithoutReserve: totalFromPSU_noReserve_W, // 🟢 nowa wartość
-    powerW_totalWithLossesAndReserve: totalFromPSU_withReserve_W,
+    powerW_totalWithoutReserve: total_noReserve_W,
+    powerW_totalWithLossesAndReserve: total_withReserve_W,
     voltageAtEnd_V: e.V_end_V,
     P_losses_W: e.P_losses_W
   };
 }
 
+// Główna funkcja silnika
 function findConfigsByBackupPolicy(
   CONTROLUNITLIST,
   busSegments,
@@ -180,6 +188,7 @@ function findConfigsByBackupPolicy(
 
   let powerSupply = null;
 
+  // --- Główna konfiguracja ---
   for (const cable of cablesByPriority) {
     if (!cable) continue;
 
@@ -195,7 +204,7 @@ function findConfigsByBackupPolicy(
             cable,
             totalCost,
             systemPower: cfg.powerW_totalWithLossesAndReserve,
-            systemPowerNoReserve: cfg.powerW_totalWithoutReserve, // 🟢
+            systemPowerNoReserve: cfg.powerW_totalWithoutReserve,
             powerForDevicesOnly: cfg.powerW_devicesOnly,
             V_end_V: cfg.voltageAtEnd_V,
             P_losses_W: cfg.P_losses_W
@@ -208,10 +217,11 @@ function findConfigsByBackupPolicy(
         break;
       }
     } else {
+      // ✅ sortuj zasilacze po mocy rosnąco
       const suppliesZBF = uniqByKey(
         (powersupplyMC || []).filter(psu => String(psu?.type).toUpperCase() === "ZBF"),
         supplyIdentityKey
-      );
+      ).sort((a, b) => toNumber(a.power, 0) - toNumber(b.power, 0));
 
       const feasible = [];
       for (const cu of cuCandidates) {
@@ -230,15 +240,17 @@ function findConfigsByBackupPolicy(
             cable,
             totalCost,
             systemPower: cfg.powerW_totalWithLossesAndReserve,
-            systemPowerNoReserve: cfg.powerW_totalWithoutReserve, // 🟢
+            systemPowerNoReserve: cfg.powerW_totalWithoutReserve,
             powerForDevicesOnly: cfg.powerW_devicesOnly,
             V_end_V: cfg.voltageAtEnd_V,
             P_losses_W: cfg.P_losses_W
           });
         }
       }
+
       if (feasible.length) {
-        feasible.sort((a, b) => (a.totalCost - b.totalCost) || (a.P_losses_W - b.P_losses_W));
+        // 🧠 wybierz konfigurację z najmniejszym wystarczającym PSU
+        feasible.sort((a, b) => (a.powerSupply?.supply?.power ?? 9999) - (b.powerSupply?.supply?.power ?? 9999));
         powerSupply = feasible[0];
         break;
       }
@@ -248,6 +260,7 @@ function findConfigsByBackupPolicy(
   if (!powerSupply)
     errors.push({ code: "NO_MAIN_CONFIG", message: "Nie udało się dobrać głównej konfiguracji (CU [+PSU])." });
 
+  // --- Alternatywa PW-108A + PSU ---
   const cu108A = (CONTROLUNITLIST || []).find(cu => cu?.productKey === "PW-108A");
   let alternativeConfig = null;
 
@@ -256,7 +269,9 @@ function findConfigsByBackupPolicy(
   } else {
     const suppliesFor108A = isBackupDesired
       ? uniqByKey((powersupplyMC || []).filter(psu => String(psu?.type).toUpperCase() === "ZBF"), supplyIdentityKey)
-      : uniqByKey((powersupplyTMC1 || []).filter(psu => String(psu?.type).toUpperCase() === "HDR"), supplyIdentityKey);
+          .sort((a, b) => toNumber(a.power, 0) - toNumber(b.power, 0))
+      : uniqByKey((powersupplyTMC1 || []).filter(psu => String(psu?.type).toUpperCase() === "HDR"), supplyIdentityKey)
+          .sort((a, b) => toNumber(a.power, 0) - toNumber(b.power, 0));
 
     const altCandidates = [];
     for (const cable of cablesByPriority) {
@@ -275,7 +290,7 @@ function findConfigsByBackupPolicy(
           cable,
           totalCost,
           systemPower: cfg.powerW_totalWithLossesAndReserve,
-          systemPowerNoReserve: cfg.powerW_totalWithoutReserve, // 🟢
+          systemPowerNoReserve: cfg.powerW_totalWithoutReserve,
           powerForDevicesOnly: cfg.powerW_devicesOnly,
           V_end_V: cfg.voltageAtEnd_V,
           P_losses_W: cfg.P_losses_W
@@ -285,7 +300,8 @@ function findConfigsByBackupPolicy(
     }
 
     if (altCandidates.length) {
-      altCandidates.sort((a, b) => (a.totalCost - b.totalCost) || (a.P_losses_W - b.P_losses_W));
+      // 🧠 wybierz najmniejszy wystarczający PSU
+      altCandidates.sort((a, b) => (a.powerSupply?.supply?.power ?? 9999) - (b.powerSupply?.supply?.power ?? 9999));
       alternativeConfig = altCandidates[0];
     } else {
       errors.push({

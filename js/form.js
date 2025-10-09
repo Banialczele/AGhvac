@@ -165,6 +165,11 @@ function validateSystem() {
   systemData.res = result;
   systemData.wireType = cable.type
   systemData.totalPower = Math.ceil(result.powerSupply.systemPowerNoReserve);
+  if (result.powerSupply.powerSupply === null) {
+    systemData.generatedSupply = null;
+  } else {
+    systemData.generatedSupply = result.powerSupply.powerSupply.powerRating;
+  }
   systemData.errorList = errors;
   initSystem.systemIsGenerated = true;
   errorHandling()
@@ -183,9 +188,9 @@ function errorHandling() {
     item.innerText = error.message;
     errorList.appendChild(item);
   });
-  if(systemData.errorList.length > 0){
+  if (systemData.errorList.length > 0) {
     errorContainer.classList.add("errorActive");
   } else {
-     errorContainer.classList.remove("errorActive");
+    errorContainer.classList.remove("errorActive");
   }
 }

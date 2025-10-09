@@ -141,6 +141,10 @@ const TRANSLATION = {
     pl: "Odznacz wszystkie pola checkbox",
     en: "Deselect all checkboxes",
   },
+  powerSupplyGenerated: {
+    pl: "Zasilacz",
+    en: "Power supply"
+  },
   checkAll: {
     pl: "Zaznacz wszystkie pola checkbox",
     en: "Check all checkboxes",
