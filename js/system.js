@@ -248,6 +248,7 @@ function createSegmentTOLEDDescriptionSelect() {
       {
         value: option.type[lang],
         "data-translate": option.translate,
+        "data-label": option.labeling,
         selected: option[0],
       },
       option.type[lang]
@@ -440,39 +441,45 @@ changeEvent = function (event) {
       ];
 
     elements.forEach(({ index, segment }) => {
-      if (changeElement.matches("select#actionsSegmentDevice0")) {
-        const selecetedModControl = CONTROLUNITLIST.find(unit => unit.productKey === changeElement.value);
-        const modControlInput = segment.querySelector("#modControlBatteryBackUp");
-        const inputTranslation =
-          selecetedModControl.possibleUPS === "no" ? TRANSLATION.batteryBackUpNo[lang] : TRANSLATION.batteryBackUpYes[lang];
-        systemData.supplyType = selecetedModControl;
-        modControlInput.value = inputTranslation;
-      } else {
-        if (changeElement.matches("select.segmentDeviceSelect")) {
-          const selected = systemData.selectedStructure.devices.find((device) => device.type === changeElement.value);
+      if (changeElement.matches("select.segmentDeviceSelect")) {
+        const selected = systemData.selectedStructure.devices.find(
+          (device) => device.type === changeElement.value
+        );
 
-          if (selected?.type === "TOLED") {
-            const container = segment.querySelector(".deviceTypeWrapper");
-            const wrapper = segment.querySelector('.deviceTypeWrapper');
-            const toled = wrapper.querySelector('.toledContainer.toledDescriptionSelect');
-            if (toled) toled.remove();
-            container.appendChild(createSegmentTOLEDDescriptionSelect());
-            const toledSelect = segment.querySelector(`.toledDescriptionSelect select`);
-            systemData.bus[index - 1].description = toledSelect.value;
-          }
-          systemData.bus[index - 1].detector = { ...selected };
+        if (selected?.type === "TOLED") {
+          const container = segment.querySelector(".deviceTypeWrapper");
+          const wrapper = segment.querySelector(".deviceTypeWrapper");
+          const toled = wrapper.querySelector(".toledContainer.toledDescriptionSelect");
+          if (toled) toled.remove();
+
+          container.appendChild(createSegmentTOLEDDescriptionSelect());
+
+          const toledSelect = segment.querySelector(".toledDescriptionSelect select");
+          systemData.bus[index - 1].description = toledSelect.value;
+
+          // 🔹 DODANE: przypisanie labeling z wybranej opcji
+          const selectedOption = toledSelect.selectedOptions[0];
+          systemData.bus[index - 1].labeling = selectedOption?.dataset.label || null;
         }
-        if (changeElement.matches("select.toledSelect")) {
-          systemData.bus[index - 1].description = changeElement.value;
-        }
-        if (changeElement.matches("input.segmentWireLength")) {
-          systemData.bus[index - 1].wireLength = parseInt(changeElement.value);
-        }
+
+        systemData.bus[index - 1].detector = { ...selected };
+      }
+
+      if (changeElement.matches("select.toledSelect")) {
+        systemData.bus[index - 1].description = changeElement.value;
+
+        // 🔹 DODANE: aktualizacja labeling przy zmianie opcji
+        const selectedOption = changeElement.selectedOptions[0];
+        systemData.bus[index - 1].labeling = selectedOption?.dataset.label || null;
+      }
+
+      if (changeElement.matches("input.segmentWireLength")) {
+        systemData.bus[index - 1].wireLength = parseInt(changeElement.value);
       }
     });
-  }
-  functionToUpdateSystem();
-  checkIfToledExists();
+}
+functionToUpdateSystem();
+checkIfToledExists();
 }
 
 clickEvent = function (event) {

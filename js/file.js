@@ -21,9 +21,6 @@ function exportToXLSX() {
     XLSX.writeFile(workbook, fileName || `TetaSystem_${setDate()}.xlsx`);
 }
 
-// ============================================================================
-// GŁÓWNA FUNKCJA – przygotowanie danych do eksportu
-// ============================================================================
 function getDataForExcel() {
     let currentLp = 1;
 
@@ -41,9 +38,6 @@ function getDataForExcel() {
         (String(initSystem?.backup || "").trim().toLowerCase() === "tak" ||
             String(initSystem?.backup || "").trim().toLowerCase() === "yes");
 
-    // ========================================================================
-    // 1️⃣ – JEDNOSTKA STERUJĄCA GŁÓWNA (powerSupply)
-    // ========================================================================
     if (controlUnitWithSupply && controlUnitWithSupply.controlUnit) {
         // --- 1. Główna jednostka sterująca ---
         currentLp = insertDeviceTypeData(
@@ -64,14 +58,15 @@ function getDataForExcel() {
                     `${TRANSLATION.fileBufferPSU[lang]}`,
                     rows
                 );
-            } else {
-                insertDeviceTypeData(
-                    currentLp++,
-                    "-",
-                    `${TRANSLATION.powerSupplyBackupNotFound[lang]}`,
-                    rows
-                );
             }
+            // else {
+            //     insertDeviceTypeData(
+            //         currentLp++,
+            //         "-",
+            //         `${TRANSLATION.powerSupplyBackupNotFound[lang]}`,
+            //         rows
+            //     );
+            // }
         } else {
             insertDeviceTypeData(
                 currentLp++,
@@ -82,9 +77,6 @@ function getDataForExcel() {
         }
     }
 
-    // ========================================================================
-    // 2️⃣ – URZĄDZENIA SYSTEMOWE
-    // ========================================================================
     const reducedDevices = reduceDevicesForFile();
 
     currentLp = insertDeviceTypeData(currentLp, reducedDevices.detector, `${TRANSLATION.fileDetector[lang]}`, rows);
@@ -92,9 +84,6 @@ function getDataForExcel() {
     currentLp = insertDeviceTypeData(currentLp, reducedDevices.valveCtrl, `${TRANSLATION.fileValve[lang]}`, rows);
     currentLp = insertTconInCSV(currentLp, reducedDevices.tCon, "quantityTotal", rows);
 
-    // ========================================================================
-    // 3️⃣ – PRZEWODY
-    // ========================================================================
     rows.push([]);
     rows.push([]);
     rows.push(rowsDescription.accessories);
@@ -104,25 +93,17 @@ function getDataForExcel() {
     rows.push([]);
     rows.push([]);
 
-    // ========================================================================
-    // 🏗️ 3.5 – INFORMACJA O WYBRANYM OBIEKCIE
-    // ========================================================================
-
     rows.push(["",
         `${TRANSLATION.structureType[lang]}`, `${systemData.selectedStructure.type[lang]}`
     ]);
     rows.push([]);
-
-    // ========================================================================
-    // 4️⃣ – INFORMACJE O KONFIGURACJACH
-    // ========================================================================
 
     // --- Główna konfiguracja ---
     if (controlUnitWithSupply && controlUnitWithSupply.controlUnit) {
         const psuMain = controlUnitWithSupply.powerSupply?.supply || controlUnitWithSupply.psu;
         const psuDesc = psuMain ? ` (${psuMain.description})` : "";
         rows.push([
-            `${TRANSLATION.modControlFileInfo[lang]} ${controlUnitWithSupply.controlUnit.type} ${TRANSLATION.modControlFileInfoEnd[lang]}${psuDesc}`
+            `${TRANSLATION.modControlFileInfo[lang]} ${controlUnitWithSupply.controlUnit.type} ${TRANSLATION.modControlFileInfoEnd[lang]}`
         ]);
     }
 
@@ -137,9 +118,6 @@ function getDataForExcel() {
     return rows;
 }
 
-// ============================================================================
-// POMOCNICZE
-// ============================================================================
 function insertTconInCSV(iterator, devices, label, row) {
     if (devices && devices.TConnector !== undefined) {
         const lpPrefix = iterator === 1 ? `` : `.`;
@@ -162,7 +140,7 @@ function reduceDevicesForFile() {
             accumulator[deviceClassSignaller][type] ??= [];
             const toledArray = accumulator[deviceClassSignaller][type];
 
-            let found = toledArray.find(item => item.description === current.description);
+            let found = toledArray.find(item => item.description === current.description && item.labeling === current.labeling);
 
             if (found) {
                 found.quantity++;
@@ -170,6 +148,7 @@ function reduceDevicesForFile() {
                 toledArray.push({
                     ...current.detector,
                     description: current.description,
+                    labeling: current.labeling,
                     quantity: 1,
                 });
             }
@@ -188,9 +167,7 @@ function reduceDevicesForFile() {
     return total;
 }
 
-// ============================================================================
-// FUNKCJE EKSPORTU / POMOCNICZE
-// ============================================================================
+
 function CUUPS() {
     return document.querySelector(`#modControlBatteryBackUp`).value;
 }
@@ -221,7 +198,7 @@ function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
                         devicesAdded++;
                     } else if (key === `TOLED`) {
                         value.forEach(elem => {
-                            store.push([`${iterator + devicesAdded}${lpPrefix}`, label, key, elem.productKey, `${elem.quantity}${TRANSLATION.quantity[lang]}`, elem.description]);
+                            store.push([`${iterator + devicesAdded}${lpPrefix}`, label, key, `${elem.productKey}-${elem.labeling}`, `${elem.quantity}${TRANSLATION.quantity[lang]}`, elem.description]);
                             devicesAdded++;
                         });
                     } else {

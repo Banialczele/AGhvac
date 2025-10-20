@@ -269,8 +269,8 @@ const TRANSLATION = {
     pl: "Sygnalizator",
     en: "Signaller"
   }, fileValve: {
-    pl: "Zawór",
-    en: "Valve"
+    pl: "Sterownik zaworu",
+    en: "Valve Control"
   }, fileCU: {
     pl: "Jednostka sterująca",
     en: "Control Unit"

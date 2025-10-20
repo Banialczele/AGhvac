@@ -236,7 +236,7 @@ const toledDevice = {
   current_A: -0.005,
   minVoltage_V: 15,
   class: DeviceCl.signaller,
-  productKey: "PW-127-TETA-X",
+  productKey: "PW-127-TETA",
   doc: {
     pl: "https://www.atestgaz.pl/produkt/tablica-ostrzegawcza-toled",
     en: 'https://atestgaz.pl/en/produkt/warning-led-display-toled/'
@@ -273,7 +273,7 @@ const tetaControlVDevice = {
   current_A: -0.011,
   minVoltage_V: 15,
   class: DeviceCl.valveCtrl,
-  productKey: "PW-121-X",
+  productKey: "PW-121-H-T",
   doc: {
     pl: "https://www.atestgaz.pl/produkt/sterownik-zaworu-control-v",
     en: "https://atestgaz.pl/en/produkt/valve-controller-control-v/"
@@ -388,6 +388,7 @@ const STRUCTURE_TYPES = [facilityTypeGarage, facilityTypeBattery, facilityTypeHa
 const TOLED_OPTIONS = [
   {
     translate: "toledLabelWe",
+    labeling: "WE",
     type: {
       pl: "NADMIAR SPALIN NIE WCHODZIĆ",
       en: "EXCESS EXHAUST FUMES / DO NOT ENTER",
@@ -395,6 +396,7 @@ const TOLED_OPTIONS = [
   },
   {
     translate: "toledLabelWj",
+    labeling: "WJ",
     type: {
       pl: "NADMIAR SPALIN NIE WJEŻDŻAĆ",
       en: "EXCESS EXHAUST FUMES / DO NOT DRIVE IN",
@@ -402,6 +404,7 @@ const TOLED_OPTIONS = [
   },
   {
     translate: "toledLabelOp",
+    labeling: "OP",
     type: {
       pl: "NADMIAR SPALIN OPUŚĆ GARAŻ",
       en: "EXCESS EXHAUST FUMES / LEAVE THE GARAGE",
@@ -409,6 +412,7 @@ const TOLED_OPTIONS = [
   },
   {
     translate: "toledLabelWs",
+    labeling: "WS",
     type: {
       pl: "Napis na życzenie klienta",
       en: "Inscription at the customer'S request",

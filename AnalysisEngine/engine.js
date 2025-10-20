@@ -1,20 +1,17 @@
 /* ============================================================================
-   ENGINE.JS — Silnik doboru jednostek sterujących (CU) i zasilaczy (PSU)
-   Wersja inżynierska — zoptymalizowana pod kątem fizyki, stabilności i zapasu mocy
-
    PRZYJĘTE NORMY I ZAPASY BEZPIECZEŃSTWA:
    ----------------------------------------
    • Rezerwa mocy systemu:
        - Systemy standardowe (backup = nie): +20% zapasu
-       - Systemy z podtrzymaniem (backup = tak): +30% zapasu (tryb 24/7, systemy bezpieczeństwa)
+       - Systemy z podtrzymaniem (backup = tak): +20% zapasu (tryb 24/7, systemy bezpieczeństwa)
    • Maksymalne wykorzystanie jednostki sterującej: 100%
-   • Margines napięcia magistrali: +5% (inżynierska tolerancja)
+   • Margines napięcia magistrali: +5%
    • Granica stabilności: napięcie na końcu magistrali (V_end) nie może spaść poniżej ½ napięcia zasilającego (po marginesie)
    • Długość magistrali: maksymalnie 1000 m
 ============================================================================ */
 
 const POWER_RESERVE = 0.20; //backup=nie
-const BACKUP_RESERVE = 0.30; //parametr backup=tak
+const BACKUP_RESERVE = 0.20; //parametr backup=tak
 const CU_UTILIZATION_MAX = 1.00;
 const VOLTAGE_MARGIN = 1.05;
 
