@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// return: true if is OK, false if 
+// return: true if is OK, false if
 function isSystemOk(system) {
 	return (analiseSystem(system) != null);
 }
@@ -52,7 +52,7 @@ function getBusSectionVoltageDrop_V(busSection, wireCurrent_A) {
 }
 
 //-----------------------------------------------------------------------------
-// return: NCN 
+// return: NCN
 function makeEleStatusObj() {
 	let eleStatus = {
 		inputVoltage_V: 0,
@@ -71,7 +71,7 @@ function makeEleStatusObj() {
 // thisSection.inputCurrent_A ->		|
 //									   | |
 // thisSection.cableR	->			   | |
-//									   | |   
+//									   | |
 //										|
 //										|      |----------------------|
 // thisSection.deviceSupplyVoltage_V ->	*------| thisSection.Device	  |
@@ -87,7 +87,7 @@ function getBusSectionEleStatus(busSection, nextSectionEleStatus) {
 	let eleStatus = null;
 
 	if (nextSectionEleStatus != null) {
-		let device = getObjByType(Devices, busSection.detector.type);
+		let device = getObjByType(Devices, busSection.deviceType);
 		if (device != undefined) {
 			eleStatus = makeEleStatusObj();
 			eleStatus.deviceSupplyVoltage_V = nextSectionEleStatus.inputVoltage_V;
@@ -95,8 +95,6 @@ function getBusSectionEleStatus(busSection, nextSectionEleStatus) {
 			if ((deviceSupplyCurrent_A != null) && (nextSectionEleStatus.isDeviceGoodVoltage == true)) {
 				eleStatus.isDeviceGoodVoltage = true;
 				eleStatus.inputCurrent_A = nextSectionEleStatus.inputCurrent_A + deviceSupplyCurrent_A;
-
-				// od tego miejsca zmiany!
 				let vDrop_V = getBusSectionVoltageDrop_V(busSection, eleStatus.inputCurrent_A);
 				eleStatus.inputVoltage_V = nextSectionEleStatus.inputVoltage_V + vDrop_V;
 			}
@@ -108,7 +106,7 @@ function getBusSectionEleStatus(busSection, nextSectionEleStatus) {
 	else {
 		eleStatus = null;
 	}
-	console.log(`1`)
+
 	return eleStatus;
 }
 
@@ -122,7 +120,6 @@ function getBusEleStatus(allBusSections, lastSectionDeviceSupplyVoltage_V) {
 
 	for (i = setcQty - 1; i >= 0; i--) {
 		eleStatus = getBusSectionEleStatus(allBusSections[i], eleStatus);
-			console.log(eleStatus)
 		allBusSections[i].eleStatus = copyObj(eleStatus);
 		if (eleStatus.isDeviceGoodVoltage == false) break;
 	}
@@ -136,7 +133,6 @@ function getBusEleStatus(allBusSections, lastSectionDeviceSupplyVoltage_V) {
 			powerConsumption_W: eleStatus.inputCurrent_A * eleStatus.inputVoltage_V
 		};
 	}
-	console.log(stat)
 	return stat;
 }
 
@@ -152,15 +148,14 @@ function analiseSystem(system) {
 	let res = null;
 	let bus = system.bus;
 	let lastSect = bus[bus.length - 1];
-	let supplyVoltage_V = getObjByType(CONTROLUNITLIST, system.supplyType.type).supplyVoltage_V;
+	let supplyVoltage_V = getObjByType(PowerSupplies, system.supplyType).supplyVoltage_V;
 	let busStat;
 
 	const voltageStep_V = 0.1;
 
 	clearErrorDescription();
-	console.log(lastSect)
-	let lastDevice = getObjByType(Devices, lastSect.detector.type);
-	console.log(lastDevice)
+
+	let lastDevice = getObjByType(Devices, lastSect.deviceType);
 	if (lastDevice != undefined) {
 		let busEndVoltage_V = lastDevice.minVoltage_V;
 
@@ -221,7 +216,7 @@ function analiseSystem(system) {
 
 
 	if (getErrorDescription().length == 0) addErrorDescription(errorMsg.noError);
-	console.log(res)
+
 	return res;
 }
 
@@ -243,8 +238,9 @@ function getBusLenght(allBusSections) {
 function getElementQtyByClass(devDlass, allBusSections) {
 	let qty = 0;
 	let setcQty = allBusSections.length;
+
 	for (i = setcQty - 1; i >= 0; i--) {
-		let device = getObjByType(Devices, allBusSections[i].detector.type);
+		let device = getObjByType(Devices, allBusSections[i].deviceType);
 		if (device.class == devDlass) qty++;
 	}
 

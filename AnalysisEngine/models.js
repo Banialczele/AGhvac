@@ -5,6 +5,14 @@ const Cables = [
   { type: "2 x 2,5 mm2", resistivity_OhmPerMeter: 0.00741, priority: 3, pricePerM: "70" },
   // { type: "2 x 4 mm2", resistivity_OhmPerMeter: 0.00461, priority: 4 },
 ];
+
+const PowerSupplies =
+  [
+    { type: "24V", supplyVoltage_V: 24 },
+    { type: "24V + UPS", supplyVoltage_V: 21 },
+    { type: "48V / 48V + UPS", supplyVoltage_V: 48 }
+  ];
+
 //sprawdzić description w controlUnitModule oraz controlUnitS
 const controlUnitModule = {
   type: "Teta MOD Control 1",
@@ -61,9 +69,9 @@ const controlUnitS48100W = {
   img: "Teta MOD Control 1",
   possibleUPS: `no`,
   description: {
-      supplyVoltage: 48,
-      power: 100,
-      powerDemand: 2.5
+    supplyVoltage: 48,
+    power: 100,
+    powerDemand: 2.5
   },
   productKey: "PW-086-Control1-S48-100",
   price: "1700"
@@ -419,3 +427,5 @@ const TOLED_OPTIONS = [
     },
   },
 ];
+
+
