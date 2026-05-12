@@ -1,90 +1,120 @@
-// Tworzenie opcji dla selecta dot. rodzaju struktury
 function createStructureTypesListSelect() {
   const select = document.getElementById("structureType");
+  if (!select || typeof STRUCTURE_TYPES === 'undefined') return;
+
   const fragment = document.createDocumentFragment();
 
-  STRUCTURE_TYPES.forEach((elem) => {
+  STRUCTURE_TYPES.forEach((elem, index) => {
+    const isSelected = initSystem.selectedStructure
+      ? elem.type?.[lang] === initSystem.selectedStructure.type?.[lang]
+      : index === 0;
+
     const option = createOption(elem.type[lang], elem.type[lang], {
       class: "structureOption",
-      selected: elem.type[lang] === STRUCTURE_TYPES[0].type[lang],
+      selected: isSelected,
     });
     fragment.appendChild(option);
+
+    if (isSelected) {
+      initSystem.selectedStructure = elem;
+      systemData.selectedStructure = elem;
+    }
   });
 
   select.innerHTML = "";
   select.appendChild(fragment);
-  structureSelectHandler();
-  createDetectedGasListSelect();
+
+  if (!select.dataset.listener) {
+    select.addEventListener(`change`, (event) => {
+      const selectedStructure = STRUCTURE_TYPES.find((s) => s.type[lang] === event.target.value) || STRUCTURE_TYPES[0];
+      initSystem.selectedStructure = selectedStructure;
+      systemData.selectedStructure = selectedStructure;
+      createDetectedGasListSelect();
+
+      const gasSelect = document.getElementById("gasDetected");
+      if (gasSelect?.options?.length > 0) {
+        initSystem.detector = getFirstDetector(selectedStructure, gasSelect.options[0].dataset.devicename);
+      }
+    });
+    select.dataset.listener = "true";
+  }
 }
 
 function getFirstDetector(structure, deviceName) {
-  return structure.devices.find((device) => device.type === deviceName);
-}
-
-function structureSelectHandler() {
-  const structureSelect = document.getElementById(`structureType`);
-  structureSelect.addEventListener(`change`, (event) => {
-    const gasDetectionSelect = document.getElementById(`gasDetected`);
-    const selectedStructure = STRUCTURE_TYPES.find((structure) => structure.type[lang] === event.target.value);
-    initSystem.selectedStructure = selectedStructure;
-    createDetectedGasListSelect();
-    initSystem.detector = getFirstDetector(selectedStructure, gasDetectionSelect.options[0].dataset.devicename);
-  });
-}
-
-function gasListSelectHandler(select) {
-  select.addEventListener("change", (event) => {
-    const opt = event.target.selectedOptions[0];
-    initSystem.detector = getFirstDetector(initSystem.selectedStructure, opt.dataset.devicename);
-  });
+  if (!structure?.devices) return null;
+  return structure.devices.find((device) => device.type === deviceName) || null;
 }
 
 function createDetectedGasListSelect() {
   const select = document.getElementById("gasDetected");
+  if (!select) return;
+
   const fragment = document.createDocumentFragment();
+  const structure = initSystem.selectedStructure || STRUCTURE_TYPES?.[0];
 
   select.innerHTML = "";
 
-  const structure = initSystem.selectedStructure;
-  if (!structure) return;
-  structure.detection.forEach((gas, i) => {
-    const device = structure.devices[i];
-    if (device.class !== "detector") return;
+  if (structure?.detection) {
+    structure.detection.forEach((gas, i) => {
+      const device = structure.devices?.[i];
+      if (!device || device.class !== "detector") return;
 
-    const option = createOption(gas, `${gas} ${structure.detectionDescription[i][lang]}`, {
-      class: "gasOption",
-      "data-devicename": device.type,
-      "data-devicetype": device.class,
-      selected: gas === initSystem.gasDetected,
+      const option = createOption(gas, `${gas} ${structure.detectionDescription?.[i]?.[lang] || ""}`, {
+        class: "gasOption",
+        "data-devicename": device.type,
+        "data-devicetype": device.class,
+      });
+      fragment.appendChild(option);
     });
-    fragment.appendChild(option);
-  });
+  }
 
   select.appendChild(fragment);
-  gasListSelectHandler(select);
+
+  if (select.options.length > 0) {
+    initSystem.detector = getFirstDetector(structure, select.options[0].dataset.devicename);
+  }
+
+  if (!select.dataset.listener) {
+    select.addEventListener("change", (event) => {
+      const opt = event.target.selectedOptions[0];
+      initSystem.detector = getFirstDetector(initSystem.selectedStructure, opt?.dataset?.devicename);
+    });
+    select.dataset.listener = "true";
+  }
 }
 
 function createBatteryBackUpListSelect() {
   const select = document.getElementById("batteryBackUp");
+  if (!select) return;
+
   const fragment = document.createDocumentFragment();
+  const yesText = TRANSLATION.batteryBackUpYes[lang];
+  const noText = TRANSLATION.batteryBackUpNo[lang];
 
-  const yesOption = createOption(TRANSLATION.batteryBackUpYes[lang], TRANSLATION.batteryBackUpYes[lang], {
-    class: "batteryBackupOption",
-  });
-
-  const noOption = createOption(TRANSLATION.batteryBackUpNo[lang], TRANSLATION.batteryBackUpNo[lang], {
-    class: "batteryBackupOption",
-    selected: true,
-  });
-
-  fragment.appendChild(yesOption);
-  fragment.appendChild(noOption);
+  fragment.appendChild(createOption(yesText, yesText, { class: "batteryBackupOption" }));
+  fragment.appendChild(createOption(noText, noText, { class: "batteryBackupOption", selected: true }));
 
   select.innerHTML = "";
   select.appendChild(fragment);
+  initSystem.backup = select.value;
 }
 
-// Pomocnicza funkcja do tworzenia opcji
+function createThRailingListSelect() {
+  const select = document.getElementById("thRailing");
+  if (!select) return;
+
+  const fragment = document.createDocumentFragment();
+  const yesText = TRANSLATION.batteryBackUpYes[lang];
+  const noText = TRANSLATION.batteryBackUpNo[lang];
+
+  fragment.appendChild(createOption(yesText, yesText, { class: "thRailingOption", selected: true }));
+  fragment.appendChild(createOption(noText, noText, { class: "thRailingOption" }));
+
+  select.innerHTML = "";
+  select.appendChild(fragment);
+  initSystem.thRailing = select.value;
+}
+
 function createOption(value, text, attributes = {}) {
   const option = document.createElement("option");
   option.value = value;
@@ -96,292 +126,820 @@ function createOption(value, text, attributes = {}) {
   return option;
 }
 
-// Ustawienie domyślnych wartości dla inputa liczby urządzeń oraz odległości między urządzeniami
+const SYSTEM_INPUT_LIMITS = {
+  maxDevices: 50,
+  maxTotalBusLengthM: 1000,
+};
+
+function getInputLimitMessage(code, data = {}) {
+  const messages = {
+    INVALID_DEVICE_AMOUNT: {
+      pl: "Ilość urządzeń musi być liczbą większą lub równą 1.",
+      en: "Device quantity must be a number greater than or equal to 1.",
+    },
+    TOO_MANY_DEVICES: {
+      pl: `Maksymalna ilość urządzeń to ${data.maxDevices || SYSTEM_INPUT_LIMITS.maxDevices} szt.`,
+      en: `Maximum device quantity is ${data.maxDevices || SYSTEM_INPUT_LIMITS.maxDevices} pcs.`,
+    },
+    INVALID_WIRE_LENGTH: {
+      pl: "Orientacyjna odległość między urządzeniami musi być liczbą większą lub równą 1 m.",
+      en: "Estimated distance between devices must be a number greater than or equal to 1 m.",
+    },
+    BUS_TOO_LONG: {
+      pl: `Całkowita długość magistrali może wynosić maksymalnie ${data.maxTotal || SYSTEM_INPUT_LIMITS.maxTotalBusLengthM} m (1 km). Aktualnie: ${data.total || 0} m (${data.amount || 0} × ${data.ewl || 0} m). Zmniejsz ilość urządzeń albo orientacyjną odległość między urządzeniami.`,
+      en: `Total bus length may be at most ${data.maxTotal || SYSTEM_INPUT_LIMITS.maxTotalBusLengthM} m (1 km). Current value: ${data.total || 0} m (${data.amount || 0} × ${data.ewl || 0} m). Reduce device quantity or estimated distance between devices.`,
+    },
+  };
+
+  return messages[code]?.[lang] || messages[code]?.pl || code;
+}
+
+function getFormValidationContainer() {
+  const form = document.querySelector(".form");
+  if (!form) return null;
+
+  let container = form.querySelector(".formValidationErrors");
+  if (container) return container;
+
+  container = document.createElement("div");
+  container.className = "formValidationErrors";
+  container.setAttribute("role", "alert");
+  container.setAttribute("aria-live", "polite");
+  container.hidden = true;
+
+  Object.assign(container.style, {
+    gridColumn: "1 / -1",
+    padding: "12px 14px",
+    margin: "2px 0 4px",
+    border: "1px solid rgba(204, 42, 39, 0.45)",
+    borderLeft: "5px solid var(--secondary-bg-color)",
+    borderRadius: "8px",
+    background: "rgba(204, 42, 39, 0.08)",
+    color: "#6f1715",
+    fontSize: "12px",
+    lineHeight: "1.45",
+  });
+
+  const button = form.querySelector(".formButton");
+  form.insertBefore(container, button || null);
+  return container;
+}
+
+function clearFormFieldErrorStates() {
+  ["amountOfDetectors", "EWL"].forEach((id) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.removeAttribute("aria-invalid");
+    input.style.borderColor = "";
+    input.style.boxShadow = "";
+  });
+}
+
+function markFormFieldAsInvalid(fieldId) {
+  const input = document.getElementById(fieldId);
+  if (!input) return;
+  input.setAttribute("aria-invalid", "true");
+  input.style.borderColor = "var(--secondary-bg-color)";
+  input.style.boxShadow = "0 0 0 2px rgba(204, 42, 39, 0.12)";
+}
+
+function setFormValidationErrors(errors = []) {
+  const container = getFormValidationContainer();
+  if (!container) return;
+
+  clearFormFieldErrorStates();
+  container.replaceChildren();
+
+  if (!errors.length) {
+    container.hidden = true;
+    return;
+  }
+
+  const title = document.createElement("strong");
+  title.textContent = lang === "en" ? "Please correct the configuration:" : "Popraw konfigurację:";
+
+  const list = document.createElement("ul");
+  Object.assign(list.style, {
+    margin: "8px 0 0",
+    paddingLeft: "18px",
+  });
+
+  errors.forEach((error) => {
+    const item = document.createElement("li");
+    item.textContent = error.message || String(error);
+    list.appendChild(item);
+    if (error.field) markFormFieldAsInvalid(error.field);
+  });
+
+  container.appendChild(title);
+  container.appendChild(list);
+  container.hidden = false;
+}
+
+function getIntegerInputValue(id) {
+  const input = document.getElementById(id);
+  const value = Number.parseInt(input?.value, 10);
+  return Number.isFinite(value) ? value : NaN;
+}
+
+function validateInitialFormInputLimits() {
+  const amount = getIntegerInputValue("amountOfDetectors");
+  const ewl = getIntegerInputValue("EWL");
+  const errors = [];
+
+  if (!Number.isFinite(amount) || amount < 1) {
+    errors.push({
+      code: "INVALID_DEVICE_AMOUNT",
+      field: "amountOfDetectors",
+      message: getInputLimitMessage("INVALID_DEVICE_AMOUNT"),
+    });
+  } else if (amount > SYSTEM_INPUT_LIMITS.maxDevices) {
+    errors.push({
+      code: "TOO_MANY_DEVICES",
+      field: "amountOfDetectors",
+      message: getInputLimitMessage("TOO_MANY_DEVICES", { maxDevices: SYSTEM_INPUT_LIMITS.maxDevices }),
+    });
+  }
+
+  if (!Number.isFinite(ewl) || ewl < 1) {
+    errors.push({
+      code: "INVALID_WIRE_LENGTH",
+      field: "EWL",
+      message: getInputLimitMessage("INVALID_WIRE_LENGTH"),
+    });
+  }
+
+  if (Number.isFinite(amount) && amount >= 1 && Number.isFinite(ewl) && ewl >= 1) {
+    const total = amount * ewl;
+    if (total > SYSTEM_INPUT_LIMITS.maxTotalBusLengthM) {
+      errors.push({
+        code: "BUS_TOO_LONG",
+        field: "EWL",
+        message: getInputLimitMessage("BUS_TOO_LONG", {
+          total,
+          amount,
+          ewl,
+          maxTotal: SYSTEM_INPUT_LIMITS.maxTotalBusLengthM,
+        }),
+      });
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    amount,
+    ewl,
+    totalBusLength: Number.isFinite(amount) && Number.isFinite(ewl) ? amount * ewl : NaN,
+  };
+}
+
+function setupInitialFormValidationListeners() {
+  const form = document.querySelector(".form");
+  if (!form) return;
+
+  form.noValidate = true;
+
+  if (form.dataset.validationListenersBound === "true") return;
+  form.dataset.validationListenersBound = "true";
+
+  ["amountOfDetectors", "EWL"].forEach((id) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+
+    input.addEventListener("input", () => {
+      const container = document.querySelector(".formValidationErrors");
+      if (!container || container.hidden) return;
+
+      const validation = validateInitialFormInputLimits();
+      setFormValidationErrors(validation.errors);
+    });
+  });
+}
+
 function setInputDefaultData() {
-  document.getElementById("amountOfDetectors").value = initSystem.amountOfDetectors;
-  document.getElementById("EWL").value = initSystem.EWL;
+  const amountInput = document.getElementById("amountOfDetectors");
+  const ewlInput = document.getElementById("EWL");
+  if (amountInput) {
+    amountInput.max = String(SYSTEM_INPUT_LIMITS.maxDevices);
+    amountInput.min = "1";
+    amountInput.value = initSystem.amountOfDetectors;
+  }
+  if (ewlInput) {
+    ewlInput.max = String(SYSTEM_INPUT_LIMITS.maxTotalBusLengthM);
+    ewlInput.min = "1";
+    ewlInput.value = initSystem.EWL;
+  }
 }
 
-function checkBusLength() {
-  const amountOfDetectors = initSystem.amountOfDetectors;
-  const busLength = systemData.bus[0].wireLength;
-  return amountOfDetectors * busLength;
+function syncInitSystemFromFormValues() {
+  const structureSelect = document.getElementById("structureType");
+  const gasSelect = document.getElementById("gasDetected");
+  const backupSelect = document.getElementById("batteryBackUp");
+  const thRailingSelect = document.getElementById("thRailing");
+  const amountInput = document.getElementById("amountOfDetectors");
+  const ewlInput = document.getElementById("EWL");
+
+  let selectedStructure = initSystem.selectedStructure || null;
+
+  if (typeof STRUCTURE_TYPES !== "undefined" && Array.isArray(STRUCTURE_TYPES) && STRUCTURE_TYPES.length > 0) {
+    selectedStructure = STRUCTURE_TYPES.find((structure) => structure.type?.[lang] === structureSelect?.value)
+      || selectedStructure
+      || STRUCTURE_TYPES[0];
+  }
+
+  initSystem.selectedStructure = selectedStructure;
+  systemData.selectedStructure = selectedStructure;
+
+  const selectedGasOption = gasSelect?.selectedOptions?.[0] || gasSelect?.options?.[0] || null;
+  const selectedDetector = selectedGasOption?.dataset?.devicename
+    ? getFirstDetector(selectedStructure, selectedGasOption.dataset.devicename)
+    : null;
+
+  initSystem.detector = selectedDetector
+    || initSystem.detector
+    || selectedStructure?.devices?.find((device) => device.class === "detector")
+    || null;
+
+  initSystem.backup = backupSelect?.value || initSystem.backup || TRANSLATION.batteryBackUpNo?.[lang] || "Nie";
+  initSystem.thRailing = thRailingSelect?.value || initSystem.thRailing || TRANSLATION.batteryBackUpYes?.[lang] || "Tak";
+  initSystem.amountOfDetectors = normalizePositiveInteger(amountInput?.value, initSystem.amountOfDetectors || 1, 1, SYSTEM_INPUT_LIMITS.maxDevices);
+  initSystem.EWL = normalizePositiveInteger(ewlInput?.value, initSystem.EWL || 15, 1, SYSTEM_INPUT_LIMITS.maxTotalBusLengthM);
+
+  if (amountInput) amountInput.value = initSystem.amountOfDetectors;
+  if (ewlInput) ewlInput.value = initSystem.EWL;
+
+  systemData.batteryBackUp = initSystem.backup;
+  systemData.thRailing = initSystem.thRailing;
+  systemData.selectedStructure = initSystem.selectedStructure;
+
+  return {
+    selectedStructure: initSystem.selectedStructure,
+    detector: initSystem.detector,
+    backup: initSystem.backup,
+    thRailing: initSystem.thRailing,
+    amountOfDetectors: initSystem.amountOfDetectors,
+    EWL: initSystem.EWL,
+  };
 }
 
-// Inicjowanie formularza wraz z domyślnymi ustawieniami
 function formInit() {
   createStructureTypesListSelect();
   createDetectedGasListSelect();
   createBatteryBackUpListSelect();
+  createThRailingListSelect();
   setInputDefaultData();
+  syncInitSystemFromFormValues();
+  setupInitialFormValidationListeners();
+  handleFormSubmit();
 }
 
-// Przetwarzanie formularza dot. systemu
+function normalizePositiveInteger(value, fallback, min = 1, max = Number.MAX_SAFE_INTEGER) {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, parsed));
+}
+
+function transitionToSystemView() {
+  const body = document.body;
+  const systemSection = document.getElementById("system");
+  const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+  body.classList.remove("scroll-locked");
+
+  if (body.classList.contains("system-active")) {
+    systemSection?.scrollIntoView({
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
+    return;
+  }
+
+  if (prefersReducedMotion) {
+    body.classList.add("system-active");
+    systemSection?.scrollIntoView({ behavior: "auto", block: "start" });
+    return;
+  }
+
+  body.classList.add("view-transitioning");
+
+  window.setTimeout(() => {
+    body.classList.add("system-active");
+    body.classList.remove("view-transitioning");
+
+    requestAnimationFrame(() => {
+      systemSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, 420);
+}
+
 function handleFormSubmit() {
-  //Zatwierdzenie formularza, przypisanie wybranych przez użytkownika parametrów do obiektu inicjującego podgląd systemu i wygenerowanie podglądu
   const form = document.querySelector(".form");
-  const container = document.getElementById("system");
+  if (!form || form.dataset.submitListenerBound === "true") return;
+
+  form.dataset.submitListenerBound = "true";
   form.addEventListener("submit", (event) => {
     event.preventDefault();
+
     if (initSystem.systemIsGenerated) {
-      const confirmRegenerate = window.confirm(TRANSLATION.regenerateSystemMessage[lang]);
-      if (!confirmRegenerate) return;
-      systemData = {
-        supplyType: ``,
-        devicesTypes: { detectors: [], signallers: [] },
-        bus: [],
-      };
-      container.removeEventListener("change", changeEvent);
-      container.removeEventListener("click", clickEvent);
+      if (!window.confirm(TRANSLATION.regenerateSystemMessage[lang])) return;
+      systemData = createEmptySystemData({ selectedStructure: initSystem.selectedStructure });
     }
 
-    initSystem.backup = document.getElementById("batteryBackUp").value;
-    initSystem.amountOfDetectors = parseInt(document.getElementById("amountOfDetectors").value);
-    systemData.devicesTypes = { detectors: [], signallers: [] };
-    systemData.bus = [];
-    systemData.amountOfDetectors = initSystem.amountOfDetectors;
-    initSystem.EWL = document.getElementById("EWL").value;
-    for (let i = 0; i < initSystem.amountOfDetectors; i++) {
-      systemData.bus.push({
-        index: i + 1,
-        detector: initSystem.detector,
-        wireLength: parseInt(document.getElementById("EWL").value),
-        description: "",
-      });
+    const inputValidation = validateInitialFormInputLimits();
+    if (!inputValidation.isValid) {
+      systemData.errorList = inputValidation.errors.map(({ code, message, field }) => ({ code, message, field }));
+      setFormValidationErrors(inputValidation.errors);
+      errorHandling();
+      return;
     }
-    systemData.selectedStructure = initSystem.selectedStructure;
+
+    setFormValidationErrors([]);
+    syncInitSystemFromFormValues();
+
+    if (!initSystem.detector) {
+      systemData.errorList = [{
+        code: "NO_DEFAULT_DETECTOR",
+        message: "Nie udało się ustalić domyślnego urządzenia z formularza. Sprawdź rodzaj obiektu i wykrywany gaz."
+      }];
+      setFormValidationErrors(systemData.errorList);
+      errorHandling();
+      return;
+    }
+    systemData.bus = Array.from({ length: initSystem.amountOfDetectors }, (_, i) => ({
+      index: i + 1,
+      detector: initSystem.detector,
+      wireLength: initSystem.EWL,
+      description: "",
+      labeling: null,
+    }));
+
+    const isValid = validateSystem();
+    if (!isValid) return;
+
     setSystem();
-    system.scrollIntoView({ behavior: "smooth", block: "start" });
+    transitionToSystemView();
   });
 }
 
-/* =============================================================================
-   DODANE: helpery do integracji z analysisEngine.js (PowerSupplies + ExampleSystem2)
-   + dobór CONTROLUNITLIST po napięciu / UPS / mocy
-============================================================================= */
-
-// backup z selecta: bywa "TAK"/"NIE" albo tekst tłumaczenia
 function isBackupYes(val) {
-  const s = String(val ?? "").trim().toUpperCase();
-  if (s === "TAK" || s === "YES" || s === "TRUE" || s === "1") return true;
-  // wsparcie dla Twojego obecnego selecta (wartość = TRANSLATION.*)
-  if (typeof TRANSLATION !== "undefined" && TRANSLATION.batteryBackUpYes && TRANSLATION.batteryBackUpYes[lang]) {
-    return String(val) === String(TRANSLATION.batteryBackUpYes[lang]);
-  }
-  return false;
+  const yesTranslated = TRANSLATION.batteryBackUpYes?.[lang];
+  return val === yesTranslated || ["TAK", "YES", "TRUE", "1"].includes(String(val).trim().toUpperCase());
 }
 
-function buildEngineSystemFromUI(systemData, forcedSupplyTypeStr) {
-  const defaultCableType = (Array.isArray(Cables) && Cables[0]) ? Cables[0].type : null;
+function isThRailingYes(val) {
+  const yesTranslated = TRANSLATION.batteryBackUpYes?.[lang];
+  return val === yesTranslated || ["TAK", "YES", "TRUE", "1"].includes(String(val).trim().toUpperCase());
+}
 
+function buildEngineSystem(supplyType) {
   return {
-    supplyType: forcedSupplyTypeStr, // string zgodny z PowerSupplies[*].type
-    bus: (systemData.bus || []).map(seg => ({
-      cableType: seg.cableType ?? defaultCableType,
-      cableLen_m: Number(seg.cableLen_m ?? seg.wireLength ?? 0),
-      deviceType: seg.deviceType ?? seg.detector?.type ?? null,
+    supplyType,
+    bus: systemData.bus.map(seg => ({
+      cableLen_m: Number(seg.wireLength) || 1,
+      deviceType: seg.detector?.type,
     })),
   };
 }
 
-// test: czy system przechodzi dla danego PowerSupplies.type
-function testSystemForPowerSupplyType(systemData, supplyTypeStr) {
-  const engineSystem = buildEngineSystemFromUI(systemData, supplyTypeStr);
-
-  // dobór kabla
-  matchSystemCables(engineSystem);
-
-  // analiza
-  const res = analiseSystem(engineSystem);
-
-  // błędy
-  const errors = (typeof getErrorDescription === "function") ? (getErrorDescription() || []) : [];
-
-  return { ok: res != null, engineSystem, res, errors };
+function getControlUnitByType(type) {
+  if (!Array.isArray(CONTROLUNITLIST)) return null;
+  return CONTROLUNITLIST.find(cu => cu.type === type) || null;
 }
 
-function getPowerSupplyObjByType(typeStr) {
-  return (Array.isArray(PowerSupplies) ? PowerSupplies : []).find(ps => ps && ps.type === typeStr) || null;
+function getPowerSupplyList(backupNeeded) {
+  if (backupNeeded) return Array.isArray(powersupplyMC) ? powersupplyMC : [];
+  return Array.isArray(powersupplyTMC1) ? powersupplyTMC1 : [];
 }
 
-// wybór CU po napięciu / mocy / UPS
-function findBestControlUnit(controlUnits, wantedVoltage_V, requiredPower_W, backupYes) {
-  const list = Array.isArray(controlUnits) ? controlUnits : [];
-  const req = Number(requiredPower_W || 0);
-
-  // filtr po napięciu
-  let candidates = list.filter(cu => Number(cu?.description?.supplyVoltage) === Number(wantedVoltage_V));
-  if (!candidates.length) return null;
-
-  // preferencja UPS
-  if (backupYes) {
-    const ups = candidates.filter(cu => String(cu?.possibleUPS).toLowerCase() === "yes");
-    if (ups.length) candidates = ups;
-  }
-
-  // podział po mocy
-  const withPower = candidates.filter(cu => Number(cu?.description?.power || 0) > 0);
-  const powerZero = candidates.filter(cu => Number(cu?.description?.power || 0) === 0);
-
-  // jeśli req <= 0: wybierz "najmniejszą" sensowną mocą albo pierwszą
-  if (req <= 0) {
-    if (withPower.length) {
-      return withPower.sort((a, b) => Number(a.description.power) - Number(b.description.power))[0];
-    }
-    return candidates[0];
-  }
-
-  // najpierw szukamy spełniających moc
-  const enough = withPower.filter(cu => Number(cu.description.power) >= req);
-  if (enough.length) {
-    return enough.sort((a, b) => Number(a.description.power) - Number(b.description.power))[0];
-  }
-
-  // jeśli brak takich, ale są power==0 (traktujemy jako fallback "nieznane/bezlimit")
-  if (powerZero.length) return powerZero[0];
-
-  // ostatecznie największa moc z dostępnych
-  if (withPower.length) {
-    return withPower.sort((a, b) => Number(b.description.power) - Number(a.description.power))[0];
-  }
-
-  return candidates[0];
+function getNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }
 
-/* =============================================================================
-   PODMIENIONE: validateSystem() — wymagania:
-   - dobór 24V vs 48V wg analizy silnika
-   - UPS: test 24V+UPS (21V) gdy backup TAK, ale CU 24V
-   - dobór CU po napięciu i mocy + 15% zapasu
-============================================================================= */
+function getPowerSupplySortValue(powerSupply) {
+  return {
+    price: getNumber(powerSupply?.price, Number.MAX_SAFE_INTEGER),
+    power: getNumber(powerSupply?.power, Number.MAX_SAFE_INTEGER),
+    capacity: getNumber(powerSupply?.batteryCapacity_Ah, 0),
+  };
+}
 
-function validateSystem() {
-  const backupYes = isBackupYes(initSystem.backup);
+function comparePowerSupplies(a, b) {
+  const aValue = getPowerSupplySortValue(a);
+  const bValue = getPowerSupplySortValue(b);
 
-  // kolejność prób
-  const supplyCandidates = backupYes
-    ? ["24V + UPS", "48V / 48V + UPS"]
-    : ["24V", "48V / 48V + UPS"];
+  return (aValue.price - bValue.price)
+    || (aValue.power - bValue.power)
+    || (aValue.capacity - bValue.capacity)
+    || String(a?.description || "").localeCompare(String(b?.description || ""));
+}
 
-  let chosen = null;
+function getTotalBusLength() {
+  return (systemData.bus || []).reduce((sum, segment) => sum + (Number(segment.wireLength) || 0), 0);
+}
 
-  for (const supplyTypeStr of supplyCandidates) {
-    const t = testSystemForPowerSupplyType(systemData, supplyTypeStr);
-    if (t.ok) {
-      chosen = t; // zawiera engineSystem (z dobranym kablem) + res
-      break;
-    }
-  }
+function getCableByType(type) {
+  if (!Array.isArray(Cables)) return null;
+  return Cables.find(cable => cable.type === type) || null;
+}
 
-  // jeśli nic nie przeszło — weź ostatni wynik dla błędów
-  if (!chosen) {
-    const lastTry = testSystemForPowerSupplyType(systemData, supplyCandidates[supplyCandidates.length - 1]);
-    const engineErrors = lastTry.errors || [];
-    systemData.errorList = (engineErrors || []).map(e => ({
-      message: e?.[lang] ?? e?.pl ?? e?.en ?? String(e),
-    }));
+function getCablePricePerMeter(type) {
+  const cable = getCableByType(type);
+  return getNumber(cable?.pricePerM, 0);
+}
 
-    systemData.res = null;
-    systemData.wireType = "-";
-    systemData.totalPower = 0;
-    systemData.generatedSupply = null;
+function getCablePriority(type) {
+  const cable = getCableByType(type);
+  return getNumber(cable?.priority, Number.MAX_SAFE_INTEGER);
+}
 
-    initSystem.systemIsGenerated = true;
-    errorHandling();
-    return;
-  }
+function getConfigEstimatedCost(config) {
+  const value = Number(config?.optimization?.totalEstimatedCost ?? config?.totalEstimatedCost);
+  return Number.isFinite(value) ? value : Number.MAX_SAFE_INTEGER;
+}
 
-  // błędy z silnika -> UI
-  const engineErrors = chosen.errors || [];
-  systemData.errorList = (engineErrors || []).map(e => ({
-    message: e?.[lang] ?? e?.pl ?? e?.en ?? String(e),
-  }));
+function hasEnoughPower(powerSource, minPower) {
+  return getNumber(powerSource?.power, 0) >= getNumber(minPower, 0);
+}
 
-  // wynik mocy z silnika (bez zapasu)
-  const requiredPower_W = chosen.res?.powerConsumption_W ?? 0;
+function hasEnoughVoltage(powerSource, requiredVoltage) {
+  const sourceVoltage = getNumber(powerSource?.supplyVoltage, NaN);
+  const required = getNumber(requiredVoltage, NaN);
 
-  // 15% zapasu do doboru jednostki sterującej
-  const requiredPowerWithReserve_W = Math.ceil(Number(requiredPower_W) * 1.15);
+  if (!Number.isFinite(sourceVoltage) || !Number.isFinite(required)) return true;
+  return sourceVoltage + 0.001 >= required;
+}
 
-  // napięcie wg PowerSupplies
-  const psObj = getPowerSupplyObjByType(chosen.engineSystem.supplyType);
-  const psVoltage = psObj?.supplyVoltage_V ?? null;
+function findSmallestPowerSupply(list, minPower, requiredVoltage, options = {}) {
+  const { requireVoltageMatch = true } = options;
+  if (!Array.isArray(list)) return null;
 
-  // reguła UPS: 21V => CU 24V
-  let wantedControlUnitVoltage = psVoltage;
-  if (psVoltage === 21) wantedControlUnitVoltage = 24;
+  return [...list]
+    .filter(psu => hasEnoughPower(psu, minPower))
+    .filter(psu => !requireVoltageMatch || hasEnoughVoltage(psu, requiredVoltage))
+    .sort(comparePowerSupplies)[0] || null;
+}
 
-  // dobór CU po napięciu i mocy (z zapasem 15%)
-  let controlUnit = findBestControlUnit(
-    CONTROLUNITLIST,
-    wantedControlUnitVoltage,
-    requiredPowerWithReserve_W,
-    backupYes
-  );
+function makePowerConfig({
+  mode,
+  label,
+  controlUnit,
+  powerSupply = null,
+  powerSupplyListName = null,
+  analysis,
+  priority,
+}) {
+  const powerSourcePower = powerSupply
+    ? getNumber(powerSupply.power, 0)
+    : getNumber(controlUnit?.description?.power, 0);
 
-  // fallback: jeśli brak na danym napięciu, spróbuj 48V
-  if (!controlUnit) {
-    controlUnit = findBestControlUnit(CONTROLUNITLIST, 48, requiredPowerWithReserve_W, backupYes)
-      || ((Array.isArray(CONTROLUNITLIST) && CONTROLUNITLIST.length) ? CONTROLUNITLIST[0] : null);
-  }
+  const cableType = analysis.engineSystem.bus[0]?.cableType || "2 x 1 mm2";
+  const busLength = getTotalBusLength();
+  const cablePricePerMeter = getCablePricePerMeter(cableType);
+  const cableCost = busLength * cablePricePerMeter;
+  const controlUnitCost = getNumber(controlUnit?.price, 0);
+  const powerSupplyCost = getNumber(powerSupply?.price, 0);
+  const totalEstimatedCost = controlUnitCost + powerSupplyCost + cableCost;
 
-  // jeśli nadal brak — błąd
-  if (!controlUnit) {
-    systemData.errorList.push({ message: "Brak jednostki sterującej w CONTROLUNITLIST dla wymaganego napięcia/mocy (z zapasem 15%)." });
-    systemData.res = null;
-    systemData.wireType = "-";
-    systemData.totalPower = 0;
-    systemData.generatedSupply = null;
-
-    initSystem.systemIsGenerated = true;
-    errorHandling();
-    return;
-  }
-
-  // dobrany kabel (po matchSystemCables już siedzi w chosen.engineSystem.bus)
-  const cableType = chosen.engineSystem.bus?.[0]?.cableType ?? null;
-  const cableObj = (Array.isArray(Cables) ? Cables : []).find(c => c.type === cableType) || null;
-
-  // zapis do UI (trzymasz supplyType jako obiekt CU — zgodnie z Twoim UI)
-  systemData.supplyType = controlUnit;
-
-  // wynik w formacie UI (jak u Ciebie)
-  systemData.res = {
-    powerSupply: {
-      controlUnit: controlUnit,
-      cable: cableObj,
-      systemPowerNoReserve: requiredPower_W, // czyste X z silnika
-      powerSupply: null, // NIE dobieramy osobnych zasilaczy
+  return {
+    mode,
+    label,
+    controlUnit,
+    powerSupply,
+    powerSupplyListName,
+    analysisType: analysis.type,
+    analysisPriority: analysis.analysisPriority,
+    engineSystem: analysis.engineSystem,
+    result: analysis.result,
+    systemPowerNoReserve: analysis.pwrNoReserve,
+    systemPowerWithReserve: analysis.pwrWithReserve,
+    requiredSupplyVoltage: analysis.result.requiredSupplyVoltage_V,
+    currentConsumption: analysis.result.currentConsumption_A,
+    cable: {
+      type: cableType,
+      pricePerM: cablePricePerMeter,
+      priority: getCablePriority(cableType),
+    },
+    priority,
+    powerSourcePower,
+    optimization: {
+      strategy: "lowest-total-estimated-cost",
+      totalEstimatedCost,
+      controlUnitCost,
+      powerSupplyCost,
+      cableCost,
+      cablePricePerMeter,
+      busLength,
     },
   };
+}
 
-  systemData.wireType = cableObj?.type ?? "-";
+function addDirectControlUnitConfig(configs, type, analysis, priority) {
+  const controlUnit = getControlUnitByType(type);
+  if (!controlUnit) return;
 
-  // totalPower = minimalna moc, jaką CU ma dostarczyć (X + 15%)
-  systemData.totalPower = Math.round(requiredPower_W);
+  const unitPower = getNumber(controlUnit.description?.power, 0);
+  const unitVoltage = getNumber(controlUnit.description?.supplyVoltage, 0);
+  const requiredVoltage = getNumber(analysis.result.requiredSupplyVoltage_V, 0);
 
-  systemData.generatedSupply = null;
+  if (unitPower < analysis.pwrWithReserve) return;
+  if (unitVoltage + 0.001 < requiredVoltage) return;
 
+  configs.push(makePowerConfig({
+    mode: "integrated-control-unit",
+    label: controlUnit.type,
+    controlUnit,
+    analysis,
+    priority,
+  }));
+}
+
+function addExternalPowerSupplyConfig(configs, controlUnitType, powerSupplyList, powerSupplyListName, analysis, priority, options = {}) {
+  const controlUnit = getControlUnitByType(controlUnitType);
+  if (!controlUnit) return;
+
+  const powerSupply = findSmallestPowerSupply(
+    powerSupplyList,
+    analysis.pwrWithReserve,
+    analysis.result.requiredSupplyVoltage_V,
+    options
+  );
+
+  if (!powerSupply) return;
+
+  configs.push(makePowerConfig({
+    mode: "control-unit-with-external-power-supply",
+    label: `${controlUnit.type} + ${powerSupply.description}`,
+    controlUnit,
+    powerSupply,
+    powerSupplyListName,
+    analysis,
+    priority,
+  }));
+}
+
+function buildPowerConfigurationsForAnalysis(analysis, backupNeeded, thRailingNeeded) {
+  const configs = [];
+  const hdrList = getPowerSupplyList(false);
+  const zbfList = getPowerSupplyList(true);
+
+  // TH35 = wybieramy wyłącznie Teta MOD Control 1.
+  // Dla braku podtrzymania dobieramy zasilacz HDR, dla podtrzymania akumulatorowego dobieramy ZBF.
+  if (thRailingNeeded) {
+    if (!backupNeeded && analysis.type === "48V / 48V + UPS") {
+      // HDR-y w batteryList mają pole supplyVoltage ustawione na wartość roboczą/minimalną,
+      // a analysisEngine waliduje wariant jako magistralę 48 V. Dla Teta MOD Control 1 + HDR
+      // nie odrzucamy więc konfiguracji po samym supplyVoltage z obiektu zasilacza.
+      addExternalPowerSupplyConfig(configs, "Teta MOD Control 1", hdrList, "powersupplyTMC1", analysis, 5, {
+        requireVoltageMatch: false,
+      });
+    }
+
+    if (backupNeeded && analysis.type === "24V + UPS") {
+      addExternalPowerSupplyConfig(configs, "Teta MOD Control 1", zbfList, "powersupplyMC", analysis, 5, {
+        requireVoltageMatch: true,
+      });
+    }
+
+    return configs.sort(comparePowerConfigurations);
+  }
+
+  // Bez montażu na TH35 nie proponujemy Teta MOD Control 1, bo jest to moduł na szynę TH35.
+  if (!backupNeeded) {
+    if (analysis.type === "24V") {
+      addDirectControlUnitConfig(configs, "Teta Control 1-S24-60W", analysis, 10);
+    }
+
+    if (analysis.type === "48V / 48V + UPS") {
+      addDirectControlUnitConfig(configs, "Teta Control 1-S48-60W", analysis, 10);
+      addDirectControlUnitConfig(configs, "Teta Control 1-S48-100W", analysis, 10);
+      addDirectControlUnitConfig(configs, "Teta Control 1-S48-150W", analysis, 10);
+    }
+  } else {
+    if (analysis.type === "24V + UPS") {
+      addExternalPowerSupplyConfig(configs, "Teta Control 1-S", zbfList, "powersupplyMC", analysis, 10, {
+        requireVoltageMatch: true,
+      });
+    }
+
+    if (analysis.type === "48V / 48V + UPS") {
+      // Teta Control 1-S-UP300W ma własny zasilacz magistrali, a ZBF dobieramy jako zasilacz podtrzymujący.
+      // Dla tej konfiguracji nie porównujemy napięcia ZBF z napięciem magistrali 48 V.
+      addExternalPowerSupplyConfig(configs, "Teta Control 1-S-UP300W", zbfList, "powersupplyMC", analysis, 30, {
+        requireVoltageMatch: false,
+      });
+    }
+  }
+
+  return configs.sort(comparePowerConfigurations);
+}
+
+function comparePowerConfigurations(a, b) {
+  return (getConfigEstimatedCost(a) - getConfigEstimatedCost(b))
+    || (getCablePriority(a.cable?.type) - getCablePriority(b.cable?.type))
+    || ((a.analysisPriority ?? Number.MAX_SAFE_INTEGER) - (b.analysisPriority ?? Number.MAX_SAFE_INTEGER))
+    || (a.priority - b.priority)
+    || (getNumber(a.powerSourcePower, 0) - getNumber(b.powerSourcePower, 0))
+    || comparePowerSupplies(a.powerSupply, b.powerSupply)
+    || String(a.controlUnit?.type || "").localeCompare(String(b.controlUnit?.type || ""));
+}
+
+function toSerializablePowerConfig(config) {
+  return {
+    mode: config.mode,
+    label: config.label,
+    controlUnit: config.controlUnit,
+    powerSupply: config.powerSupply ? {
+      supply: config.powerSupply,
+      listName: config.powerSupplyListName,
+    } : null,
+    analysisType: config.analysisType,
+    systemPowerNoReserve: config.systemPowerNoReserve,
+    systemPowerWithReserve: config.systemPowerWithReserve,
+    requiredSupplyVoltage: config.requiredSupplyVoltage,
+    currentConsumption: config.currentConsumption,
+    cable: config.cable,
+    priority: config.priority,
+    powerSourcePower: config.powerSourcePower,
+    optimization: config.optimization,
+  };
+}
+
+function validateSystem() {
+  if (!Array.isArray(systemData.bus) || systemData.bus.length === 0) {
+    systemData.errorList = [{ code: "EMPTY_BUS", message: "Brak urządzeń w magistrali systemu." }];
+    errorHandling();
+    return false;
+  }
+
+  if (systemData.bus.length > SYSTEM_INPUT_LIMITS.maxDevices) {
+    systemData.errorList = [{
+      code: "TOO_MANY_DEVICES",
+      message: getInputLimitMessage("TOO_MANY_DEVICES", { maxDevices: SYSTEM_INPUT_LIMITS.maxDevices }),
+    }];
+    errorHandling();
+    return false;
+  }
+
+  const totalBusLength = getTotalBusLength();
+  if (totalBusLength > SYSTEM_INPUT_LIMITS.maxTotalBusLengthM) {
+    systemData.errorList = [{
+      code: "BUS_TOO_LONG",
+      message: getInputLimitMessage("BUS_TOO_LONG", {
+        total: totalBusLength,
+        amount: systemData.bus.length,
+        ewl: systemData.bus.length ? Math.round(totalBusLength / systemData.bus.length) : 0,
+        maxTotal: SYSTEM_INPUT_LIMITS.maxTotalBusLengthM,
+      }),
+    }];
+    errorHandling();
+    return false;
+  }
+
+  const hasInvalidSegment = systemData.bus.some(seg => !seg.detector?.type || !Number.isFinite(Number(seg.wireLength)) || Number(seg.wireLength) <= 0);
+  if (hasInvalidSegment) {
+    systemData.errorList = [{ code: "INVALID_SEGMENT", message: "Nieprawidłowe dane segmentu: sprawdź typ urządzenia i długość przewodu." }];
+    errorHandling();
+    return false;
+  }
+
+  const backupNeeded = isBackupYes(initSystem.backup || systemData.batteryBackUp);
+  const thRailingNeeded = isThRailingYes(initSystem.thRailing || systemData.thRailing);
+  const supplyCandidates = backupNeeded ? ["24V + UPS", "48V / 48V + UPS"] : ["24V", "48V / 48V + UPS"];
+  const possibleConfigs = [];
+
+  supplyCandidates.forEach((type, analysisPriority) => {
+    const engineSystem = buildEngineSystem(type);
+    if (typeof matchSystemCables === 'function') matchSystemCables(engineSystem);
+
+    const result = (typeof analiseSystem === 'function') ? analiseSystem(engineSystem) : null;
+    if (!result || result.status === "error") return;
+
+    const pwrNoReserve = Number(result.powerConsumption_W) || 0;
+    const pwrWithReserve = Math.ceil(pwrNoReserve * 1.15);
+    const voltageForCU = (type.includes("24V") || Number(result.supplyVoltage_V) < 30) ? 24 : 48;
+
+    const analysis = {
+      result,
+      engineSystem,
+      type,
+      pwrNoReserve,
+      pwrWithReserve,
+      voltageForCU,
+      analysisPriority,
+    };
+
+    buildPowerConfigurationsForAnalysis(analysis, backupNeeded, thRailingNeeded)
+      .forEach(config => {
+        config.analysisPriority = analysisPriority;
+        possibleConfigs.push(config);
+      });
+  });
+
+  possibleConfigs.sort(comparePowerConfigurations);
+  const chosenConfig = possibleConfigs[0] || null;
+
+  if (!chosenConfig) {
+    systemData.errorList = [{
+      code: "NO_VALID_POWER_CONFIG",
+      message: thRailingNeeded
+        ? (backupNeeded
+          ? "System nie spełnia wymogów spadku napięcia albo nie znaleziono poprawnej konfiguracji: Teta MOD Control 1 + zasilacz ZBF dla montażu na szynie TH35."
+          : "System nie spełnia wymogów spadku napięcia albo nie znaleziono poprawnej konfiguracji: Teta MOD Control 1 + zasilacz HDR dla montażu na szynie TH35.")
+        : (backupNeeded
+          ? "System nie spełnia wymogów spadku napięcia albo nie znaleziono poprawnej konfiguracji: Teta Control 1-S + ZBF albo Teta Control 1-S-UP300W + ZBF."
+          : "System nie spełnia wymogów spadku napięcia albo nie znaleziono poprawnej konfiguracji: Teta Control 1-S24-60W / Teta Control 1-S48-60W / Teta Control 1-S48-100W / Teta Control 1-S48-150W.")
+    }];
+    errorHandling();
+    if (!document.body.classList.contains("system-active")) {
+      setFormValidationErrors(systemData.errorList);
+    }
+    return false;
+  }
+
+  systemData.supplyType = chosenConfig.controlUnit;
+  systemData.totalPower = Math.round(chosenConfig.systemPowerNoReserve);
+  systemData.wireType = chosenConfig.cable.type || "2 x 1 mm2";
+  systemData.generatedSupply = chosenConfig.powerSupply
+    ? chosenConfig.powerSupply.description
+    : (chosenConfig.controlUnit.description?.power ? `${chosenConfig.controlUnit.description.power}W` : null);
+  systemData.selectedStructure = initSystem.selectedStructure || systemData.selectedStructure;
+  systemData.batteryBackUp = initSystem.backup || systemData.batteryBackUp;
+  systemData.thRailing = initSystem.thRailing || systemData.thRailing;
+  systemData.res = {
+    powerSupply: {
+      controlUnit: chosenConfig.controlUnit,
+      powerSupply: chosenConfig.powerSupply ? {
+        supply: chosenConfig.powerSupply,
+        listName: chosenConfig.powerSupplyListName,
+      } : null,
+      psu: chosenConfig.powerSupply || null,
+      mode: chosenConfig.mode,
+      label: chosenConfig.label,
+      systemPowerNoReserve: chosenConfig.systemPowerNoReserve,
+      systemPowerWithReserve: chosenConfig.systemPowerWithReserve,
+      cable: chosenConfig.cable,
+      analysisType: chosenConfig.analysisType,
+      requiredSupplyVoltage: chosenConfig.requiredSupplyVoltage,
+      currentConsumption: chosenConfig.currentConsumption,
+      powerSourcePower: chosenConfig.powerSourcePower,
+      optimization: chosenConfig.optimization,
+      backupRequested: backupNeeded,
+      thRailingRequested: thRailingNeeded,
+    },
+    possibleConfigs: possibleConfigs.map(toSerializablePowerConfig),
+  };
+
+  systemData.errorList = [];
   initSystem.systemIsGenerated = true;
+  setFormValidationErrors([]);
   errorHandling();
+  return true;
+}
+
+function findBestControlUnit(list, voltage, minPower, needsUPS) {
+  if (!Array.isArray(list)) return null;
+
+  return [...list]
+    .filter(cu =>
+      Number(cu.description?.supplyVoltage) === Number(voltage) &&
+      Number(cu.description?.power) >= Number(minPower) &&
+      (!needsUPS || String(cu.possibleUPS).toLowerCase() === "yes")
+    )
+    .sort((a, b) => Number(a.description?.power) - Number(b.description?.power))[0] || null;
 }
 
 function errorHandling() {
-  if (systemData.bus.length > 50 && !systemData.errorList.find(error => error.code === `TOO_MANY_DEVICES`)) {
-    systemData.errorList.push({ code: `TOO_MANY_DEVICES`, message: `${TRANSLATION.busWarning[lang]}` })
-  }
   const errorContainer = document.querySelector(`.errors`);
   const errorList = document.querySelector(`.errorList`);
-  errorList.innerHTML = ""
+  if (!errorList) return;
+
+  errorList.innerHTML = "";
+
+  const uniqueErrors = [];
+  const seen = new Set();
+  (systemData.errorList || []).forEach(error => {
+    const key = error.code || error.message;
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueErrors.push(error);
+    }
+  });
+  systemData.errorList = uniqueErrors;
+
   systemData.errorList.forEach(error => {
     const item = document.createElement(`li`);
-    item.setAttribute(`id`, error.code);
+    if (error.code) item.id = error.code;
     item.innerText = error.message;
     errorList.appendChild(item);
   });
-  if (systemData.errorList.length > 0) {
-    errorContainer.classList.add("errorActive");
-  } else {
-    errorContainer.classList.remove("errorActive");
+
+  if (errorContainer) {
+    errorContainer.classList.toggle("errorActive", systemData.errorList.length > 0);
+  }
+
+  if (!document.body.classList.contains("system-active")) {
+    setFormValidationErrors(systemData.errorList || []);
   }
 }

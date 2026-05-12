@@ -323,7 +323,7 @@
   place-self: center;
 }
 
-#actionsSegment0 .actionsSegment0SelectContainer { 
+#actionsSegment0 .actionsSegment0SelectContainer {
   grid-area: modControlSelect
 }
 
@@ -358,7 +358,7 @@
   color: #cc2a27;
 }
 
-#actionsSegment0  .tooltip::before {
+#actionsSegment0 .tooltip::before {
   content: attr(data-text);
   position: absolute;
   left: 50%;
@@ -378,16 +378,16 @@
   transition: opacity 0.2s;
   z-index: 100;
   white-space: normal;
-  box-shadow: 0 4px 12px 0 rgba(0,0,0,0.12);
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.12);
   visibility: hidden;
 }
 
- #actionsSegment0  .tooltip:hover::before {
+#actionsSegment0 .tooltip:hover::before {
   opacity: 1;
   visibility: visible;
 }
 
-#actionsSegment0  .tooltip::after {
+#actionsSegment0 .tooltip::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -493,4 +493,3 @@
     grid-template-columns: 10% 1fr 90px 1fr;
   }
 }
-

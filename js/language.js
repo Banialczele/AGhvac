@@ -33,6 +33,10 @@ const TRANSLATION = {
     pl: "Proszę wybrać czy jednostka sterująca powinna mieć akumulatorowe podtrzymanie pracy",
     en: "Please choose if control unit module should have built-in UPS. "
   },
+  thRailingInformation: {
+    pl: "Proszę wybrać czy jednostka sterująca będzie montowana w szafie na szynie TH35",
+    en: "Please choose if control unit will be mounted on TH35 railing inside distribution board"
+  },
   wireLengthInformation: {
     pl: "Orientacyjna odległość ( długość przewodu ) pomiędzy urządeniami na magistrali. Przykładowo, w garażach podziemnych pomiędzy dwoma czujnikami CO przyjmuje się średnio 20m. ",
     en: "Approximate distance ( cable length ) between two devices on the bus. For example, in underground garages, the average distance between two CO detectors is 20m."
@@ -56,6 +60,10 @@ const TRANSLATION = {
   batteryBackUpLabel: {
     pl: "Akumulatorowe podtrzymanie pracy",
     en: "Uninterruptible power supply",
+  },
+  thRailingLabel: {
+    pl: "Montaż w szafie na szynie TH35",
+    en: "DIN rail mounting (TH35) in an electrical distribution board"
   },
   wireLengthLabel: {
     pl: "Orientacyjna odległość między urządzeniami",

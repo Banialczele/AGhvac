@@ -257,7 +257,7 @@
   }
 
   .system .systemStatus {
-   max-height: calc(100vh - 200px);
+    max-height: calc(100vh - 200px);
   }
 }
 
@@ -277,8 +277,9 @@
     padding: 0 8px;
     margin: 0 auto 17px;
   }
-   .system .systemStatus {
-   max-height: calc(100vh - 200px);
+
+  .system .systemStatus {
+    max-height: calc(100vh - 200px);
   }
 }
 
@@ -577,4 +578,111 @@
   background: rgba(213, 96, 96, 0.7);
   border-radius: 15px;
 
+}
+
+
+/* Czytelniejsza prezentacja dobranego zasilacza w panelu stanu systemu */
+.controlUnitList .powerSupplyStatusItem {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  row-gap: 8px;
+  padding: 12px;
+  margin-top: 2px;
+  background: var(--accent-bg-color);
+  border-left: 4px solid var(--secondary-bg-color);
+  border-radius: 8px;
+}
+
+.controlUnitList .powerSupplyStatusItem>div:first-child {
+  display: block;
+  width: 100%;
+  color: #666;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.controlUnitList .powerSupplyStatusItem>div:last-child {
+  display: block;
+  width: 100%;
+}
+
+.controlUnitList .powerSupplyStatusItem #powerSupplyType {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  margin: 0;
+  color: #222;
+  background: #fff;
+  border: 2px solid var(--input-border-color);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+
+/* Przycisk powrotu do formularza wejściowego */
+.system .systemStatus {
+  display: flex;
+  flex-direction: column;
+}
+
+.systemHomeActions {
+  width: 100%;
+  padding: 18px 0 0 15px;
+  margin-top: auto;
+}
+
+.systemHomeButton {
+  width: 100%;
+  min-height: var(--input-height);
+  padding: 10px 14px;
+  font-family: var(--main-font-family);
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--secondary-bg-color);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(204, 42, 39, 0.18);
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.systemHomeButton::before {
+  content: "‹";
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 18px;
+  line-height: 1;
+  vertical-align: -1px;
+}
+
+.systemHomeButton:hover {
+  background: #a12220;
+  box-shadow: 0 6px 16px rgba(204, 42, 39, 0.24);
+  transform: translateY(-1px);
+}
+
+.systemHomeButton:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(204, 42, 39, 0.18);
+}
+
+.systemHomeButton:focus-visible {
+  outline: 3px solid rgba(204, 42, 39, 0.28);
+  outline-offset: 3px;
+}
+
+@media screen and (max-width: 699px) {
+  .systemHomeActions {
+    padding: 12px 0 0;
+  }
 }

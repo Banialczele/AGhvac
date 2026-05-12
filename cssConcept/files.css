@@ -6,7 +6,9 @@
   cursor: pointer;
 }
 
-.systemFiles .fileButton:first-child { margin-bottom: 15px; }
+.systemFiles .fileButton:first-child {
+  margin-bottom: 15px;
+}
 
 .systemFiles .fileButton img {
   width: calc(var(--input-height) - 6px);
@@ -30,6 +32,7 @@
     font-size: 11px;
     padding: 4px 2px;
   }
+
   .systemFiles .fileButton img {
     width: 22px;
     height: 22px;

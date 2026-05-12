@@ -21,6 +21,7 @@ function exportToXLSX() {
     XLSX.writeFile(workbook, fileName || `TetaSystem_${setDate()}.xlsx`);
 }
 
+
 function getDataForExcel() {
     let currentLp = 1;
 
@@ -35,11 +36,10 @@ function getDataForExcel() {
     const controlUnitWithSupply = systemData.res?.powerSupply;
     const alternativeConfig = systemData.res?.alternativeConfig;
     const wantsBackup =
-        (String(initSystem?.backup || "").trim().toLowerCase() === "tak" ||
-            String(initSystem?.backup || "").trim().toLowerCase() === "yes");
+        (String(initSystem?.backup || systemData?.batteryBackUp || "").trim().toLowerCase() === "tak" ||
+            String(initSystem?.backup || systemData?.batteryBackUp || "").trim().toLowerCase() === "yes");
 
     if (controlUnitWithSupply && controlUnitWithSupply.controlUnit) {
-        // --- 1. Główna jednostka sterująca ---
         currentLp = insertDeviceTypeData(
             currentLp,
             controlUnitWithSupply.controlUnit,
@@ -48,28 +48,18 @@ function getDataForExcel() {
             { removeDotForOne: true }
         );
 
-        // --- 2. Zasilacz / brak zasilacza ---
-        if (wantsBackup) {
-            const psuObj = controlUnitWithSupply.powerSupply?.supply || controlUnitWithSupply.psu;
-            if (psuObj) {
-                insertDeviceTypeData(
-                    currentLp++,
-                    psuObj,
-                    `${TRANSLATION.fileBufferPSU[lang]}`,
-                    rows
-                );
-            }
-            // else {
-            //     insertDeviceTypeData(
-            //         currentLp++,
-            //         "-",
-            //         `${TRANSLATION.powerSupplyBackupNotFound[lang]}`,
-            //         rows
-            //     );
-            // }
-        } else {
-            insertDeviceTypeData(
-                currentLp++,
+        const psuObj = controlUnitWithSupply.powerSupply?.supply || controlUnitWithSupply.psu;
+
+        if (psuObj) {
+            currentLp = insertDeviceTypeData(
+                currentLp,
+                psuObj,
+                wantsBackup ? `${TRANSLATION.fileBufferPSU[lang]}` : `${TRANSLATION.filePSU[lang]}`,
+                rows
+            );
+        } else if (!wantsBackup) {
+            currentLp = insertDeviceTypeData(
+                currentLp,
                 "-",
                 `${TRANSLATION.powerSupplyNotRequired[lang]}`,
                 rows
@@ -88,26 +78,21 @@ function getDataForExcel() {
     rows.push([]);
     rows.push(rowsDescription.accessories);
 
-    const busLengthValue = systemData.bus.reduce((acc, device) => acc + device.wireLength, 0);
+    const busLengthValue = systemData.bus.reduce((acc, device) => acc + (Number(device.wireLength) || 0), 0);
     rows.push(["", `${systemData.wireType}`, busLengthValue]);
     rows.push([]);
     rows.push([]);
 
-    rows.push(["",
-        `${TRANSLATION.structureType[lang]}`, `${systemData.selectedStructure.type[lang]}`
-    ]);
+    const structure = systemData.selectedStructure || initSystem.selectedStructure;
+    rows.push(["", `${TRANSLATION.structureType[lang]}`, `${structure?.type?.[lang] || structure || ""}`]);
     rows.push([]);
 
-    // --- Główna konfiguracja ---
     if (controlUnitWithSupply && controlUnitWithSupply.controlUnit) {
-        const psuMain = controlUnitWithSupply.powerSupply?.supply || controlUnitWithSupply.psu;
-        const psuDesc = psuMain ? ` (${psuMain.description})` : "";
         rows.push([
             `${TRANSLATION.modControlFileInfo[lang]} ${controlUnitWithSupply.controlUnit.type} ${TRANSLATION.modControlFileInfoEnd[lang]}`
         ]);
     }
 
-    // --- Alternatywna konfiguracja ---
     if (alternativeConfig && alternativeConfig.controlUnit) {
         const altPSU = alternativeConfig.powerSupply?.supply || alternativeConfig.psu;
         const altDesc = altPSU?.description ? ` (${altPSU.description})` : "";
@@ -180,7 +165,16 @@ function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
         if (label === `Jednostka sterująca` || label === `Control Unit`) {
             store.push([`${iterator}${lpPrefix}`, label, devices.type, devices.productKey, `1${TRANSLATION.quantity[lang]}`]);
             return iterator + 1;
-        } else if (label === `Zasilacz buforowy` || label === `Zasilacz`) {
+        } else if ([
+            TRANSLATION.fileBufferPSU?.pl,
+            TRANSLATION.fileBufferPSU?.en,
+            TRANSLATION.filePSU?.pl,
+            TRANSLATION.filePSU?.en,
+            `Zasilacz buforowy`,
+            `Zasilacz`,
+            `Buffer power supply`,
+            `Power supply`,
+        ].includes(label)) {
             const deviceType = typeof devices === 'object' ? devices.type : devices;
             const deviceDescription = typeof devices === 'object' ? devices.description : '';
             const deviceProductKey = typeof devices === 'object' ? devices.productKey : '';
@@ -219,12 +213,33 @@ function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
     return iterator;
 }
 
+
 function exportToJSON() {
-    systemData.backup = initSystem.backup;
-    const stringData = JSON.stringify(systemData);
-    const blob = new Blob([stringData], { type: "text/javascript" });
+    const exportData = {
+        version: 2,
+        revision: typeof REVISIONNUMBER !== "undefined" ? REVISIONNUMBER : null,
+        lang,
+        initSystem: {
+            systemIsGenerated: initSystem.systemIsGenerated,
+            amountOfDetectors: initSystem.amountOfDetectors,
+            EWL: initSystem.EWL,
+            backup: initSystem.backup,
+            thRailing: initSystem.thRailing,
+            selectedStructureType: initSystem.selectedStructure?.type?.pl || initSystem.selectedStructure?.type?.[lang] || null,
+        },
+        systemData: {
+            ...systemData,
+            selectedStructureType: systemData.selectedStructure?.type?.pl || systemData.selectedStructure?.type?.[lang] || null,
+            // Nie serializujemy pełnego obiektu struktury jako źródła prawdy — odtwarzamy go z models.js przy imporcie.
+            selectedStructure: undefined,
+        },
+    };
+
+    const stringData = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([stringData], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     downloadFile(url, "json");
+    URL.revokeObjectURL(url);
 }
 
 function insertDeviceTypeWireLengthData(deviceType, deviceTypeLabel, store) {
@@ -261,16 +276,37 @@ function handleInputLoadFile(event) {
     convertAndLoadFileData(event.target.files[0]);
 }
 
+
 function convertAndLoadFileData(file) {
-    if (file.type.match("^application/json")) {
-        const reader = new FileReader();
-        reader.readAsText(file);
-        reader.onload = function () {
-            const data = reader.result;
-            const formattedData = JSON.parse(data);
-            createSystemDataFromAFile(formattedData);
-            setSystem();
-            system.scrollIntoView({ behavior: "smooth", block: "start" });
-        };
+    if (!file) return;
+
+    if (!file.type.match("^application/json") && !file.name?.toLowerCase().endsWith(".json")) {
+        window.alert("Nieprawidłowy format pliku. Wczytaj plik JSON.");
+        return;
     }
+
+    const reader = new FileReader();
+    reader.readAsText(file);
+    reader.onload = function () {
+        try {
+            const formattedData = JSON.parse(reader.result);
+            createSystemDataFromAFile(formattedData);
+
+            const isValid = validateSystem();
+            if (!isValid) return;
+
+            setSystem();
+            document.body.classList.remove('scroll-locked');
+            document.body.classList.add('system-active');
+
+            const systemSection = document.getElementById("system");
+            systemSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+        } catch (error) {
+            console.error(error);
+            window.alert("Nie udało się wczytać pliku JSON. Sprawdź strukturę pliku.");
+        } finally {
+            const input = document.getElementById("readFileInput");
+            if (input) input.value = "";
+        }
+    };
 }

@@ -22,18 +22,18 @@
   grid-template-rows: 1fr 15px;
   grid-template-areas: "modControlDescription modControlImage"
     "modControlDocTech modControlImage";
-    padding-bottom: 12px; 
+  padding-bottom: 12px;
 }
 
-.usedDeviceItem:first-child .usedDeviceName{
+.usedDeviceItem:first-child .usedDeviceName {
   grid-area: modControlDescription;
 }
 
-.usedDeviceItem:first-child .usedDeviceDocs{
+.usedDeviceItem:first-child .usedDeviceDocs {
   grid-area: modControlDocTech;
 }
 
-.usedDeviceItem:first-child .usedDeviceImageContainer{
+.usedDeviceItem:first-child .usedDeviceImageContainer {
   grid-area: modControlImage;
   place-self: center end;
 }
@@ -80,6 +80,7 @@
   max-width: 60px;
   max-height: 80px;
 }
+
 @media screen and (max-width: 768px) {
   #usedDevicesContainer .usedDeviceItem {
     flex-direction: column;
@@ -96,11 +97,14 @@
   #usedDevicesContainer .usedDeviceItem {
     padding: 12px 0;
   }
+
   .usedDeviceImageContainer img {
     max-width: 45px;
     max-height: 55px;
   }
-  .systemUsedDeviceDataContainer, .usedDeviceImageContainer {
+
+  .systemUsedDeviceDataContainer,
+  .usedDeviceImageContainer {
     font-size: 10px;
   }
 }

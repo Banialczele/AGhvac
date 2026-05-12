@@ -14,7 +14,7 @@
 	<link href='https://fonts.googleapis.com/css?family=Spartan' rel='stylesheet' />
 </head>
 
-<body id="body">
+<body id="body" class="scroll-locked">
 	<header id="top">
 		<div id="configuratorInfo">
 
@@ -76,6 +76,13 @@
 							data-translate="batteryBackUpLabel"></label>
 						<div id="batterySelectFormBtn" class="batteryBackUpSelect formSelectInput">
 							<select id="batteryBackUp" name="batteryBackUp"></select>
+						</div>
+					</div>
+					<span class="thRailingInformation tooltip">i</span>
+					<div class="thRailingContainer">
+						<label for="thRailing" class="thRailingUpLabel" data-translate="thRailingLabel"></label>
+						<div id="thRailingSelectFormBtn" class="thRailingSelect formSelectInput">
+							<select id="thRailing" name="thRailing"></select>
 						</div>
 					</div>
 					<span class="wireLengthInformation tooltip">i</span>
@@ -297,7 +304,6 @@
 
 
 	<script src="./AnalysisEngine/batteryList.js"></script>
-
 	<script src="./AnalysisEngine/analysisEngine.js"></script>
 	<script src="./AnalysisEngine/models.js"></script>
 

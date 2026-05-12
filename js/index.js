@@ -1,19 +1,30 @@
-// Ustawienie domyślnego języka widoku aplikacji
 let lang = "pl";
 
 const REVISIONNUMBER = 123;
 
-// Główny obiekt zawierający dane utworzonego systemu
+// Główny obiekt zawierający dane utworzonego systemu - JEDYNE ŹRÓDŁO PRAWDY
 let systemData = {
 	supplyType: ``,
-	wiretype: '',
+	wireType: '',
+	batteryBackUp: "Tak",
+	thRailing: "Nie",
 	devicesTypes: { detectors: [], signallers: [] },
 	bus: [],
 	errorList: [],
+	res: null,
+	totalPower: 0,
+	generatedSupply: null,
+	selectedStructure: null,
 };
 
 let initSystem = {
-	systemIsGenerated: false
+	systemIsGenerated: false,
+	amountOfDetectors: 1,
+	EWL: 15,
+	backup: "Nie",
+	thRailing: "Tak",
+	selectedStructure: null,
+	detector: null,
 };
 
 const NAVLINKS = {
@@ -33,113 +44,154 @@ const NAVLINKS = {
 		pl: "https://www.atestgaz.pl/kontakt",
 		en: "https://atestgaz.pl/en/contact-2/"
 	}
+};
+
+function createEmptySystemData(overrides = {}) {
+	return {
+		supplyType: ``,
+		wireType: '',
+		batteryBackUp: TRANSLATION?.batteryBackUpNo?.[lang] || "Nie",
+		thRailing: TRANSLATION?.batteryBackUpYes?.[lang] || "Tak",
+		devicesTypes: { detectors: [], signallers: [] },
+		bus: [],
+		errorList: [],
+		res: null,
+		totalPower: 0,
+		generatedSupply: null,
+		selectedStructure: initSystem?.selectedStructure || null,
+		...overrides,
+	};
 }
 
 function setLinksForNavigation() {
 	document.querySelectorAll(`.configuratorNavItem a`).forEach(elem => {
-		if (NAVLINKS[elem.dataset.translate]) {
-			elem.setAttribute(`href`, NAVLINKS[elem.dataset.translate][lang])
+		const translationKey = elem.dataset.translate;
+		if (NAVLINKS[translationKey]) {
+			elem.setAttribute(`href`, NAVLINKS[translationKey][lang]);
 		}
-	})
+	});
 }
 
-// Etykiety dla widoku aplikacji w obsługiwanych przez aplikację językach
-
-// Ustawienie nasłuchiwania na przycisku mobilnego menu
 function setMobileMenuClickEvent() {
-	document.getElementById("navMobileActivationBtn").addEventListener("click", () => {
-		document.getElementById("configuratorNavMobile").classList.toggle("active");
-		document.querySelector(".navMobileActivationBtnIcon").classList.toggle("active");
+	const btn = document.getElementById("navMobileActivationBtn");
+	const nav = document.getElementById("configuratorNavMobile");
+	const icon = document.querySelector(".navMobileActivationBtnIcon");
+
+	if (!btn || !nav || !icon || btn.dataset.listenerBound === "true") return;
+
+	btn.addEventListener("click", () => {
+		nav.classList.toggle("active");
+		icon.classList.toggle("active");
 	});
+	btn.dataset.listenerBound = "true";
 }
 
 function configuratorHeaderDesc() {
 	const container = document.querySelector(`#configuratorInfo`);
+	if (!container) return;
+
+	container.innerHTML = "";
 
 	const infoDescription = document.createElement(`div`);
 	infoDescription.classList.add(`infoDescription`);
 
 	const title = document.createElement(`h2`);
 	title.classList.add(`configuratorTitle`);
+	title.innerText = TRANSLATION.configuratorHeader[lang];
 
 	const tetaGasHeader = document.createElement(`h2`);
-	const tetaGas = document.createElement(`h2`);
-
 	tetaGasHeader.classList.add(`tetaGasRed`);
-	tetaGas.classList.add(`gas`);
-
-	title.innerText = TRANSLATION.configuratorHeader[lang];
 	tetaGasHeader.innerText = TRANSLATION.teta;
+
+	const tetaGas = document.createElement(`h2`);
+	tetaGas.classList.add(`gas`);
 	tetaGas.innerText = TRANSLATION.gas;
 
 	const configuratordesc = document.createElement(`p`);
 	configuratordesc.classList.add(`configuratorDescription`);
 	configuratordesc.setAttribute(`id`, `configuratorDescription`);
-	configuratordesc.innerText = REVISIONNUMBER;
+	configuratordesc.innerText = `Revision: ${REVISIONNUMBER}`;
 
 	if (lang === `pl`) {
-		infoDescription.appendChild(title);
-		infoDescription.appendChild(tetaGasHeader);
-		infoDescription.appendChild(tetaGas);
+		infoDescription.append(title, tetaGasHeader, tetaGas);
 	} else {
-		infoDescription.appendChild(tetaGasHeader);
-		infoDescription.appendChild(tetaGas);
-		infoDescription.appendChild(title);
+		infoDescription.append(tetaGasHeader, tetaGas, title);
 	}
-	container.appendChild(infoDescription);
-	container.appendChild(configuratordesc)
 
+	container.appendChild(infoDescription);
+	container.appendChild(configuratordesc);
 }
 
 function checkLang() {
-	let HREF = window.location.href;
-
-	if (HREF.includes(`lang=pl`) || !HREF.includes(`lang`)) {
-		lang = "pl";
-	} else if (HREF.includes(`lang=en`)) {
-		lang = "en";
-	}
+	const params = new URLSearchParams(window.location.search);
+	const langParam = params.get('lang');
+	lang = langParam === 'en' ? "en" : "pl";
 }
 
 function setTooltipText() {
 	document.querySelectorAll(`.tooltip`).forEach(elem => {
-		elem.setAttribute(`data-text`, TRANSLATION[elem.classList[0]][lang]);
-	})
+		const translationKey = elem.classList[0];
+		if (TRANSLATION[translationKey]) {
+			elem.setAttribute(`data-text`, TRANSLATION[translationKey][lang]);
+		}
+	});
+}
+
+function getDefaultStructure() {
+	if (typeof STRUCTURE_TYPES === 'undefined' || !Array.isArray(STRUCTURE_TYPES) || STRUCTURE_TYPES.length === 0) {
+		return null;
+	}
+	return STRUCTURE_TYPES[0];
+}
+
+function getDefaultDetectorForStructure(structure) {
+	if (!structure?.devices?.length) return null;
+	const selectedStructureGas = structure.detection?.[0];
+	return structure.devices.find(device => device.gasDetected === selectedStructureGas) ||
+		structure.devices.find(device => device.class === "detector") ||
+		structure.devices[0];
 }
 
 function initSystemData() {
-	const selectedStructure = STRUCTURE_TYPES[0];
-	const selectedStructureGas = selectedStructure.detection[0];
-	const selectedStructureDetector = selectedStructure.devices.find(device => device.gasDetected === selectedStructureGas);
+	const selectedStructure = getDefaultStructure();
+	const selectedStructureDetector = getDefaultDetectorForStructure(selectedStructure);
+
 	initSystem = {
 		selectedStructure,
 		amountOfDetectors: 1,
 		EWL: 15,
 		detector: selectedStructureDetector,
-		batteryBackUp: "Tak",
+		backup: TRANSLATION?.batteryBackUpNo?.[lang] || "Nie",
+		thRailing: TRANSLATION?.batteryBackUpYes?.[lang] || "Tak",
+		systemIsGenerated: false,
 	};
-	return initSystem;
+
+	systemData = createEmptySystemData({ selectedStructure });
 }
 
-// Entry point aplikacji, generowanie całego widoku do wproadzenia danych
 window.addEventListener("load", () => {
 	checkLang();
-	translate();
+
+	// Po odświeżeniu zawsze pokazujemy punkt wejścia: formularz.
+	document.body.classList.remove("system-active"); document.body.classList.add("scroll-locked");
+
+	if (typeof translate === 'function') translate();
 	initSystemData();
 	setMobileMenuClickEvent();
-	formInit();
-	createSystemDataFromAFile();
-	handleFormSubmit();
+
+	if (typeof formInit === 'function') formInit();
+	if (typeof createSystemDataFromAFile === 'function') createSystemDataFromAFile();
+
 	configuratorHeaderDesc();
 	setTooltipText();
 	setLinksForNavigation();
+
 	const guidanceLink = document.querySelector(`.hvacGuidanceLink`);
-	guidanceLink.setAttribute(`href`, `${TRANSLATION.hvacGuidance[lang]}`)
+	if (guidanceLink && TRANSLATION.hvacGuidance) {
+		guidanceLink.setAttribute(`href`, TRANSLATION.hvacGuidance[lang]);
+	}
 });
 
-// Reset pozycji scrolla do początku strony
 window.onbeforeunload = function () {
 	window.scrollTo(0, 0);
 };
-
-
