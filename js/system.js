@@ -535,15 +535,17 @@ function renderSystemStateOnly() {
 
 function functionToUpdateSystem({ forceValidation = false } = {}) {
   const signature = getCalculationSignature();
+  let isValid = true;
 
   if (forceValidation || signature !== lastCalculationSignature) {
-    const isValid = validateSystem();
-    if (!isValid) return false;
+    isValid = validateSystem();
     lastCalculationSignature = signature;
   }
 
+  // Nawet przy błędach limitów aktualizujemy widok „Stan systemu”, listy i długość magistrali.
+  // Dzięki temu użytkownik może dalej dodawać segmenty, a błędy są widoczne w panelu statusu.
   renderSystemStateOnly();
-  return true;
+  return isValid;
 }
 
 
@@ -693,11 +695,6 @@ const clickEvent = function (event) {
 
   if (btn.matches("button.duplicateDeviceButton")) {
     if (!index || !systemData.bus[index - 1]) return;
-    if (systemData.bus.length >= 50) {
-      systemData.errorList = [{ code: `TOO_MANY_DEVICES`, message: TRANSLATION.busWarning?.[lang] || "Maksymalna liczba segmentów to 50." }];
-      errorHandling();
-      return;
-    }
 
     const copy = JSON.parse(JSON.stringify(systemData.bus[index - 1]));
     systemData.bus.splice(index, 0, copy);

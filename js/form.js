@@ -128,6 +128,8 @@ function createOption(value, text, attributes = {}) {
 
 const SYSTEM_INPUT_LIMITS = {
   maxDevices: 50,
+  maxSignallers: 28,
+  maxValveCtrls: 8,
   maxTotalBusLengthM: 1000,
 };
 
@@ -138,8 +140,20 @@ function getInputLimitMessage(code, data = {}) {
       en: "Device quantity must be a number greater than or equal to 1.",
     },
     TOO_MANY_DEVICES: {
-      pl: `Maksymalna ilość urządzeń to ${data.maxDevices || SYSTEM_INPUT_LIMITS.maxDevices} szt.`,
-      en: `Maximum device quantity is ${data.maxDevices || SYSTEM_INPUT_LIMITS.maxDevices} pcs.`,
+      pl: data.current
+        ? `Maksymalna ilość urządzeń na magistrali to ${data.maxDevices || SYSTEM_INPUT_LIMITS.maxDevices} szt. Aktualnie: ${data.current} szt.`
+        : `Maksymalna ilość urządzeń to ${data.maxDevices || SYSTEM_INPUT_LIMITS.maxDevices} szt.`,
+      en: data.current
+        ? `Maximum device quantity on the bus is ${data.maxDevices || SYSTEM_INPUT_LIMITS.maxDevices} pcs. Current value: ${data.current} pcs.`
+        : `Maximum device quantity is ${data.maxDevices || SYSTEM_INPUT_LIMITS.maxDevices} pcs.`,
+    },
+    TOO_MANY_SIGNALLERS: {
+      pl: `Maksymalna ilość sygnalizatorów to ${data.maxSignallers || SYSTEM_INPUT_LIMITS.maxSignallers} szt. Aktualnie: ${data.current || 0} szt.`,
+      en: `Maximum signalling devices quantity is ${data.maxSignallers || SYSTEM_INPUT_LIMITS.maxSignallers} pcs. Current value: ${data.current || 0} pcs.`,
+    },
+    TOO_MANY_VALVE_CTRLS: {
+      pl: `Maksymalna ilość sterowników zaworu to ${data.maxValveCtrls || SYSTEM_INPUT_LIMITS.maxValveCtrls} szt. Aktualnie: ${data.current || 0} szt.`,
+      en: `Maximum valve controllers quantity is ${data.maxValveCtrls || SYSTEM_INPUT_LIMITS.maxValveCtrls} pcs. Current value: ${data.current || 0} pcs.`,
     },
     INVALID_WIRE_LENGTH: {
       pl: "Orientacyjna odległość między urządzeniami musi być liczbą większą lub równą 1 m.",
@@ -766,6 +780,124 @@ function toSerializablePowerConfig(config) {
   };
 }
 
+
+function analyseSystemForConfigurator(engineSystem) {
+  // Nie modyfikujemy analysisEngine.js. Ta funkcja używa jego niższych funkcji obliczeniowych,
+  // ale limity biznesowe (>50 urządzeń, >28 sygnalizatorów, >8 zaworów, >1000 m) obsługujemy w GUI.
+  // Dzięki temu nie dziedziczymy starego limitu 26 sygnalizatorów z analiseSystem().
+  if (!engineSystem?.bus?.length) return null;
+  if (typeof getObjByType !== "function" || typeof getBusEleStatus !== "function") return null;
+
+  const supply = getObjByType(PowerSupplies, engineSystem.supplyType);
+  const lastSection = engineSystem.bus[engineSystem.bus.length - 1];
+  const lastDevice = getObjByType(Devices, lastSection?.deviceType);
+
+  if (!supply || !lastDevice) return null;
+
+  const supplyVoltage_V = Number(supply.supplyVoltage_V);
+  const voltageStep_V = 0.1;
+  let busEndVoltage_V = Number(lastDevice.minVoltage_V);
+  let busStat = null;
+  let result = null;
+
+  if (!Number.isFinite(supplyVoltage_V) || !Number.isFinite(busEndVoltage_V)) return null;
+  if (busEndVoltage_V < supplyVoltage_V / 2) busEndVoltage_V = supplyVoltage_V / 2;
+
+  const firstStepBusEndVoltage_V = busEndVoltage_V;
+
+  do {
+    busStat = getBusEleStatus(engineSystem.bus, busEndVoltage_V);
+    if (busStat != null && busStat.requiredSupplyVoltage_V > supplyVoltage_V) break;
+    busEndVoltage_V += voltageStep_V;
+  } while (busEndVoltage_V < supplyVoltage_V);
+
+  if (busStat != null) {
+    busEndVoltage_V -= voltageStep_V;
+    if (busEndVoltage_V > firstStepBusEndVoltage_V) {
+      result = getBusEleStatus(engineSystem.bus, busEndVoltage_V);
+    }
+  }
+
+  return result;
+}
+
+function matchSystemCablesForConfigurator(engineSystem) {
+  if (!engineSystem?.bus?.length || !Array.isArray(Cables)) return engineSystem;
+
+  const cables = JSON.parse(JSON.stringify(Cables)).sort((a, b) => {
+    return Number(b.resistivity_OhmPerMeter) - Number(a.resistivity_OhmPerMeter);
+  });
+
+  for (let cableIndex = 0; cableIndex < cables.length; cableIndex++) {
+    for (let segmentIndex = 0; segmentIndex < engineSystem.bus.length; segmentIndex++) {
+      engineSystem.bus[segmentIndex].cableType = cables[cableIndex].type;
+    }
+
+    if (analyseSystemForConfigurator(engineSystem) != null) break;
+  }
+
+  return engineSystem;
+}
+
+function countBusDevicesByClass(deviceClass) {
+  if (!Array.isArray(systemData.bus)) return 0;
+  return systemData.bus.reduce((total, segment) => {
+    return total + (segment.detector?.class === deviceClass ? 1 : 0);
+  }, 0);
+}
+
+function getSystemStatusLimitErrors() {
+  const errors = [];
+  const devicesCount = Array.isArray(systemData.bus) ? systemData.bus.length : 0;
+  const signallersCount = countBusDevicesByClass("signaller");
+  const valveCtrlsCount = countBusDevicesByClass("valveCtrl");
+  const totalBusLength = getTotalBusLength();
+
+  if (devicesCount > SYSTEM_INPUT_LIMITS.maxDevices) {
+    errors.push({
+      code: "TOO_MANY_DEVICES",
+      message: getInputLimitMessage("TOO_MANY_DEVICES", {
+        maxDevices: SYSTEM_INPUT_LIMITS.maxDevices,
+        current: devicesCount,
+      }),
+    });
+  }
+
+  if (signallersCount > SYSTEM_INPUT_LIMITS.maxSignallers) {
+    errors.push({
+      code: "TOO_MANY_SIGNALLERS",
+      message: getInputLimitMessage("TOO_MANY_SIGNALLERS", {
+        maxSignallers: SYSTEM_INPUT_LIMITS.maxSignallers,
+        current: signallersCount,
+      }),
+    });
+  }
+
+  if (valveCtrlsCount > SYSTEM_INPUT_LIMITS.maxValveCtrls) {
+    errors.push({
+      code: "TOO_MANY_VALVE_CTRLS",
+      message: getInputLimitMessage("TOO_MANY_VALVE_CTRLS", {
+        maxValveCtrls: SYSTEM_INPUT_LIMITS.maxValveCtrls,
+        current: valveCtrlsCount,
+      }),
+    });
+  }
+
+  if (totalBusLength > SYSTEM_INPUT_LIMITS.maxTotalBusLengthM) {
+    errors.push({
+      code: "BUS_TOO_LONG",
+      message: getInputLimitMessage("BUS_TOO_LONG", {
+        total: totalBusLength,
+        amount: devicesCount,
+        ewl: devicesCount ? Math.round(totalBusLength / devicesCount) : 0,
+        maxTotal: SYSTEM_INPUT_LIMITS.maxTotalBusLengthM,
+      }),
+    });
+  }
+
+  return errors;
+}
+
 function validateSystem() {
   if (!Array.isArray(systemData.bus) || systemData.bus.length === 0) {
     systemData.errorList = [{ code: "EMPTY_BUS", message: "Brak urządzeń w magistrali systemu." }];
@@ -773,33 +905,18 @@ function validateSystem() {
     return false;
   }
 
-  if (systemData.bus.length > SYSTEM_INPUT_LIMITS.maxDevices) {
-    systemData.errorList = [{
-      code: "TOO_MANY_DEVICES",
-      message: getInputLimitMessage("TOO_MANY_DEVICES", { maxDevices: SYSTEM_INPUT_LIMITS.maxDevices }),
-    }];
-    errorHandling();
-    return false;
-  }
-
-  const totalBusLength = getTotalBusLength();
-  if (totalBusLength > SYSTEM_INPUT_LIMITS.maxTotalBusLengthM) {
-    systemData.errorList = [{
-      code: "BUS_TOO_LONG",
-      message: getInputLimitMessage("BUS_TOO_LONG", {
-        total: totalBusLength,
-        amount: systemData.bus.length,
-        ewl: systemData.bus.length ? Math.round(totalBusLength / systemData.bus.length) : 0,
-        maxTotal: SYSTEM_INPUT_LIMITS.maxTotalBusLengthM,
-      }),
-    }];
-    errorHandling();
-    return false;
-  }
-
+  const limitErrors = getSystemStatusLimitErrors();
   const hasInvalidSegment = systemData.bus.some(seg => !seg.detector?.type || !Number.isFinite(Number(seg.wireLength)) || Number(seg.wireLength) <= 0);
+
   if (hasInvalidSegment) {
-    systemData.errorList = [{ code: "INVALID_SEGMENT", message: "Nieprawidłowe dane segmentu: sprawdź typ urządzenia i długość przewodu." }];
+    limitErrors.push({
+      code: "INVALID_SEGMENT",
+      message: "Nieprawidłowe dane segmentu: sprawdź typ urządzenia i długość przewodu.",
+    });
+  }
+
+  if (limitErrors.length > 0) {
+    systemData.errorList = limitErrors;
     errorHandling();
     return false;
   }
@@ -811,9 +928,9 @@ function validateSystem() {
 
   supplyCandidates.forEach((type, analysisPriority) => {
     const engineSystem = buildEngineSystem(type);
-    if (typeof matchSystemCables === 'function') matchSystemCables(engineSystem);
+    matchSystemCablesForConfigurator(engineSystem);
 
-    const result = (typeof analiseSystem === 'function') ? analiseSystem(engineSystem) : null;
+    const result = analyseSystemForConfigurator(engineSystem);
     if (!result || result.status === "error") return;
 
     const pwrNoReserve = Number(result.powerConsumption_W) || 0;
