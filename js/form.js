@@ -759,18 +759,29 @@ function buildPowerConfigurationsForAnalysis(analysis, backupNeeded, thRailingNe
   return configs.sort(comparePowerConfigurations);
 }
 
+function getConfigCableCost(config) {
+  const value = Number(config?.optimization?.cableCost);
+  return Number.isFinite(value) ? value : Number.MAX_SAFE_INTEGER;
+}
+
+function getConfigVoltage(config) {
+  const value = Number(config?.controlUnit?.description?.supplyVoltage);
+  return Number.isFinite(value) ? value : Number.MAX_SAFE_INTEGER;
+}
+
 function comparePowerConfigurations(a, b) {
-  // Strategia wyboru końcowego:
-  // 1) najmniejsza moc źródła, która spełnia wymagania systemu,
-  // 2) najniższy koszt całkowity w obrębie tej samej klasy mocy,
-  // 3) preferencje techniczne jako tie-breakery.
-  //
-  // Cel: małe systemy mają wybierać np. 60 W zamiast 100 W, nawet jeśli 100 W
-  // chwilowo wychodzi taniej w danych cennikowych. Dopiero przy tej samej mocy
-  // porównujemy koszt jednostki, zasilacza i kabla.
+  // Definicja „najlepszego zestawu”:
+  // 1) najmniejsza wystarczająca moc źródła zasilania,
+  // 2) najniższy koszt całkowity zestawu: jednostka + zasilacz + kabel,
+  // 3) najniższy koszt samego kabla,
+  // 4) priorytet kabla z models.js,
+  // 5) niższe napięcie, jeżeli poprzednie kryteria są równe,
+  // 6) stabilny tie-breaker po nazwie jednostki.
   return (getNumber(a.powerSourcePower, 0) - getNumber(b.powerSourcePower, 0))
     || (getConfigEstimatedCost(a) - getConfigEstimatedCost(b))
+    || (getConfigCableCost(a) - getConfigCableCost(b))
     || (getCablePriority(a.cable?.type) - getCablePriority(b.cable?.type))
+    || (getConfigVoltage(a) - getConfigVoltage(b))
     || ((a.analysisPriority ?? Number.MAX_SAFE_INTEGER) - (b.analysisPriority ?? Number.MAX_SAFE_INTEGER))
     || (a.priority - b.priority)
     || comparePowerSupplies(a.powerSupply, b.powerSupply)
