@@ -543,8 +543,11 @@ function comparePowerSupplies(a, b) {
   const aValue = getPowerSupplySortValue(a);
   const bValue = getPowerSupplySortValue(b);
 
-  return (aValue.price - bValue.price)
-    || (aValue.power - bValue.power)
+  // Dobór zasilacza ma być najpierw inżynierski: najmniejsza moc spełniająca wymagania,
+  // a dopiero później cena. Dzięki temu np. mały system nie wybierze 100 W tylko dlatego,
+  // że w cenniku 100 W jest tańszy niż 60 W.
+  return (aValue.power - bValue.power)
+    || (aValue.price - bValue.price)
     || (aValue.capacity - bValue.capacity)
     || String(a?.description || "").localeCompare(String(b?.description || ""));
 }
@@ -638,7 +641,7 @@ function makePowerConfig({
     priority,
     powerSourcePower,
     optimization: {
-      strategy: "lowest-total-estimated-cost",
+      strategy: "smallest-sufficient-power-then-lowest-cost",
       totalEstimatedCost,
       controlUnitCost,
       powerSupplyCost,
@@ -750,11 +753,19 @@ function buildPowerConfigurationsForAnalysis(analysis, backupNeeded, thRailingNe
 }
 
 function comparePowerConfigurations(a, b) {
-  return (getConfigEstimatedCost(a) - getConfigEstimatedCost(b))
+  // Strategia wyboru końcowego:
+  // 1) najmniejsza moc źródła, która spełnia wymagania systemu,
+  // 2) najniższy koszt całkowity w obrębie tej samej klasy mocy,
+  // 3) preferencje techniczne jako tie-breakery.
+  //
+  // Cel: małe systemy mają wybierać np. 60 W zamiast 100 W, nawet jeśli 100 W
+  // chwilowo wychodzi taniej w danych cennikowych. Dopiero przy tej samej mocy
+  // porównujemy koszt jednostki, zasilacza i kabla.
+  return (getNumber(a.powerSourcePower, 0) - getNumber(b.powerSourcePower, 0))
+    || (getConfigEstimatedCost(a) - getConfigEstimatedCost(b))
     || (getCablePriority(a.cable?.type) - getCablePriority(b.cable?.type))
     || ((a.analysisPriority ?? Number.MAX_SAFE_INTEGER) - (b.analysisPriority ?? Number.MAX_SAFE_INTEGER))
     || (a.priority - b.priority)
-    || (getNumber(a.powerSourcePower, 0) - getNumber(b.powerSourcePower, 0))
     || comparePowerSupplies(a.powerSupply, b.powerSupply)
     || String(a.controlUnit?.type || "").localeCompare(String(b.controlUnit?.type || ""));
 }
