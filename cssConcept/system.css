@@ -686,3 +686,116 @@
     padding: 12px 0 0;
   }
 }
+
+/* ==============================================================
+   RESPONSIVE SYSTEM VIEW PATCH
+   --------------------------------------------------------------
+   Widok systemu pozostaje w pełni przewijalny na tabletach i telefonach.
+   Szerokie panele nie wymuszają poziomego overflow całej strony.
+   ============================================================== */
+@media screen and (max-width: 1199px) {
+  body.system-active {
+    height: auto;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  body.system-active #system,
+  .system {
+    width: 100%;
+    max-width: 100%;
+    padding: 10px;
+    margin: 0 auto 16px;
+    overflow: visible;
+  }
+
+  .system .panelContainer {
+    width: 100%;
+    max-width: 100%;
+    padding: 16px 12px 20px;
+    border-radius: 10px;
+  }
+
+  .system .systemPreview,
+  .system .systemStatus,
+  .system .wrapper {
+    width: 100%;
+    min-width: 0 !important;
+    max-width: 100%;
+    max-height: none;
+    height: auto;
+    overflow: visible;
+  }
+
+  .system .wrapper .usedDevices {
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .systemStatusContainer ol,
+  .powerSupplyContainer ol {
+    padding-left: 0;
+  }
+}
+
+@media screen and (min-width: 700px) and (max-width: 1199px) {
+  .system {
+    display: grid;
+    grid-template-areas:
+      "systemPreview"
+      "wrapper"
+      "systemStatus";
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 16px;
+  }
+
+  .system .systemPreview {
+    grid-area: systemPreview;
+  }
+
+  .system .wrapper {
+    grid-area: wrapper;
+  }
+
+  .system .systemStatus {
+    grid-area: systemStatus;
+  }
+}
+
+@media screen and (max-width: 699px) {
+  .system {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    row-gap: 12px;
+    padding: 8px;
+  }
+
+  .system .panelHeaderContainer h3 {
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-size: 15px;
+  }
+
+  .systemStatusContainer h4 {
+    font-size: 12px;
+  }
+
+  .systemStatusContainer ol li,
+  .powerSupplyContainer ol li {
+    column-gap: 10px;
+    align-items: flex-start;
+  }
+
+  .systemStatusContainer ol li div:first-child,
+  .powerSupplyContainer ol li div:first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .systemHomeActions {
+    padding-left: 0;
+  }
+}

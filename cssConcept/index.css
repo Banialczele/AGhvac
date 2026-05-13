@@ -812,161 +812,766 @@ header #configuratorLanguage .langLink:first-child {
 }
 
 /* ==============================================================
-   Compact desktop start view
-   Cel: na dużych monitorach widok startowy ma wyglądać jak przy
-   ok. 80% zoomu przeglądarki, ale bez zmiany zoomu strony.
-   Dotyczy wyłącznie ekranu formularza, nie widoku systemu.
+   Large desktop entry view — 2560 x 1440 friendly
+   --------------------------------------------------------------
+   Cofnięcie podejścia z tetagaz_compact_desktop_patch:
+   - brak pomniejszania fontów i kontrolek,
+   - brak symulacji 80% zoomu,
+   - zachowana czytelność 100% zoom.
+
+   Standardowe podejście:
+   - płynny, wycentrowany kontener,
+   - rozsądne max-width zamiast rozciągania na cały ekran,
+   - spójne marginesy headera i paneli,
+   - reguły tylko dla ekranu wejściowego, bez wpływu na widok systemu.
    ============================================================== */
-@media screen and (min-width: 1441px) {
-  body:not(.system-active) {
-    --input-height: 32px;
-    --input-margin: 4px;
-    --input-font-size: 10px;
-    font-size: 12px;
-  }
-
+@media screen and (min-width: 1650px) {
   body:not(.system-active) header {
-    padding: 24px 24px 0;
+    padding-left: max(30px, calc((100vw - 1180px) / 2));
+    padding-right: max(30px, calc((100vw - 1180px) / 2));
   }
 
-  body:not(.system-active) header .infoDescription {
-    width: 480px;
-  }
-
-  body:not(.system-active) .infoDescription>h2 {
-    margin: 0 4px 8px 4px;
-    font-size: 17px;
-  }
-
-  body:not(.system-active) header #configuratorDescription {
-    font-size: 11px;
-  }
-
-  body:not(.system-active) header #configuratorNav .configuratorNavList {
-    margin: 0 24px;
-  }
-
-  body:not(.system-active) header #configuratorNav .configuratorNavList li {
-    padding: 8px 0;
-    margin-right: 4px;
-  }
-
-  body:not(.system-active) header #configuratorNav .configuratorNavList li a {
-    padding: 8px 16px;
-    font-size: 12px;
-  }
-
-  body:not(.system-active) header #configuratorLogoImage {
-    width: 150px;
-    height: auto;
-    margin-bottom: 4px;
-  }
-
-  body:not(.system-active) header #configuratorLanguage {
-    font-size: 11px;
-  }
-
-  body:not(.system-active) .panelContainer {
-    max-width: 800px;
-    border-radius: 8px;
+  body:not(.system-active) .configuratorPanel,
+  body:not(.system-active) .dragAndDropPanel {
+    max-width: min(1180px, calc(100vw - 96px));
   }
 
   body:not(.system-active) .configuratorPanel {
-    padding: 18px 25px 33px;
-    margin: 118px auto 10px;
+    margin-top: clamp(145px, 11vh, 180px);
+    padding: 28px 36px 44px;
   }
 
   body:not(.system-active) .dragAndDropPanel {
-    padding: 18px 25px;
-    margin: 0 auto 24px;
-  }
-
-  body:not(.system-active) .panelHeaderContainer {
-    padding: 0 12px 0 4px;
-    margin-bottom: 14px;
-  }
-
-  body:not(.system-active) .panelHeaderContainer h3 {
-    padding: 16px 24px;
-    font-size: 15px;
-  }
-
-  body:not(.system-active) input {
-    padding: 8px 3px;
-  }
-
-  body:not(.system-active) select {
-    padding: 8px 3px;
+    padding: 24px 36px;
+    margin-bottom: 40px;
   }
 
   body:not(.system-active) .contentContainer .formContainer {
-    padding-right: 18px;
+    width: 46%;
+    padding-right: 30px;
   }
 
   body:not(.system-active) .contentContainer .descriptionContainer {
-    padding-left: 18px;
-    line-height: 18px;
-  }
-
-  body:not(.system-active) .formContainer .form {
-    row-gap: calc(2.5 * var(--input-margin));
+    width: 54%;
+    padding-left: 30px;
+    line-height: 1.75;
   }
 
   body:not(.system-active) .form .buildingType,
   body:not(.system-active) .form .detectedGas,
   body:not(.system-active) .form .batteryBackUp,
   body:not(.system-active) .form .thRailingContainer {
-    max-width: 224px;
+    max-width: 330px;
   }
 
-  body:not(.system-active) .detectorAmounts .detectorAmountsLabel,
-  body:not(.system-active) .buildingType .structureLabel,
-  body:not(.system-active) .detectedGas .detectedGasLabel,
-  body:not(.system-active) .batteryBackUp .batteryBackUpLabel,
-  body:not(.system-active) .thRailingContainer .thRailingUpLabel,
-  body:not(.system-active) .wireLength .wireLengthLabel {
-    margin-bottom: 4px;
-  }
-
-  body:not(.system-active) .form .buildingInformation,
-  body:not(.system-active) .form .detectedGasInformation,
-  body:not(.system-active) .form .batteryBackUpInformation,
-  body:not(.system-active) .form .thRailingInformation,
-  body:not(.system-active) .form .wireLengthInformation {
-    margin-bottom: 8px;
-  }
-
-  body:not(.system-active) .tooltip {
-    padding: 0 5px;
-    margin-right: 6px;
-  }
-
-  body:not(.system-active) .tooltip::before {
-    font-size: 11px;
-    padding: 8px 10px;
-  }
-
-  body:not(.system-active) .formButton {
-    width: 120px;
-    font-size: 13px;
-  }
-
-  body:not(.system-active) .descriptionContainer ol li {
-    margin: 8px 0;
-  }
-
-  body:not(.system-active) .dragAndDropPanel .dragAndDropArea {
-    padding: 32px 24px;
-    margin-bottom: 18px;
-  }
-
-  body:not(.system-active) .dragAndDropPanel label {
-    width: 145px;
+  body:not(.system-active) .panelHeaderContainer h3 {
+    margin-top: 0;
   }
 }
 
-@media screen and (min-width: 1441px) and (max-height: 850px) {
+@media screen and (min-width: 2200px) and (min-height: 1200px) {
+
+  body:not(.system-active) .configuratorPanel,
+  body:not(.system-active) .dragAndDropPanel {
+    max-width: 1240px;
+  }
+
+  body:not(.system-active) header {
+    padding-left: max(30px, calc((100vw - 1240px) / 2));
+    padding-right: max(30px, calc((100vw - 1240px) / 2));
+  }
+
   body:not(.system-active) .configuratorPanel {
-    margin-top: 96px;
+    margin-top: clamp(155px, 10.5vh, 190px);
+  }
+}
+
+/* ==============================================================
+   Header overlap fix for desktop entry view
+   --------------------------------------------------------------
+   The entry panel can stay compact/centered, but the header needs
+   a wider usable row because it contains: title + nav + logo.
+   This fixes the overlap visible on wide desktop screens.
+   ============================================================== */
+@media screen and (min-width: 1441px) {
+  body:not(.system-active) header {
+    display: grid;
+    grid-template-areas: "info navi logo";
+    grid-template-columns: max-content minmax(520px, 1fr) max-content;
+    column-gap: 32px;
+    align-items: start;
+    width: 100%;
+    padding-top: 24px;
+    padding-bottom: 8px;
+    padding-left: max(30px, calc((100vw - 1680px) / 2));
+    padding-right: max(30px, calc((100vw - 1680px) / 2));
+  }
+
+  body:not(.system-active) header #configuratorInfo {
+    grid-area: info;
+    place-self: start start;
+    min-width: 0;
+  }
+
+  body:not(.system-active) header .infoDescription {
+    width: auto;
+    max-width: none;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  body:not(.system-active) header .infoDescription>h2 {
+    margin-bottom: 8px;
+  }
+
+  body:not(.system-active) header #configuratorNav {
+    grid-area: navi;
+    place-self: start center;
+    align-self: start;
+    margin-top: 14px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  body:not(.system-active) header #configuratorNav .configuratorNavList {
+    flex-wrap: nowrap;
+    justify-content: center;
+    margin: 0;
+    max-width: 100%;
+  }
+
+  body:not(.system-active) header #configuratorNav .configuratorNavList li {
+    margin-right: 5px;
+    padding: 0;
+  }
+
+  body:not(.system-active) header #configuratorNav .configuratorNavList li a {
+    display: block;
+    white-space: nowrap;
+    padding: 10px 18px;
+  }
+
+  body:not(.system-active) header .configuratorLogo,
+  body:not(.system-active) header #configuratorLogo {
+    grid-area: logo;
+    place-self: start end;
+    text-align: right;
+  }
+}
+
+@media screen and (min-width: 1441px) and (max-width: 1740px) {
+  body:not(.system-active) header {
+    grid-template-columns: max-content minmax(460px, 1fr) max-content;
+    column-gap: 20px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  body:not(.system-active) header #configuratorNav .configuratorNavList li a {
+    padding-left: 13px;
+    padding-right: 13px;
+    font-size: 13px;
+  }
+
+  body:not(.system-active) header .infoDescription>h2 {
+    font-size: 20px;
+  }
+}
+
+/* ==============================================================
+   Responsive header normalization
+   --------------------------------------------------------------
+   Header remains visible at every viewport width.
+   Desktop nav is kept where it can fit, moves to a second row on
+   medium screens, and only switches to mobile/off-canvas on small
+   screens. This overrides the older max-width:1440 rule that hid
+   the main navigation too early.
+   ============================================================== */
+header .configuratorLogo {
+  grid-area: logo;
+  place-self: start end;
+  text-align: right;
+}
+
+@media screen and (min-width: 1024px) and (max-width: 1440px) {
+  body:not(.system-active) header {
+    display: grid;
+    grid-template-areas:
+      "info logo"
+      "navi navi";
+    grid-template-columns: minmax(0, 1fr) max-content;
+    row-gap: 8px;
+    column-gap: 24px;
+    align-items: start;
+    padding: 18px 28px 10px;
+  }
+
+  body:not(.system-active) header #configuratorInfo {
+    grid-area: info;
+    min-width: 0;
+  }
+
+  body:not(.system-active) header .infoDescription {
+    width: auto;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  body:not(.system-active) header .infoDescription>h2 {
+    margin-bottom: 4px;
+    font-size: clamp(18px, 1.5vw, 23px);
+  }
+
+  body:not(.system-active) header #configuratorDescription {
+    display: block;
+    font-size: 12px;
+  }
+
+  body:not(.system-active) header .configuratorLogo {
+    grid-area: logo;
+    place-self: start end;
+  }
+
+  body:not(.system-active) header #configuratorLogoImage {
+    width: 170px;
+    height: auto;
+  }
+
+  body:not(.system-active) header #configuratorNav {
+    display: flex;
+    grid-area: navi;
+    place-self: center;
+    width: 100%;
+    justify-content: center;
+  }
+
+  body:not(.system-active) header #configuratorNav .configuratorNavList {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    margin: 0;
+  }
+
+  body:not(.system-active) header #configuratorNav .configuratorNavList li {
+    padding: 0;
+    margin: 0;
+  }
+
+  body:not(.system-active) header #configuratorNav .configuratorNavList li a {
+    display: block;
+    padding: 9px 14px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  body:not(.system-active) #configuratorNavMobile,
+  body:not(.system-active) #navMobileActivationBtn {
+    display: none;
+  }
+
+  body:not(.system-active) .configuratorPanel {
+    margin-top: 150px;
+  }
+}
+
+@media screen and (min-width: 700px) and (max-width: 1023px) {
+  body:not(.system-active) header {
+    display: grid;
+    grid-template-areas: "info logo";
+    grid-template-columns: minmax(0, 1fr) max-content;
+    column-gap: 16px;
+    align-items: start;
+    padding: 14px 18px 10px;
+  }
+
+  body:not(.system-active) header #configuratorInfo {
+    grid-area: info;
+    min-width: 0;
+  }
+
+  body:not(.system-active) header .infoDescription {
+    width: auto;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  body:not(.system-active) header .infoDescription>h2 {
+    margin: 0 4px 4px 0;
+    font-size: clamp(16px, 2.1vw, 20px);
+  }
+
+  body:not(.system-active) header #configuratorDescription {
+    display: block;
+    font-size: 11px;
+    margin-left: 0;
+  }
+
+  body:not(.system-active) header .configuratorLogo {
+    grid-area: logo;
+    place-self: start end;
+  }
+
+  body:not(.system-active) header #configuratorLogoImage {
+    width: 145px;
+    height: auto;
+  }
+
+  body:not(.system-active) header #configuratorLanguage {
+    font-size: 11px;
+  }
+
+  body:not(.system-active) header #configuratorNav {
+    display: none;
+  }
+
+  body:not(.system-active) #configuratorNavMobile {
+    display: flex;
+  }
+
+  body:not(.system-active) #navMobileActivationBtn {
+    display: block;
+  }
+
+  body:not(.system-active) .configuratorPanel {
+    margin-top: 118px;
+  }
+}
+
+@media screen and (max-width: 699px) {
+  body:not(.system-active) header {
+    display: grid;
+    grid-template-areas:
+      "info"
+      "logo";
+    grid-template-columns: 1fr;
+    row-gap: 8px;
+    align-items: start;
+    padding: 12px 12px 10px;
+  }
+
+  body:not(.system-active) header #configuratorInfo {
+    grid-area: info;
+    min-width: 0;
+  }
+
+  body:not(.system-active) header .infoDescription {
+    width: auto;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  body:not(.system-active) header .infoDescription>h2 {
+    margin: 0 4px 4px 0;
+    font-size: clamp(15px, 5vw, 18px);
+    line-height: 1.2;
+  }
+
+  body:not(.system-active) header #configuratorDescription {
+    display: block;
+    font-size: 10px;
+    margin-left: 0;
+  }
+
+  body:not(.system-active) header .configuratorLogo {
+    grid-area: logo;
+    place-self: start start;
+    text-align: left;
+  }
+
+  body:not(.system-active) header #configuratorLogoImage {
+    width: min(150px, 48vw);
+    height: auto;
+    margin-bottom: 2px;
+  }
+
+  body:not(.system-active) header #configuratorLanguage {
+    text-align: left;
+    font-size: 11px;
+  }
+
+  body:not(.system-active) header #configuratorNav {
+    display: none;
+  }
+
+  body:not(.system-active) #configuratorNavMobile {
+    display: flex;
+  }
+
+  body:not(.system-active) #navMobileActivationBtn {
+    display: block;
+    width: 46px;
+    height: 46px;
+    right: 14px;
+    bottom: 14px;
+  }
+
+  body:not(.system-active) .configuratorPanel {
+    margin-top: 154px;
+  }
+}
+
+/* ==============================================================
+   RESPONSIVE MOBILE/TABLET PATCH
+   --------------------------------------------------------------
+   - narzędzie jest przewijalne na małych ekranach,
+   - linki nawigacyjne są dostępne w hamburger menu,
+   - header nie nachodzi na treść,
+   - ekran wejściowy zachowuje czytelne odstępy na telefonach/tabletach.
+   ============================================================== */
+html {
+  min-height: 100%;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+/* Na ekranie wejściowym blokada scrolla nie może blokować telefonów/tabletów,
+   bo formularz + panel wczytywania mogą być wyższe niż viewport. */
+body.scroll-locked:not(.system-active) {
+  min-height: 100dvh;
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Header bazowo nie powinien wymuszać stałej wysokości zawartości strony. */
+body:not(.system-active) header {
+  position: sticky;
+  top: 0;
+}
+
+/* Desktop: zostawiamy menu klasyczne tam, gdzie realnie się mieści. */
+@media screen and (min-width: 1200px) {
+  body:not(.system-active) header #configuratorNav {
+    display: flex;
+  }
+
+  body:not(.system-active) #configuratorNavMobile,
+  body:not(.system-active) #navMobileActivationBtn {
+    display: none;
+  }
+}
+
+/* Tablet i mobile: menu w hamburgerze. */
+@media screen and (max-width: 1199px) {
+  body:not(.system-active) header {
+    display: grid;
+    grid-template-areas: "info logo";
+    grid-template-columns: minmax(0, 1fr) max-content;
+    column-gap: 14px;
+    align-items: start;
+    width: 100%;
+    padding: 12px 16px 10px;
+    background: var(--accent-bg-color);
+  }
+
+  body:not(.system-active) header #configuratorInfo {
+    grid-area: info;
+    min-width: 0;
+  }
+
+  body:not(.system-active) header .infoDescription {
+    width: auto;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  body:not(.system-active) header .infoDescription>h2 {
+    margin: 0 5px 4px 0;
+    font-size: clamp(16px, 2.5vw, 22px);
+    line-height: 1.2;
+  }
+
+  body:not(.system-active) header #configuratorDescription {
+    display: block;
+    margin-left: 0;
+    font-size: 11px;
+  }
+
+  body:not(.system-active) header .configuratorLogo,
+  body:not(.system-active) header #configuratorLogo {
+    grid-area: logo;
+    place-self: start end;
+    text-align: right;
+  }
+
+  body:not(.system-active) header #configuratorLogoImage {
+    width: clamp(132px, 18vw, 180px);
+    height: auto;
+  }
+
+  body:not(.system-active) header #configuratorLanguage {
+    font-size: 11px;
+  }
+
+  body:not(.system-active) header #configuratorNav {
+    display: none !important;
+  }
+
+  body:not(.system-active) #navMobileActivationBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: auto;
+    right: 18px;
+    bottom: 18px;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    background: var(--secondary-bg-color);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    z-index: 3001;
+  }
+
+  body:not(.system-active) #navMobileActivationBtn .navMobileActivationBtnIcon {
+    width: 100%;
+    height: 100%;
+    background-size: 28px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z'/%3E%3C/svg%3E");
+  }
+
+  body:not(.system-active) #navMobileActivationBtn .navMobileActivationBtnIcon.active {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M18.3 5.71 12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.71 2.88 18.3 9.17 12 2.88 5.71 4.29 4.29l6.3 6.3 6.29-6.3z'/%3E%3C/svg%3E");
+  }
+
+  body:not(.system-active) #configuratorNavMobile {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    padding: 88px 24px 96px;
+    align-items: center;
+    justify-content: center;
+    background: rgba(244, 244, 244, 0.98);
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 260ms ease, opacity 260ms ease;
+    z-index: 3000;
+    overflow-y: auto;
+  }
+
+  body:not(.system-active) #configuratorNavMobile.active {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  body:not(.system-active) #configuratorNavMobile .configuratorNavList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: min(420px, 100%);
+    padding: 0;
+    margin: 0;
+  }
+
+  body:not(.system-active) #configuratorNavMobile .configuratorNavList li {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  body:not(.system-active) #configuratorNavMobile .configuratorNavList li a {
+    display: block;
+    width: 100%;
+    padding: 16px 18px;
+    color: #fff;
+    background: var(--secondary-bg-color);
+    border-radius: 10px;
+    font-size: clamp(15px, 4vw, 18px);
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgba(204, 42, 39, 0.2);
+  }
+
+  body:not(.system-active) #configuratorNavMobile .configuratorNavList li a:focus-visible,
+  body:not(.system-active) #configuratorNavMobile .configuratorNavList li a:hover {
+    background: #a12220;
+    outline: none;
+  }
+}
+
+/* Tablet: formularz i opis układają się w jedną kolumnę z pełną szerokością pól. */
+@media screen and (max-width: 1015px) {
+  body:not(.system-active) .configuratorPanel {
+    width: min(94vw, 760px);
+    max-width: none;
+    margin: 24px auto 14px;
+    padding: 22px 18px 28px;
+  }
+
+  body:not(.system-active) .dragAndDropPanel {
+    width: min(94vw, 760px);
+    max-width: none;
+    margin: 0 auto 28px;
+    padding: 18px;
+  }
+
+  body:not(.system-active) .configuratorPanel .contentContainer {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  body:not(.system-active) .contentContainer .formContainer,
+  body:not(.system-active) .contentContainer .descriptionContainer {
+    width: 100%;
+    padding: 0;
+    border: none;
+  }
+
+  body:not(.system-active) .contentContainer .descriptionContainer {
+    order: 2;
+    margin-top: 24px;
+    margin-bottom: 0;
+    line-height: 1.65;
+  }
+
+  body:not(.system-active) .contentContainer .formContainer {
+    order: 1;
+  }
+
+  body:not(.system-active) .form .buildingType,
+  body:not(.system-active) .form .detectedGas,
+  body:not(.system-active) .form .batteryBackUp,
+  body:not(.system-active) .form .thRailingContainer {
+    max-width: 100%;
+  }
+}
+
+/* Telefony: prosty układ formularza, duże pola dotykowe i swobodne przewijanie. */
+@media screen and (max-width: 699px) {
+  body:not(.system-active) header {
+    grid-template-areas:
+      "info"
+      "logo";
+    grid-template-columns: 1fr;
+    row-gap: 6px;
+    padding: 10px 12px;
+  }
+
+  body:not(.system-active) header .configuratorLogo,
+  body:not(.system-active) header #configuratorLogo {
+    place-self: start start;
+    text-align: left;
+  }
+
+  body:not(.system-active) header #configuratorLogoImage {
+    width: min(150px, 52vw);
+  }
+
+  body:not(.system-active) header #configuratorLanguage {
+    text-align: left;
+  }
+
+  body:not(.system-active) .configuratorPanel {
+    width: 100%;
+    margin: 14px 0 10px;
+    padding: 12px 10px 18px;
+    border-radius: 0;
+  }
+
+  body:not(.system-active) .dragAndDropPanel {
+    width: 100%;
+    margin: 0 0 22px;
+    padding: 12px 10px 16px;
+    border-radius: 0;
+  }
+
+  body:not(.system-active) .panelHeaderContainer {
+    padding: 0;
+    margin-bottom: 12px;
+  }
+
+  body:not(.system-active) .panelHeaderContainer h3 {
+    padding: 14px 16px;
+    margin: 0;
+    font-size: 16px;
+  }
+
+  body:not(.system-active) .formContainer .form {
+    grid-template-columns: 24px minmax(0, 1fr);
+    grid-template-areas:
+      ". amounts"
+      "buildingInfo building"
+      "gasInfo gas"
+      "batteryInfo batterybackup"
+      "thRailingInfo thRailing"
+      "wireInfo wireLength"
+      ". button";
+    row-gap: 14px;
+  }
+
+  body:not(.system-active) .formSelectInput:has(select),
+  body:not(.system-active) input {
+    min-height: 44px;
+  }
+
+  body:not(.system-active) select {
+    min-height: 44px;
+    padding: 10px 46px 10px 10px;
+  }
+
+  body:not(.system-active) .formSelectInput:has(select)::after {
+    width: 44px;
+    height: 44px;
+  }
+
+  body:not(.system-active) .formButton,
+  body:not(.system-active) .dragAndDropPanel label {
+    width: 100%;
+    min-height: 46px;
+    font-size: 14px;
+  }
+
+  body:not(.system-active) .form .formButton {
+    place-self: stretch;
+  }
+
+  body:not(.system-active) .descriptionContainer ol {
+    padding-left: 20px;
+  }
+
+  body:not(.system-active) .descriptionContainer {
+    font-size: 13px;
+    text-align: left;
+  }
+
+  body:not(.system-active) .dragAndDropPanel .dragAndDropArea {
+    padding: 28px 16px;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+}
+
+@media screen and (max-width: 380px) {
+  body:not(.system-active) header .infoDescription>h2 {
+    font-size: 14px;
+  }
+
+  body:not(.system-active) .detectorAmountsInputContainer,
+  body:not(.system-active) .wireLengthInputContainer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  body:not(.system-active) .detectorAmounts .shadedAmount {
+    display: block;
+    width: 100%;
+    margin-left: 0;
   }
 }

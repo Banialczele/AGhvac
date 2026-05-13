@@ -493,3 +493,138 @@
     grid-template-columns: 10% 1fr 90px 1fr;
   }
 }
+
+/* ==============================================================
+   RESPONSIVE SYSTEM PREVIEW PATCH
+   --------------------------------------------------------------
+   Grafika i akcje systemu na małych ekranach są przewijalne i nie
+   wymuszają ucinania zawartości.
+   ============================================================== */
+@media screen and (max-width: 1199px) {
+  .system .systemPreview {
+    min-width: 0 !important;
+    overflow: visible;
+  }
+
+  .system .systemPreview,
+  .systemPreview .systemGraphics,
+  .systemActions {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .systemPreview .systemGraphics {
+    height: auto;
+  }
+
+  .systemPreview .systemGraphics .systemPreviewControlUnit {
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .systemActions .actionsList {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #actionsSegment0 #segmentDeviceLabel {
+    grid-template-columns: minmax(0, 1fr) 52px 34px;
+    width: 100%;
+  }
+}
+
+@media screen and (max-width: 699px) {
+  .systemPreview .systemGraphics {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px;
+  }
+
+  .systemPreview .systemGraphics .systemHeader,
+  .systemActions .systemHeader {
+    min-height: 0;
+  }
+
+  .systemPreview .systemGraphics .systemPreviewControlUnit {
+    width: 100%;
+    max-width: 320px;
+    height: auto;
+    margin-top: 0;
+  }
+
+  .systemPreview .systemGraphics .systemPreviewControlUnit img {
+    width: 100%;
+    height: auto;
+  }
+
+  .systemGraphics .systemDiagram .deviceSegment {
+    grid-template-columns: 28px minmax(0, 1fr) 72px minmax(0, 1fr);
+    grid-template-rows: minmax(110px, auto);
+    overflow: hidden;
+  }
+
+  .deviceSegment img {
+    max-width: 100%;
+    height: auto;
+    max-height: 110px;
+    object-fit: contain;
+  }
+
+  .systemActions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 8px;
+  }
+
+  .systemActions .actionsList {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 0;
+  }
+
+  .actionsList .actionsSegment {
+    padding: 12px 0;
+  }
+
+  .actionsList .actionsSegment .wrapper {
+    min-width: 0;
+    padding: 0 44px 0 8px;
+  }
+
+  .actionsList .actionsSegment .wrapper .deviceTypeWrapper {
+    flex-direction: column;
+    row-gap: 12px;
+  }
+
+  .actionsList .actionsSegment:first-child .wrapper input.segmentDeviceSelect,
+  .actionsList .actionsSegment .wrapper .deviceTypeWrapper .segmentDeviceSelectContainer,
+  .actionsList .actionsSegment .wrapper .deviceTypeWrapper .toledContainer {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  #actionsSegment0 #segmentDeviceLabel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 50px 30px;
+    grid-template-areas:
+      "description UPSdescription tooltip"
+      "modControlSelect modControlUPS tooltip";
+    column-gap: 8px;
+    align-items: end;
+  }
+
+  #segmentDeviceLabel .segmentDeviceSelect {
+    min-width: 0;
+    font-size: 11px;
+  }
+
+  .segmentButtonsContainer {
+    right: 6px;
+    bottom: 8px;
+  }
+}

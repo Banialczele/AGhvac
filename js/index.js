@@ -5,26 +5,23 @@ const REVISIONNUMBER = 123;
 // Główny obiekt zawierający dane utworzonego systemu - JEDYNE ŹRÓDŁO PRAWDY
 let systemData = {
 	supplyType: ``,
-	wireType: '',
+	wireType: '',        // Optymalizacja: ujednolicony klucz (CamelCase)
 	batteryBackUp: "Tak",
-	thRailing: "Nie",
+	thRailing: "Nie",    // Dodane: obsługa montażu na szynie TH35
 	devicesTypes: { detectors: [], signallers: [] },
 	bus: [],
 	errorList: [],
-	res: null,
+	res: null,           // Przechowuje wyniki z AnalysisEngine
 	totalPower: 0,
-	generatedSupply: null,
-	selectedStructure: null,
+	selectedStructure: ""
 };
 
 let initSystem = {
 	systemIsGenerated: false,
 	amountOfDetectors: 1,
 	EWL: 15,
-	backup: "Nie",
-	thRailing: "Tak",
 	selectedStructure: null,
-	detector: null,
+	detector: null
 };
 
 const NAVLINKS = {
@@ -46,23 +43,7 @@ const NAVLINKS = {
 	}
 };
 
-function createEmptySystemData(overrides = {}) {
-	return {
-		supplyType: ``,
-		wireType: '',
-		batteryBackUp: TRANSLATION?.batteryBackUpNo?.[lang] || "Nie",
-		thRailing: TRANSLATION?.batteryBackUpYes?.[lang] || "Tak",
-		devicesTypes: { detectors: [], signallers: [] },
-		bus: [],
-		errorList: [],
-		res: null,
-		totalPower: 0,
-		generatedSupply: null,
-		selectedStructure: initSystem?.selectedStructure || null,
-		...overrides,
-	};
-}
-
+// Funkcja ustawiająca linki nawigacyjne na podstawie datasetów
 function setLinksForNavigation() {
 	document.querySelectorAll(`.configuratorNavItem a`).forEach(elem => {
 		const translationKey = elem.dataset.translate;
@@ -72,6 +53,7 @@ function setLinksForNavigation() {
 	});
 }
 
+// Ustawienie nasłuchiwania na przycisku mobilnego menu
 function setMobileMenuClickEvent() {
 	const btn = document.getElementById("navMobileActivationBtn");
 	const nav = document.getElementById("configuratorNavMobile");
@@ -79,18 +61,41 @@ function setMobileMenuClickEvent() {
 
 	if (!btn || !nav || !icon || btn.dataset.listenerBound === "true") return;
 
+	const closeMenu = () => {
+		nav.classList.remove("active");
+		icon.classList.remove("active");
+		btn.setAttribute("aria-expanded", "false");
+		btn.setAttribute("aria-label", lang === "en" ? "Open menu" : "Otwórz menu");
+	};
+
+	const openMenu = () => {
+		nav.classList.add("active");
+		icon.classList.add("active");
+		btn.setAttribute("aria-expanded", "true");
+		btn.setAttribute("aria-label", lang === "en" ? "Close menu" : "Zamknij menu");
+	};
+
 	btn.addEventListener("click", () => {
-		nav.classList.toggle("active");
-		icon.classList.toggle("active");
+		nav.classList.contains("active") ? closeMenu() : openMenu();
 	});
+
+	nav.querySelectorAll("a").forEach((link) => {
+		link.addEventListener("click", closeMenu);
+	});
+
+	document.addEventListener("keydown", (event) => {
+		if (event.key === "Escape") closeMenu();
+	});
+
 	btn.dataset.listenerBound = "true";
 }
 
+// Generowanie nagłówka konfiguratora
 function configuratorHeaderDesc() {
 	const container = document.querySelector(`#configuratorInfo`);
 	if (!container) return;
 
-	container.innerHTML = "";
+	container.innerHTML = ""; // Czyścimy przed renderowaniem
 
 	const infoDescription = document.createElement(`div`);
 	infoDescription.classList.add(`infoDescription`);
@@ -112,6 +117,7 @@ function configuratorHeaderDesc() {
 	configuratordesc.setAttribute(`id`, `configuratorDescription`);
 	configuratordesc.innerText = `Revision: ${REVISIONNUMBER}`;
 
+	// Logika kolejności wyświetlania zależna od języka
 	if (lang === `pl`) {
 		infoDescription.append(title, tetaGasHeader, tetaGas);
 	} else {
@@ -122,76 +128,72 @@ function configuratorHeaderDesc() {
 	container.appendChild(configuratordesc);
 }
 
+// Sprawdzanie języka na podstawie parametrów URL
 function checkLang() {
 	const params = new URLSearchParams(window.location.search);
 	const langParam = params.get('lang');
-	lang = langParam === 'en' ? "en" : "pl";
+
+	if (langParam === 'en') {
+		lang = "en";
+	} else {
+		lang = "pl";
+	}
 }
 
+// Ustawianie tekstów tooltipów na podstawie klas i tłumaczeń
 function setTooltipText() {
 	document.querySelectorAll(`.tooltip`).forEach(elem => {
-		const translationKey = elem.classList[0];
+		const translationKey = elem.classList[0]; // Pierwsza klasa jako klucz
 		if (TRANSLATION[translationKey]) {
 			elem.setAttribute(`data-text`, TRANSLATION[translationKey][lang]);
 		}
 	});
 }
 
-function getDefaultStructure() {
-	if (typeof STRUCTURE_TYPES === 'undefined' || !Array.isArray(STRUCTURE_TYPES) || STRUCTURE_TYPES.length === 0) {
-		return null;
-	}
-	return STRUCTURE_TYPES[0];
-}
-
-function getDefaultDetectorForStructure(structure) {
-	if (!structure?.devices?.length) return null;
-	const selectedStructureGas = structure.detection?.[0];
-	return structure.devices.find(device => device.gasDetected === selectedStructureGas) ||
-		structure.devices.find(device => device.class === "detector") ||
-		structure.devices[0];
-}
-
+// Inicjalizacja domyślnych danych systemu
 function initSystemData() {
-	const selectedStructure = getDefaultStructure();
-	const selectedStructureDetector = getDefaultDetectorForStructure(selectedStructure);
+	if (typeof STRUCTURE_TYPES === 'undefined') return;
+
+	const selectedStructure = STRUCTURE_TYPES[0];
+	const selectedStructureGas = selectedStructure.detection[0];
+	const selectedStructureDetector = selectedStructure.devices.find(device => device.gasDetected === selectedStructureGas);
 
 	initSystem = {
-		selectedStructure,
+		selectedStructure: selectedStructure,
 		amountOfDetectors: 1,
 		EWL: 15,
 		detector: selectedStructureDetector,
-		backup: TRANSLATION?.batteryBackUpNo?.[lang] || "Nie",
-		thRailing: TRANSLATION?.batteryBackUpYes?.[lang] || "Tak",
-		systemIsGenerated: false,
+		batteryBackUp: "Tak",
+		systemIsGenerated: false
 	};
 
-	systemData = createEmptySystemData({ selectedStructure });
+	systemData.selectedStructure = selectedStructure.type['pl']; // Klucz bazowy
 }
 
+// Entry point aplikacji
 window.addEventListener("load", () => {
 	checkLang();
-
-	// Po odświeżeniu zawsze pokazujemy punkt wejścia: formularz.
-	document.body.classList.remove("system-active"); document.body.classList.add("scroll-locked");
-
-	if (typeof translate === 'function') translate();
+	translate(); // Funkcja z translator.js
 	initSystemData();
 	setMobileMenuClickEvent();
 
+	// Inicjalizacja formularza i wczytywanie danych
 	if (typeof formInit === 'function') formInit();
 	if (typeof createSystemDataFromAFile === 'function') createSystemDataFromAFile();
+	if (typeof handleFormSubmit === 'function') handleFormSubmit();
 
 	configuratorHeaderDesc();
 	setTooltipText();
 	setLinksForNavigation();
 
+	// Link do wytycznych HVAC
 	const guidanceLink = document.querySelector(`.hvacGuidanceLink`);
 	if (guidanceLink && TRANSLATION.hvacGuidance) {
 		guidanceLink.setAttribute(`href`, TRANSLATION.hvacGuidance[lang]);
 	}
 });
 
+// Reset pozycji scrolla przy przeładowaniu
 window.onbeforeunload = function () {
 	window.scrollTo(0, 0);
 };
