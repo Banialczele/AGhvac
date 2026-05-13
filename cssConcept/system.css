@@ -799,3 +799,30 @@
     padding-left: 0;
   }
 }
+
+/* ==============================================================
+   Applied / additional devices panel height
+   --------------------------------------------------------------
+   Desktop/tablet: panel „Zastosowane/Dodatkowe urządzenia” ma
+   maksymalnie 650px wysokości i własny scroll.
+   Mobile: limit wysokości wyłączony, żeby strona przewijała się
+   naturalnie na telefonach.
+   ============================================================== */
+.system .wrapper .usedDevices {
+  max-height: 650px;
+  overflow-y: auto;
+}
+
+.system .wrapper .usedDevices #usedDevicesContainer {
+  max-height: calc(650px - 92px);
+  overflow-y: auto;
+}
+
+@media screen and (max-width: 699px) {
+
+  .system .wrapper .usedDevices,
+  .system .wrapper .usedDevices #usedDevicesContainer {
+    max-height: none;
+    overflow: visible;
+  }
+}

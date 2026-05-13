@@ -628,3 +628,48 @@
     bottom: 8px;
   }
 }
+
+/* ==============================================================
+   TOLED text select width adjustment
+   --------------------------------------------------------------
+   Pole „Napis” jest tylko trochę szersze, ale nie rozciąga się
+   na całą szerokość kontenera. Na mobile wraca do 100% szerokości.
+   ============================================================== */
+.actionsList .actionsSegment .wrapper .deviceTypeWrapper {
+  flex-wrap: wrap;
+  align-items: flex-end;
+  row-gap: 14px;
+}
+
+.actionsList .actionsSegment .wrapper .deviceTypeWrapper .segmentDeviceSelectContainer {
+  flex: 0 0 220px;
+  width: 220px;
+  max-width: 100%;
+}
+
+.actionsList .actionsSegment .wrapper .deviceTypeWrapper .toledContainer {
+  flex: 0 0 250px;
+  width: 250px;
+  min-width: 250px;
+  max-width: 100%;
+}
+
+.actionsList .actionsSegment .wrapper .deviceTypeWrapper .toledContainer .formSelectInput,
+.actionsList .actionsSegment .wrapper .deviceTypeWrapper .toledContainer select {
+  width: 100%;
+}
+
+.actionsList .actionsSegment .wrapper .deviceTypeWrapper .toledContainer select {
+  min-width: 0;
+  text-overflow: clip;
+}
+
+@media screen and (max-width: 699px) {
+
+  .actionsList .actionsSegment .wrapper .deviceTypeWrapper .segmentDeviceSelectContainer,
+  .actionsList .actionsSegment .wrapper .deviceTypeWrapper .toledContainer {
+    flex-basis: 100%;
+    width: 100%;
+    min-width: 0;
+  }
+}
