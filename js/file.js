@@ -87,12 +87,6 @@ function getDataForExcel() {
     rows.push(["", `${TRANSLATION.structureType[lang]}`, `${structure?.type?.[lang] || structure || ""}`]);
     rows.push([]);
 
-    if (controlUnitWithSupply && controlUnitWithSupply.controlUnit) {
-        rows.push([
-            `${TRANSLATION.modControlFileInfo[lang]} ${controlUnitWithSupply.controlUnit.type} ${TRANSLATION.modControlFileInfoEnd[lang]}`
-        ]);
-    }
-
     if (alternativeConfig && alternativeConfig.controlUnit) {
         const altPSU = alternativeConfig.powerSupply?.supply || alternativeConfig.psu;
         const altDesc = altPSU?.description ? ` (${altPSU.description})` : "";
@@ -262,6 +256,21 @@ function downloadFile(url, fileType) {
     anchor.click();
 }
 
+
+function getFileLoadMessage(code) {
+    const messages = {
+        invalidFormat: {
+            pl: "Nieprawidłowy format pliku. Wczytaj plik JSON.",
+            en: "Invalid file format. Please load a JSON file.",
+        },
+        loadError: {
+            pl: "Nie udało się wczytać pliku JSON. Sprawdź strukturę pliku.",
+            en: "The JSON file could not be loaded. Please check the file structure.",
+        },
+    };
+    return messages[code]?.[lang] || messages[code]?.pl || code;
+}
+
 // Drag & Drop / Input Loader
 function handleDropFile(event) {
     event.preventDefault();
@@ -281,7 +290,7 @@ function convertAndLoadFileData(file) {
     if (!file) return;
 
     if (!file.type.match("^application/json") && !file.name?.toLowerCase().endsWith(".json")) {
-        window.alert("Nieprawidłowy format pliku. Wczytaj plik JSON.");
+        window.alert(getFileLoadMessage("invalidFormat"));
         return;
     }
 
@@ -303,7 +312,7 @@ function convertAndLoadFileData(file) {
             systemSection?.scrollIntoView({ behavior: "smooth", block: "start" });
         } catch (error) {
             console.error(error);
-            window.alert("Nie udało się wczytać pliku JSON. Sprawdź strukturę pliku.");
+            window.alert(getFileLoadMessage("loadError"));
         } finally {
             const input = document.getElementById("readFileInput");
             if (input) input.value = "";

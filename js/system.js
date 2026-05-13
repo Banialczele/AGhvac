@@ -972,6 +972,8 @@ function setSystemUsedDevice(device) {
     systemUsedDeviceType.appendChild(
       document.createTextNode(`${TRANSLATION.deviceDescription[lang]} ${device.gasDetected}`)
     );
+  } else if (device.type === "Teta Control V" || device.class === `valveCtrl`) {
+    systemUsedDeviceType.appendChild(document.createTextNode(`${TRANSLATION.valveControl[lang]}`));
   } else {
     systemUsedDeviceType.appendChild(document.createTextNode(`${TRANSLATION.signallerDescription[lang]}`));
   }

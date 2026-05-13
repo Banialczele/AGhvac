@@ -13,16 +13,46 @@ let systemData = {
 	errorList: [],
 	res: null,           // Przechowuje wyniki z AnalysisEngine
 	totalPower: 0,
-	selectedStructure: ""
+	generatedSupply: null,
+	selectedStructure: null
 };
 
 let initSystem = {
 	systemIsGenerated: false,
 	amountOfDetectors: 1,
 	EWL: 15,
+	backup: "Nie",
+	thRailing: "Tak",
 	selectedStructure: null,
 	detector: null
 };
+
+
+function getDefaultStructure() {
+	if (typeof STRUCTURE_TYPES === 'undefined' || !Array.isArray(STRUCTURE_TYPES) || STRUCTURE_TYPES.length === 0) return null;
+	return STRUCTURE_TYPES.find(structure => {
+		const pl = String(structure?.type?.pl || "").trim().toLowerCase();
+		const en = String(structure?.type?.en || "").trim().toLowerCase();
+		return pl === "inne" || en === "other";
+	}) || STRUCTURE_TYPES[0];
+}
+
+function createEmptySystemData(overrides = {}) {
+	return {
+		supplyType: ``,
+		wireType: '',
+		batteryBackUp: TRANSLATION?.batteryBackUpNo?.[lang] || "Nie",
+		thRailing: TRANSLATION?.batteryBackUpYes?.[lang] || "Tak",
+		devicesTypes: { detectors: [], signallers: [] },
+		bus: [],
+		errorList: [],
+		res: null,
+		totalPower: 0,
+		generatedSupply: null,
+		selectedStructure: initSystem?.selectedStructure || getDefaultStructure(),
+		...overrides,
+	};
+}
 
 const NAVLINKS = {
 	tetaGasGuidance: {
@@ -154,20 +184,23 @@ function setTooltipText() {
 function initSystemData() {
 	if (typeof STRUCTURE_TYPES === 'undefined') return;
 
-	const selectedStructure = STRUCTURE_TYPES[0];
-	const selectedStructureGas = selectedStructure.detection[0];
-	const selectedStructureDetector = selectedStructure.devices.find(device => device.gasDetected === selectedStructureGas);
+	const selectedStructure = getDefaultStructure();
+	const selectedStructureGas = selectedStructure?.detection?.[0];
+	const selectedStructureDetector = selectedStructure?.devices?.find(device => device.gasDetected === selectedStructureGas)
+		|| selectedStructure?.devices?.find(device => device.class === "detector")
+		|| null;
 
 	initSystem = {
 		selectedStructure: selectedStructure,
 		amountOfDetectors: 1,
 		EWL: 15,
 		detector: selectedStructureDetector,
-		batteryBackUp: "Tak",
+		backup: TRANSLATION?.batteryBackUpNo?.[lang] || "Nie",
+		thRailing: TRANSLATION?.batteryBackUpYes?.[lang] || "Tak",
 		systemIsGenerated: false
 	};
 
-	systemData.selectedStructure = selectedStructure.type['pl']; // Klucz bazowy
+	systemData = createEmptySystemData({ selectedStructure });
 }
 
 // Entry point aplikacji

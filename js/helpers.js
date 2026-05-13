@@ -1,10 +1,10 @@
 function setAttributes(el, attrs) {
-    Object.keys(attrs).forEach(key => el.setAttribute(key, attrs[key]));
+	Object.keys(attrs).forEach(key => el.setAttribute(key, attrs[key]));
 }
 
 function setDate() {
-    const date = new Date();
-    return `${date.getFullYear()}_${date.getMonth() + 1}_${date.getDate()}__${date.getHours()}_${date.getMinutes()}`;
+	const date = new Date();
+	return `${date.getFullYear()}_${date.getMonth() + 1}_${date.getDate()}__${date.getHours()}_${date.getMinutes()}`;
 }
 
 // // Pomocniczy skrót do tworzenia elementów z atrybutami

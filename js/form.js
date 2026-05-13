@@ -4,10 +4,14 @@ function createStructureTypesListSelect() {
 
   const fragment = document.createDocumentFragment();
 
-  STRUCTURE_TYPES.forEach((elem, index) => {
+  const defaultStructure = typeof getDefaultStructure === "function"
+    ? getDefaultStructure()
+    : (STRUCTURE_TYPES.find((s) => String(s.type?.pl || "").toLowerCase() === "inne" || String(s.type?.en || "").toLowerCase() === "other") || STRUCTURE_TYPES[0]);
+
+  STRUCTURE_TYPES.forEach((elem) => {
     const isSelected = initSystem.selectedStructure
       ? elem.type?.[lang] === initSystem.selectedStructure.type?.[lang]
-      : index === 0;
+      : elem.type?.[lang] === defaultStructure?.type?.[lang];
 
     const option = createOption(elem.type[lang], elem.type[lang], {
       class: "structureOption",
@@ -457,7 +461,10 @@ function handleFormSubmit() {
 
     if (initSystem.systemIsGenerated) {
       if (!window.confirm(TRANSLATION.regenerateSystemMessage[lang])) return;
-      systemData = createEmptySystemData({ selectedStructure: initSystem.selectedStructure });
+      const preservedStructure = initSystem.selectedStructure || systemData.selectedStructure || (typeof getDefaultStructure === "function" ? getDefaultStructure() : null);
+      systemData = createEmptySystemData({ selectedStructure: preservedStructure });
+      initSystem.systemIsGenerated = false;
+      initSystem.selectedStructure = preservedStructure;
     }
 
     const inputValidation = validateInitialFormInputLimits();
