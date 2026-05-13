@@ -137,6 +137,43 @@ const tetaEcoWentDevice = {
   }
 }; // see adms://s:192.168.0.251/b:archidemes/i:165964
 
+const tetaEcoO2Device = {
+  type: `Teta EcoO2`,
+  power_W: 0.3,
+  current_A: 0.006,
+  minVoltage_V: 12,
+  class: DeviceCl.detector,
+  gasDetected: "O2",
+  gasDetectedDescription: {
+    pl: "- Tlen",
+    en: "- Oxygen"
+  },
+  productKey: "PW-134-O2",
+  doc: {
+    pl: "https://atestgaz.pl/produkt/teta-ecoo2/",
+    en: "https://atestgaz.pl/en/produkt/gas-detector-teta-ecoo2/"
+  }
+}; // see adms://s:192.168.0.251/b:archidemes/i:165964
+
+const tetaEcoCO2Device = {
+  type: `Teta EcoCO2`,
+  power_W: 0.3,
+  current_A: 0.006,
+  minVoltage_V: 12,
+  class: DeviceCl.detector,
+  gasDetected: "CO2",
+  gasDetectedDescription: {
+    pl: "- Dwutlenek węgla",
+    en: "- Carbon dioxide"
+  },
+  productKey: "PW-133-CO2",
+  doc: {
+    pl: "https://atestgaz.pl/produkt/teta-ecoco2/",
+    en: "https://atestgaz.pl/en/produkt/gas-detector-teta-ecoco2/"
+  }
+}; // see adms://s:192.168.0.251/b:archidemes/i:165964
+
+
 const tetaEcoDetDevice = {
   type: `Teta EcoDet`,
   power_W: 1.27,
@@ -355,6 +392,8 @@ const facilityTypeOther = {
     tetaEcoTermDevice,
     tetaEcoHDevice,
     tetaEcoNDevice,
+    tetaEcoCO2Device,
+    tetaEcoO2Device,
     toledDevice,
     tetaSOLERTDevice,
     tetaControlVDevice,
@@ -363,7 +402,8 @@ const facilityTypeOther = {
     tetaEcoWentDevice.gasDetected,
     tetaEcoDetDevice.gasDetected,
     tetaEcoWentMiniDetDevice.gasDetected,
-
+    tetaEcoCO2Device.gasDetected,
+    tetaEcoO2Device.gasDetected,
     tetaEcoTermDevice.gasDetected,
     tetaEcoHDevice.gasDetected,
     tetaEcoNDevice.gasDetected,
@@ -372,7 +412,8 @@ const facilityTypeOther = {
     tetaEcoWentDevice.gasDetectedDescription,
     tetaEcoDetDevice.gasDetectedDescription,
     tetaEcoWentMiniDetDevice.gasDetectedDescription,
-
+    tetaEcoCO2Device.gasDetectedDescription,
+    tetaEcoO2Device.gasDetectedDescription,
     tetaEcoTermDevice.gasDetectedDescription,
     tetaEcoHDevice.gasDetectedDescription,
     tetaEcoNDevice.gasDetectedDescription,
@@ -381,6 +422,8 @@ const facilityTypeOther = {
 
 const Devices = [
   tetaEcoWentDevice,
+  tetaEcoO2Device,
+  tetaEcoCO2Device,
   tetaEcoWentMiniDetDevice,
   tetaEcoDetDevice,
   tetaEcoTermDevice,

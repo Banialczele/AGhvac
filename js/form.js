@@ -60,8 +60,9 @@ function createDetectedGasListSelect() {
 
   if (structure?.detection) {
     structure.detection.forEach((gas, i) => {
-      const device = structure.devices?.[i];
-      if (!device || device.class !== "detector") return;
+      const device = structure.devices?.find((device) =>
+        device.class === "detector" && device.gasDetected === gas
+      );
 
       const option = createOption(gas, `${gas} ${structure.detectionDescription?.[i]?.[lang] || ""}`, {
         class: "gasOption",
