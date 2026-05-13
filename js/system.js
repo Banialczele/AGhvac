@@ -843,11 +843,8 @@ function createSystemUsedDevicesPanel() {
   if (!systemUsedDevicesContainer) return;
 
   const result = setUsedDevices();
-  const externalPowerSupply = getSelectedExternalPowerSupply();
   const signature = JSON.stringify({
     supplyType: systemData.supplyType?.type || "",
-    powerSupply: externalPowerSupply?.description || "",
-    configLabel: systemData.res?.powerSupply?.label || "",
     devices: Object.keys(result).sort(),
     lang,
   });
@@ -857,7 +854,6 @@ function createSystemUsedDevicesPanel() {
 
   const df = document.createDocumentFragment();
   if (systemData.supplyType?.type) df.appendChild(setSystemUsedPSU(systemData.supplyType.type));
-  if (externalPowerSupply?.description) df.appendChild(setSystemUsedExternalPowerSupply(externalPowerSupply));
 
   for (const value of Object.values(result)) {
     df.appendChild(setSystemUsedDevice(value));
