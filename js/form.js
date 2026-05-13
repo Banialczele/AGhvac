@@ -444,7 +444,7 @@ function transitionToSystemView() {
     requestAnimationFrame(() => {
       systemSection?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-  }, 420);
+  }, 150);
 }
 
 function handleFormSubmit() {
