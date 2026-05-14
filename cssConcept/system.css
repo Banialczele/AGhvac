@@ -811,11 +811,12 @@
 .system .wrapper .usedDevices {
   max-height: 650px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .system .wrapper .usedDevices #usedDevicesContainer {
-  max-height: calc(650px - 92px);
-  overflow-y: auto;
+  max-height: none;
+  overflow-y: visible;
 }
 
 @media screen and (max-width: 699px) {
