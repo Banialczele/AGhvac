@@ -876,7 +876,7 @@ header #configuratorLanguage .langLink:first-child {
   body:not(.system-active) .form .detectedGas,
   body:not(.system-active) .form .batteryBackUp,
   body:not(.system-active) .form .thRailingContainer {
-    max-width: 330px;
+    max-width: 250px;
   }
 
   body:not(.system-active) .panelHeaderContainer h3 {
