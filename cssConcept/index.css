@@ -1575,3 +1575,11 @@ body:not(.system-active) header {
     margin-left: 0;
   }
 }
+
+.dragAndDropPanel .dragAndDropArea.is-drag-over {
+  opacity: 0.65;
+  outline: 3px solid var(--secondary-bg-color);
+  outline-offset: -8px;
+  background-color: rgba(204, 42, 39, 0.08);
+  filter: grayscale(0.25);
+}

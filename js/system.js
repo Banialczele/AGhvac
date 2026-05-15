@@ -1,18 +1,143 @@
-function createSystemDataFromAFile(fileData = null) {
-  if (!fileData) return;
-
-  systemData.supplyType = fileData.supplyType;
-  systemData.wireType = fileData.wireType;
-  systemData.batteryBackUp = fileData.batteryBackUp;
-  systemData.bus = fileData.bus;
-
-  if (fileData.thRailing) {
-    const select = document.getElementById("thRailing");
-    if (select) select.value = fileData.thRailing;
-    systemData.thRailing = fileData.thRailing;
+function findStructureByType(typeValue) {
+  if (!typeValue || typeof STRUCTURE_TYPES === "undefined" || !Array.isArray(STRUCTURE_TYPES)) {
+    return null;
   }
 
-  systemData.errorList = [];
+  const normalized = String(
+    typeof typeValue === "object"
+      ? typeValue?.[lang] || typeValue?.pl || typeValue?.en || ""
+      : typeValue
+  ).trim().toLowerCase();
+
+  if (!normalized) return null;
+
+  return STRUCTURE_TYPES.find((structure) => {
+    const pl = String(structure?.type?.pl || "").trim().toLowerCase();
+    const en = String(structure?.type?.en || "").trim().toLowerCase();
+    const current = String(structure?.type?.[lang] || "").trim().toLowerCase();
+
+    return normalized === pl || normalized === en || normalized === current;
+  }) || null;
+}
+
+function getDefaultDetectorFromStructure(structure) {
+  if (!structure?.devices?.length) return null;
+  return structure.devices.find((device) => device.class === "detector") || structure.devices[0] || null;
+}
+
+function createSystemDataFromAFile(fileData = null) {
+  if (!fileData) return false;
+
+  // Obsługujemy zarówno stary format JSON, jak i eksport z wrapperem { systemData, initSystem }.
+  const incomingSystem = fileData.systemData || fileData;
+  const incomingInit = fileData.initSystem || {};
+
+  const structureType = incomingSystem.selectedStructureType ||
+    incomingSystem.selectedStructure?.type?.pl ||
+    incomingSystem.selectedStructure?.type?.en ||
+    incomingSystem.selectedStructure?.type?.[lang] ||
+    incomingSystem.selectedStructure ||
+    incomingInit.selectedStructure?.type?.[lang] ||
+    incomingInit.selectedStructure?.type?.pl ||
+    incomingInit.selectedStructure?.type?.en ||
+    incomingInit.selectedStructure;
+
+  const selectedStructure = findStructureByType(structureType)
+    || initSystem?.selectedStructure
+    || systemData?.selectedStructure
+    || (typeof getDefaultStructure === "function" ? getDefaultStructure() : null)
+    || (typeof STRUCTURE_TYPES !== "undefined" ? STRUCTURE_TYPES?.[0] : null);
+
+  const normalizeDevice = (deviceLike) => {
+    if (!deviceLike) return null;
+    const deviceType = typeof deviceLike === "string" ? deviceLike : deviceLike.type;
+    if (!deviceType) return typeof deviceLike === "object" ? deviceLike : null;
+
+    const fromStructure = selectedStructure?.devices?.find(device => device.type === deviceType);
+    const fromGlobal = typeof Devices !== "undefined" && Array.isArray(Devices)
+      ? Devices.find(device => device.type === deviceType)
+      : null;
+
+    return fromStructure || fromGlobal || (typeof deviceLike === "object" ? deviceLike : null);
+  };
+
+  const incomingBus = Array.isArray(incomingSystem.bus) ? incomingSystem.bus : [];
+  const normalizedBus = incomingBus.map((segment, index) => {
+    const detector = normalizeDevice(segment.detector || segment.device || segment.deviceType);
+    return {
+      ...segment,
+      index: Number(segment.index) || index + 1,
+      detector,
+      wireLength: Number(segment.wireLength ?? segment.cableLen_m ?? segment.length ?? initSystem?.EWL ?? 15) || 15,
+      description: segment.description || "",
+      labeling: segment.labeling ?? null,
+    };
+  }).filter(segment => segment.detector?.type);
+
+  const backupValue = incomingSystem.batteryBackUp || incomingSystem.backup || incomingInit.backup || initSystem?.backup || TRANSLATION?.batteryBackUpNo?.[lang] || "Nie";
+  const thRailingValue = incomingSystem.thRailing || incomingInit.thRailing || initSystem?.thRailing || TRANSLATION?.batteryBackUpYes?.[lang] || "Tak";
+
+  const incomingSupplyType = incomingSystem.supplyType || incomingSystem.res?.powerSupply?.controlUnit || null;
+  const supplyType = typeof incomingSupplyType === "string"
+    ? (typeof CONTROLUNITLIST !== "undefined" && Array.isArray(CONTROLUNITLIST)
+      ? CONTROLUNITLIST.find(controlUnit => controlUnit.type === incomingSupplyType)
+      : null) || incomingSupplyType
+    : incomingSupplyType;
+
+  systemData = createEmptySystemData({
+    supplyType: supplyType || ``,
+    wireType: incomingSystem.wireType || incomingSystem.res?.powerSupply?.cable?.type || "",
+    batteryBackUp: backupValue,
+    thRailing: thRailingValue,
+    bus: normalizedBus,
+    errorList: [],
+    res: incomingSystem.res || null,
+    totalPower: Number(incomingSystem.totalPower) || 0,
+    generatedSupply: incomingSystem.generatedSupply ?? null,
+    selectedStructure,
+  });
+
+  initSystem.selectedStructure = selectedStructure;
+  initSystem.backup = backupValue;
+  initSystem.thRailing = thRailingValue;
+  initSystem.amountOfDetectors = normalizedBus.length || Number(incomingInit.amountOfDetectors) || 1;
+  initSystem.EWL = Number(normalizedBus[0]?.wireLength || incomingInit.EWL || 15);
+  initSystem.detector = normalizedBus[0]?.detector || getDefaultDetectorFromStructure(selectedStructure);
+  initSystem.systemIsGenerated = normalizedBus.length > 0;
+
+  const structureSelect = document.getElementById("structureType");
+  if (structureSelect && selectedStructure?.type?.[lang]) {
+    structureSelect.value = selectedStructure.type[lang];
+  }
+
+  if (typeof createDetectedGasListSelect === "function") {
+    createDetectedGasListSelect();
+  }
+
+  const gasSelect = document.getElementById("gasDetected");
+  if (gasSelect && initSystem.detector?.type) {
+    const option = Array.from(gasSelect.options).find((opt) => {
+      return opt.dataset?.devicename === initSystem.detector.type;
+    });
+
+    if (option) {
+      gasSelect.value = option.value;
+    }
+  }
+
+  const thSelect = document.getElementById("thRailing");
+  if (thSelect) thSelect.value = thRailingValue;
+
+  const backupSelect = document.getElementById("batteryBackUp");
+  if (backupSelect) backupSelect.value = backupValue;
+
+  const amountInput = document.getElementById("amountOfDetectors");
+  if (amountInput) amountInput.value = initSystem.amountOfDetectors;
+
+  const ewlInput = document.getElementById("EWL");
+  if (ewlInput) ewlInput.value = initSystem.EWL;
+
+  return true;
 }
 
 function copyImageSegmentOnFormSubmit() {
@@ -425,6 +550,52 @@ function setList(listName, deviceList) {
   }
 }
 
+
+function getBackToHomeButtonText() {
+  return lang === "en" ? "‹ Back to main page" : "‹ Powrót na stronę główną";
+}
+
+function ensureBackToHomeButton() {
+  const statusPanel = document.querySelector(".systemStatus");
+  if (!statusPanel) return;
+
+  let actions = document.getElementById("systemHomeActions");
+  let button = document.getElementById("backToHomeButton");
+
+  if (!actions) {
+    actions = document.createElement("div");
+    actions.id = "systemHomeActions";
+    actions.className = "systemHomeActions";
+    statusPanel.appendChild(actions);
+  }
+
+  if (!button) {
+    button = document.createElement("button");
+    button.id = "backToHomeButton";
+    button.type = "button";
+    button.className = "systemHomeButton";
+    actions.appendChild(button);
+  }
+
+  button.textContent = getBackToHomeButtonText();
+}
+
+function returnToHomeView() {
+  const body = document.body;
+  const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+  body.classList.remove("view-transitioning");
+  body.classList.remove("system-active");
+  body.classList.add("scroll-locked");
+
+  window.setTimeout(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+    });
+  }, 0);
+}
+
 // Tworzenie systemu
 function setSystem() {
   const actionsList = document.getElementById('actionsList');
@@ -445,6 +616,7 @@ function setSystem() {
   setSystemSegmentsLazy(systemData.bus);
   copyImageSegmentOnFormSubmit();
   functionToUpdateSystem();
+  ensureBackToHomeButton();
 
   fillData();
   updateSelectValue();
@@ -614,6 +786,11 @@ changeEvent = function (event) {
 
 clickEvent = function (event) {
   const btn = event.target;
+
+  if (btn.closest("#backToHomeButton")) {
+    returnToHomeView();
+    return;
+  }
 
   if (btn.matches(".systemOptionToggleInput")) {
     toggleSystemOption(btn.dataset.systemOption);

@@ -231,7 +231,7 @@ function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
 function exportToJSON() {
     systemData.backup = initSystem.backup;
     const stringData = JSON.stringify(systemData);
-    const blob = new Blob([stringData], { type: "text/javascript" });
+    const blob = new Blob([stringData], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     downloadFile(url, "json");
 }
@@ -257,29 +257,226 @@ function downloadFile(url, fileType) {
 }
 
 // Drag & Drop / Input Loader
+function getFileLoadMessage(key) {
+    const messages = {
+        noFile: {
+            pl: "Nie wybrano pliku do wczytania.",
+            en: "No file was selected."
+        },
+        unsupportedFile: {
+            pl: "Wybierz plik JSON z wcześniej zapisanym systemem.",
+            en: "Please select a JSON file with a previously saved system."
+        },
+        invalidJson: {
+            pl: "Nie udało się odczytać pliku JSON. Sprawdź, czy plik nie jest uszkodzony.",
+            en: "The JSON file could not be read. Please check whether the file is not corrupted."
+        },
+        invalidStructure: {
+            pl: "Plik JSON nie wygląda jak zapisany system TetaGas.",
+            en: "The JSON file does not look like a saved TetaGas system."
+        },
+        loadFailed: {
+            pl: "Nie udało się wczytać systemu z pliku.",
+            en: "The system could not be loaded from the file."
+        }
+    };
+
+    return messages[key]?.[lang] || messages[key]?.pl || key;
+}
+
+function getDragAndDropArea() {
+    return document.getElementById("dragNDropArea");
+}
+
+function setDragAndDropActive(isActive) {
+    const area = getDragAndDropArea();
+    if (!area) return;
+    area.classList.toggle("is-drag-over", Boolean(isActive));
+}
+
+function isProbablyJsonFile(file) {
+    if (!file) return false;
+
+    const name = String(file.name || "").toLowerCase();
+    const type = String(file.type || "").toLowerCase();
+
+    return (
+        name.endsWith(".json") ||
+        type === "" ||
+        type.includes("json") ||
+        type === "text/plain" ||
+        type === "text/javascript" ||
+        type === "application/octet-stream"
+    );
+}
+
+function normalizeLoadedSystemPayload(parsedData) {
+    if (!parsedData || typeof parsedData !== "object") {
+        throw new Error("Invalid JSON payload");
+    }
+
+    const incomingSystem = parsedData.systemData || parsedData;
+
+    const looksLikeSavedSystem =
+        Array.isArray(incomingSystem.bus) ||
+        incomingSystem.supplyType !== undefined ||
+        incomingSystem.wireType !== undefined ||
+        incomingSystem.batteryBackUp !== undefined ||
+        incomingSystem.thRailing !== undefined ||
+        incomingSystem.selectedStructure !== undefined ||
+        incomingSystem.res !== undefined ||
+        parsedData.initSystem !== undefined;
+
+    if (!looksLikeSavedSystem) {
+        throw new Error("Invalid TetaGas system file structure");
+    }
+
+    return parsedData;
+}
+
+function showFileLoadError(key, error) {
+    console.error("TetaGas file load error:", error);
+    alert(getFileLoadMessage(key));
+}
+
+function switchToSystemViewAfterFileLoad() {
+    const systemSection = document.getElementById("system");
+
+    if (typeof transitionToSystemView === "function") {
+        transitionToSystemView();
+        return;
+    }
+
+    document.body.classList.remove("scroll-locked");
+    document.body.classList.add("system-active");
+    systemSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderLoadedSystem() {
+    if (typeof setSystem !== "function") {
+        throw new Error("setSystem function is not available");
+    }
+
+    setSystem();
+
+    if (typeof validateSystem === "function") {
+        validateSystem();
+        if (typeof functionToUpdateSystem === "function") {
+            functionToUpdateSystem();
+        }
+    }
+
+    if (typeof initSystem !== "undefined") {
+        initSystem.systemIsGenerated = true;
+    }
+
+    switchToSystemViewAfterFileLoad();
+}
+
 function handleDropFile(event) {
     event.preventDefault();
-    convertAndLoadFileData(event.dataTransfer.files[0]);
+    event.stopPropagation();
+
+    setDragAndDropActive(false);
+
+    const file = event.dataTransfer?.files?.[0];
+    convertAndLoadFileData(file);
 }
 
 function handleDragOver(event) {
     event.preventDefault();
+    event.stopPropagation();
+    setDragAndDropActive(true);
+}
+
+function handleDragLeave(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const area = getDragAndDropArea();
+    if (!area) return;
+
+    if (event.relatedTarget && area.contains(event.relatedTarget)) {
+        return;
+    }
+
+    setDragAndDropActive(false);
 }
 
 function handleInputLoadFile(event) {
-    convertAndLoadFileData(event.target.files[0]);
+    const file = event.target.files?.[0];
+    convertAndLoadFileData(file);
+    event.target.value = "";
 }
 
 function convertAndLoadFileData(file) {
-    if (file.type.match("^application/json")) {
-        const reader = new FileReader();
-        reader.readAsText(file);
-        reader.onload = function () {
-            const data = reader.result;
-            const formattedData = JSON.parse(data);
-            createSystemDataFromAFile(formattedData);
-            setSystem();
-            system.scrollIntoView({ behavior: "smooth", block: "start" });
-        };
+    if (!file) {
+        alert(getFileLoadMessage("noFile"));
+        return;
     }
+
+    if (!isProbablyJsonFile(file)) {
+        alert(getFileLoadMessage("unsupportedFile"));
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function () {
+        let parsedData;
+
+        try {
+            const rawText = String(reader.result || "").replace(/^\uFEFF/, "").trim();
+            parsedData = JSON.parse(rawText);
+        } catch (error) {
+            showFileLoadError("invalidJson", error);
+            return;
+        }
+
+        let normalizedData;
+
+        try {
+            normalizedData = normalizeLoadedSystemPayload(parsedData);
+        } catch (error) {
+            showFileLoadError("invalidStructure", error);
+            return;
+        }
+
+        try {
+            const loaded = createSystemDataFromAFile(normalizedData);
+            if (loaded === false) {
+                throw new Error("createSystemDataFromAFile returned false");
+            }
+            renderLoadedSystem();
+        } catch (error) {
+            showFileLoadError("loadFailed", error);
+        }
+    };
+
+    reader.onerror = function () {
+        showFileLoadError("loadFailed", reader.error || new Error("FileReader error"));
+    };
+
+    reader.readAsText(file, "utf-8");
+}
+
+function setupDragAndDropVisualState() {
+    const area = getDragAndDropArea();
+    if (!area || area.dataset.dragVisualBound === "true") return;
+
+    area.dataset.dragVisualBound = "true";
+
+    area.addEventListener("dragenter", handleDragOver);
+    area.addEventListener("dragover", handleDragOver);
+    area.addEventListener("dragleave", handleDragLeave);
+    area.addEventListener("drop", handleDropFile);
+
+    document.addEventListener("dragend", () => setDragAndDropActive(false));
+    document.addEventListener("drop", () => setDragAndDropActive(false));
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupDragAndDropVisualState);
+} else {
+    setupDragAndDropVisualState();
 }
