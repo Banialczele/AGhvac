@@ -157,7 +157,7 @@ const tetaEcoO2Device = {
 
 const tetaEcoCO2Device = {
   type: `Teta EcoCO2`,
-  power_W: 2.18,
+  power_W: 2.4,
   current_A: 0.047,
   minVoltage_V: 15,
   class: DeviceCl.detector,
