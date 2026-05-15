@@ -21,13 +21,12 @@ function exportToXLSX() {
     XLSX.writeFile(workbook, fileName || `TetaSystem_${setDate()}.xlsx`);
 }
 
-
 function getDataForExcel() {
     let currentLp = 1;
 
     const rowsDescription = {
         device: [`LP.`, `${TRANSLATION.fileDeviceType[lang]}`, `${TRANSLATION.fileDeviceName[lang]}`, `${TRANSLATION.filePW[lang]}`, `${TRANSLATION.fileQuantity[lang]}`, `${TRANSLATION.fileToled[lang]}`],
-        accessories: ["", `${TRANSLATION.fileWireType[lang]}`, `${TRANSLATION.fileWireLength[lang]}`],
+        accessories: ["", `${TRANSLATION.fileWireType[lang]}`, `${TRANSLATION.fileWireLength[lang]} [m]`],
     };
     const rows = [];
 
@@ -36,10 +35,11 @@ function getDataForExcel() {
     const controlUnitWithSupply = systemData.res?.powerSupply;
     const alternativeConfig = systemData.res?.alternativeConfig;
     const wantsBackup =
-        (String(initSystem?.backup || systemData?.batteryBackUp || "").trim().toLowerCase() === "tak" ||
-            String(initSystem?.backup || systemData?.batteryBackUp || "").trim().toLowerCase() === "yes");
+        (String(initSystem?.backup || "").trim().toLowerCase() === "tak" ||
+            String(initSystem?.backup || "").trim().toLowerCase() === "yes");
 
     if (controlUnitWithSupply && controlUnitWithSupply.controlUnit) {
+        // --- 1. Główna jednostka sterująca ---
         currentLp = insertDeviceTypeData(
             currentLp,
             controlUnitWithSupply.controlUnit,
@@ -48,18 +48,28 @@ function getDataForExcel() {
             { removeDotForOne: true }
         );
 
-        const psuObj = controlUnitWithSupply.powerSupply?.supply || controlUnitWithSupply.psu;
-
-        if (psuObj) {
-            currentLp = insertDeviceTypeData(
-                currentLp,
-                psuObj,
-                wantsBackup ? `${TRANSLATION.fileBufferPSU[lang]}` : `${TRANSLATION.filePSU[lang]}`,
-                rows
-            );
-        } else if (!wantsBackup) {
-            currentLp = insertDeviceTypeData(
-                currentLp,
+        // --- 2. Zasilacz / brak zasilacza ---
+        if (wantsBackup) {
+            const psuObj = controlUnitWithSupply.powerSupply?.supply || controlUnitWithSupply.psu;
+            if (psuObj) {
+                insertDeviceTypeData(
+                    currentLp++,
+                    psuObj,
+                    `${TRANSLATION.fileBufferPSU[lang]}`,
+                    rows
+                );
+            }
+            // else {
+            //     insertDeviceTypeData(
+            //         currentLp++,
+            //         "-",
+            //         `${TRANSLATION.powerSupplyBackupNotFound[lang]}`,
+            //         rows
+            //     );
+            // }
+        } else {
+            insertDeviceTypeData(
+                currentLp++,
                 "-",
                 `${TRANSLATION.powerSupplyNotRequired[lang]}`,
                 rows
@@ -83,10 +93,21 @@ function getDataForExcel() {
     rows.push([]);
     rows.push([]);
 
-    const structure = systemData.selectedStructure || initSystem.selectedStructure;
-    rows.push(["", `${TRANSLATION.structureType[lang]}`, `${structure?.type?.[lang] || structure || ""}`]);
+    rows.push(["",
+        `${TRANSLATION.structureType[lang]}`, `${systemData.selectedStructure?.type?.[lang] || systemData.selectedStructure || ""}`
+    ]);
     rows.push([]);
 
+    // --- Główna konfiguracja ---
+    if (controlUnitWithSupply && controlUnitWithSupply.controlUnit) {
+        const psuMain = controlUnitWithSupply.powerSupply?.supply || controlUnitWithSupply.psu;
+        const psuDesc = psuMain ? ` (${psuMain.description})` : "";
+        rows.push([
+            `${TRANSLATION.modControlFileInfo[lang]} ${controlUnitWithSupply.controlUnit.type} ${TRANSLATION.modControlFileInfoEnd[lang]}`
+        ]);
+    }
+
+    // --- Alternatywna konfiguracja ---
     if (alternativeConfig && alternativeConfig.controlUnit) {
         const altPSU = alternativeConfig.powerSupply?.supply || alternativeConfig.psu;
         const altDesc = altPSU?.description ? ` (${altPSU.description})` : "";
@@ -207,33 +228,12 @@ function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
     return iterator;
 }
 
-
 function exportToJSON() {
-    const exportData = {
-        version: 2,
-        revision: typeof REVISIONNUMBER !== "undefined" ? REVISIONNUMBER : null,
-        lang,
-        initSystem: {
-            systemIsGenerated: initSystem.systemIsGenerated,
-            amountOfDetectors: initSystem.amountOfDetectors,
-            EWL: initSystem.EWL,
-            backup: initSystem.backup,
-            thRailing: initSystem.thRailing,
-            selectedStructureType: initSystem.selectedStructure?.type?.pl || initSystem.selectedStructure?.type?.[lang] || null,
-        },
-        systemData: {
-            ...systemData,
-            selectedStructureType: systemData.selectedStructure?.type?.pl || systemData.selectedStructure?.type?.[lang] || null,
-            // Nie serializujemy pełnego obiektu struktury jako źródła prawdy — odtwarzamy go z models.js przy imporcie.
-            selectedStructure: undefined,
-        },
-    };
-
-    const stringData = JSON.stringify(exportData, null, 2);
-    const blob = new Blob([stringData], { type: "application/json" });
+    systemData.backup = initSystem.backup;
+    const stringData = JSON.stringify(systemData);
+    const blob = new Blob([stringData], { type: "text/javascript" });
     const url = URL.createObjectURL(blob);
     downloadFile(url, "json");
-    URL.revokeObjectURL(url);
 }
 
 function insertDeviceTypeWireLengthData(deviceType, deviceTypeLabel, store) {
@@ -256,21 +256,6 @@ function downloadFile(url, fileType) {
     anchor.click();
 }
 
-
-function getFileLoadMessage(code) {
-    const messages = {
-        invalidFormat: {
-            pl: "Nieprawidłowy format pliku. Wczytaj plik JSON.",
-            en: "Invalid file format. Please load a JSON file.",
-        },
-        loadError: {
-            pl: "Nie udało się wczytać pliku JSON. Sprawdź strukturę pliku.",
-            en: "The JSON file could not be loaded. Please check the file structure.",
-        },
-    };
-    return messages[code]?.[lang] || messages[code]?.pl || code;
-}
-
 // Drag & Drop / Input Loader
 function handleDropFile(event) {
     event.preventDefault();
@@ -285,37 +270,16 @@ function handleInputLoadFile(event) {
     convertAndLoadFileData(event.target.files[0]);
 }
 
-
 function convertAndLoadFileData(file) {
-    if (!file) return;
-
-    if (!file.type.match("^application/json") && !file.name?.toLowerCase().endsWith(".json")) {
-        window.alert(getFileLoadMessage("invalidFormat"));
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.readAsText(file);
-    reader.onload = function () {
-        try {
-            const formattedData = JSON.parse(reader.result);
+    if (file.type.match("^application/json")) {
+        const reader = new FileReader();
+        reader.readAsText(file);
+        reader.onload = function () {
+            const data = reader.result;
+            const formattedData = JSON.parse(data);
             createSystemDataFromAFile(formattedData);
-
-            const isValid = validateSystem();
-            if (!isValid) return;
-
             setSystem();
-            document.body.classList.remove('scroll-locked');
-            document.body.classList.add('system-active');
-
-            const systemSection = document.getElementById("system");
-            systemSection?.scrollIntoView({ behavior: "smooth", block: "start" });
-        } catch (error) {
-            console.error(error);
-            window.alert(getFileLoadMessage("loadError"));
-        } finally {
-            const input = document.getElementById("readFileInput");
-            if (input) input.value = "";
-        }
-    };
+            system.scrollIntoView({ behavior: "smooth", block: "start" });
+        };
+    }
 }

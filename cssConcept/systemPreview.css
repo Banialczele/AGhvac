@@ -307,10 +307,12 @@
 
 #actionsSegment0 #segmentDeviceLabel {
   display: grid;
-  grid-template-columns: 225px 50px 50px;
+  grid-template-columns: 225px 52px 52px;
   grid-template-areas:
-    "description UPSdescription ."
-    "modControlSelect modControlUPS tooltip";
+    "description UPSdescription THdescription"
+    "modControlSelect modControlUPS modControlTH";
+  column-gap: 10px;
+  align-items: center;
 }
 
 #segmentDeviceLabel:first-child {
@@ -323,88 +325,54 @@
   place-self: center;
 }
 
+#actionsSegment0 .thRailingDescriptionSystem {
+  grid-area: THdescription;
+  place-self: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 #actionsSegment0 .actionsSegment0SelectContainer {
-  grid-area: modControlSelect
+  grid-area: modControlSelect;
 }
 
 #actionsSegment0 .modControlBatteryBackUp {
   grid-area: modControlUPS;
-  align-self: end;
 }
 
-#actionsSegment0 .tooltip {
-  grid-area: tooltip;
-  place-self: center;
+#actionsSegment0 #modControlThRailing {
+  grid-area: modControlTH;
 }
 
-#actionsSegment0 .tooltip {
-  position: relative;
-  display: inline-block;
+#actionsSegment0 .systemOptionToggleInput {
+  width: 44px;
+  min-width: 44px;
+  height: 34px;
   padding: 0 6px;
-  margin-right: 8px;
-  bottom: 0;
-  font-family: "Times New Roman", Times, serif;
-  color: #666;
-  font-weight: bold;
-  border: 2px solid #999;
-  border-radius: 50%;
-  cursor: pointer;
-  background: #fff;
-  transition: border-color 0.2s;
-}
-
-#actionsSegment0 .tooltip:hover {
-  border-color: #cc2a27;
-  color: #cc2a27;
-}
-
-#actionsSegment0 .tooltip::before {
-  content: attr(data-text);
-  position: absolute;
-  left: 50%;
-  bottom: 130%;
-  transform: translateX(-50%);
-  min-width: 200px;
-  background: #222;
-  color: #fff;
-  padding: 15px 14px;
-  border-radius: 8px;
+  margin: 0;
   text-align: center;
   font-family: var(--main-font-family);
-  font-size: 18px;
-  font-weight: 400;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s;
-  z-index: 100;
-  white-space: normal;
-  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.12);
-  visibility: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  background: #fff;
+  border: 1px solid var(--secondary-bg-color);
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(204, 42, 39, 0.08);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
-#actionsSegment0 .tooltip:hover::before {
-  opacity: 1;
-  visibility: visible;
+#actionsSegment0 .systemOptionToggleInput:hover,
+#actionsSegment0 .systemOptionToggleInput:focus-visible {
+  background: rgba(204, 42, 39, 0.08);
+  border-color: var(--secondary-bg-color);
+  box-shadow: 0 0 0 3px rgba(204, 42, 39, 0.16);
+  outline: none;
 }
 
-#actionsSegment0 .tooltip::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 120%;
-  transform: translateX(-50%);
-  border-width: 7px;
-  border-style: solid;
-  border-color: #222 transparent transparent transparent;
-  opacity: 0;
-  transition: opacity 0.2s;
-  z-index: 101;
-  visibility: hidden;
-}
-
-.tooltip:hover::after {
-  opacity: 1;
-  visibility: visible;
+#actionsSegment0 .systemOptionToggleInput:active {
+  transform: translateY(1px);
 }
 
 
@@ -530,7 +498,7 @@
   }
 
   #actionsSegment0 #segmentDeviceLabel {
-    grid-template-columns: minmax(0, 1fr) 52px 34px;
+    grid-template-columns: minmax(0, 1fr) 50px 50px;
     width: 100%;
   }
 }
@@ -610,10 +578,10 @@
 
   #actionsSegment0 #segmentDeviceLabel {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 50px 30px;
+    grid-template-columns: minmax(0, 1fr) 50px 50px;
     grid-template-areas:
-      "description UPSdescription tooltip"
-      "modControlSelect modControlUPS tooltip";
+      "description UPSdescription THdescription"
+      "modControlSelect modControlUPS modControlTH";
     column-gap: 8px;
     align-items: end;
   }

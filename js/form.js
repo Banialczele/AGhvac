@@ -64,6 +64,8 @@ function createDetectedGasListSelect() {
         device.class === "detector" && device.gasDetected === gas
       );
 
+      if (!device) return;
+
       const option = createOption(gas, `${gas} ${structure.detectionDescription?.[i]?.[lang] || ""}`, {
         class: "gasOption",
         "data-devicename": device.type,
@@ -129,6 +131,82 @@ function createOption(value, text, attributes = {}) {
     else if (val !== false && val != null) option.setAttribute(key, val);
   });
   return option;
+}
+
+function getSystemErrorMessage(code, data = {}) {
+  const messages = {
+    EMPTY_BUS: {
+      pl: "Dodaj co najmniej jedno urządzenie do systemu.",
+      en: "Add at least one device to the system.",
+    },
+    INVALID_SEGMENT: {
+      pl: "Sprawdź dane urządzeń i długości przewodów.",
+      en: "Check the device data and cable lengths.",
+    },
+    NO_DEFAULT_DETECTOR: {
+      pl: "Nie udało się przygotować systemu dla wybranych danych.",
+      en: "The system could not be prepared for the selected data.",
+    },
+    NO_VALID_POWER_CONFIG_TH35_BACKUP: {
+      pl: "Nie znaleziono poprawnej konfiguracji dla Państwa systemu.",
+      en: "No valid configuration was found for this system.",
+    },
+    NO_VALID_POWER_CONFIG_TH35_NO_BACKUP: {
+      pl: "Nie znaleziono poprawnej konfiguracji dla Państwa systemu.",
+      en: "No valid configuration was found for this system.",
+    },
+    NO_VALID_POWER_CONFIG_WALL_BACKUP: {
+      pl: "Nie znaleziono poprawnej konfiguracji dla Państwa systemu.",
+      en: "No valid configuration was found for this system.",
+    },
+    NO_VALID_POWER_CONFIG_WALL_NO_BACKUP: {
+      pl: "Nie znaleziono poprawnej konfiguracji dla Państwa systemu.",
+      en: "No valid configuration was found for this system.",
+    },
+  };
+
+  return messages[code]?.[lang] || messages[code]?.pl || code;
+}
+
+function getNoValidPowerConfigCode(backupNeeded, thRailingNeeded) {
+  if (thRailingNeeded && backupNeeded) return "NO_VALID_POWER_CONFIG_TH35_BACKUP";
+  if (thRailingNeeded && !backupNeeded) return "NO_VALID_POWER_CONFIG_TH35_NO_BACKUP";
+  if (!thRailingNeeded && backupNeeded) return "NO_VALID_POWER_CONFIG_WALL_BACKUP";
+  return "NO_VALID_POWER_CONFIG_WALL_NO_BACKUP";
+}
+
+function getLocalizedErrorMessage(error) {
+  if (!error) return "";
+
+  if (typeof error === "string") return error;
+
+  if (typeof error.message === "object" && error.message !== null) {
+    return error.message[lang] || error.message.pl || error.message.en || String(error.code || "");
+  }
+
+  if (typeof error.message === "string" && error.message.length > 0) {
+    return error.message;
+  }
+
+  if (error.pl || error.en) {
+    return error[lang] || error.pl || error.en || String(error.code || "");
+  }
+
+  if (error.code) {
+    if (typeof getInputLimitMessage === "function" && [
+      "INVALID_DEVICE_AMOUNT",
+      "TOO_MANY_DEVICES",
+      "TOO_MANY_SIGNALLERS",
+      "TOO_MANY_VALVE_CTRLS",
+      "INVALID_WIRE_LENGTH",
+      "BUS_TOO_LONG",
+    ].includes(error.code)) {
+      return getInputLimitMessage(error.code, error.data || error);
+    }
+    return getSystemErrorMessage(error.code, error.data || error);
+  }
+
+  return String(error);
 }
 
 const SYSTEM_INPUT_LIMITS = {
@@ -245,7 +323,7 @@ function setFormValidationErrors(errors = []) {
 
   errors.forEach((error) => {
     const item = document.createElement("li");
-    item.textContent = error.message || String(error);
+    item.textContent = getLocalizedErrorMessage(error);
     list.appendChild(item);
     if (error.field) markFormFieldAsInvalid(error.field);
   });
@@ -481,8 +559,7 @@ function handleFormSubmit() {
 
     if (!initSystem.detector) {
       systemData.errorList = [{
-        code: "NO_DEFAULT_DETECTOR",
-        message: "Nie udało się ustalić domyślnego urządzenia z formularza. Sprawdź rodzaj obiektu i wykrywany gaz."
+        code: "NO_DEFAULT_DETECTOR"
       }];
       setFormValidationErrors(systemData.errorList);
       errorHandling();
@@ -597,11 +674,12 @@ function hasEnoughVoltage(powerSource, requiredVoltage) {
 }
 
 function findSmallestPowerSupply(list, minPower, requiredVoltage, options = {}) {
-  const { requireVoltageMatch = true } = options;
+  const { requireVoltageMatch = true, minSupplyVoltage = null } = options;
   if (!Array.isArray(list)) return null;
 
   return [...list]
     .filter(psu => hasEnoughPower(psu, minPower))
+    .filter(psu => minSupplyVoltage == null || getNumber(psu?.supplyVoltage, 0) + 0.001 >= getNumber(minSupplyVoltage, 0))
     .filter(psu => !requireVoltageMatch || hasEnoughVoltage(psu, requiredVoltage))
     .sort(comparePowerSupplies)[0] || null;
 }
@@ -724,6 +802,16 @@ function buildPowerConfigurationsForAnalysis(analysis, backupNeeded, thRailingNe
     if (backupNeeded && analysis.type === "24V + UPS") {
       addExternalPowerSupplyConfig(configs, "Teta MOD Control 1", zbfList, "powersupplyMC", analysis, 5, {
         requireVoltageMatch: true,
+      });
+    }
+
+    if (backupNeeded && analysis.type === "48V / 48V + UPS") {
+      // Dla konfiguracji na szynę TH35 nie zatrzymujemy się wyłącznie na wariancie 24V + UPS.
+      // Jeżeli magistrala przechodzi dopiero jako 48V, nadal dopuszczamy Teta MOD Control 1 + ZBF
+      // i filtrujemy ZBF-y do wariantów 24V, żeby nie wybrać zasilacza 12V.
+      addExternalPowerSupplyConfig(configs, "Teta MOD Control 1", zbfList, "powersupplyMC", analysis, 15, {
+        requireVoltageMatch: false,
+        minSupplyVoltage: 21,
       });
     }
 
@@ -930,7 +1018,7 @@ function getSystemStatusLimitErrors() {
 
 function validateSystem() {
   if (!Array.isArray(systemData.bus) || systemData.bus.length === 0) {
-    systemData.errorList = [{ code: "EMPTY_BUS", message: "Brak urządzeń w magistrali systemu." }];
+    systemData.errorList = [{ code: "EMPTY_BUS" }];
     errorHandling();
     return false;
   }
@@ -941,7 +1029,6 @@ function validateSystem() {
   if (hasInvalidSegment) {
     limitErrors.push({
       code: "INVALID_SEGMENT",
-      message: "Nieprawidłowe dane segmentu: sprawdź typ urządzenia i długość przewodu.",
     });
   }
 
@@ -989,14 +1076,7 @@ function validateSystem() {
 
   if (!chosenConfig) {
     systemData.errorList = [{
-      code: "NO_VALID_POWER_CONFIG",
-      message: thRailingNeeded
-        ? (backupNeeded
-          ? "System nie spełnia wymogów spadku napięcia albo nie znaleziono poprawnej konfiguracji: Teta MOD Control 1 + zasilacz ZBF dla montażu na szynie TH35."
-          : "System nie spełnia wymogów spadku napięcia albo nie znaleziono poprawnej konfiguracji: Teta MOD Control 1 + zasilacz HDR dla montażu na szynie TH35.")
-        : (backupNeeded
-          ? "System nie spełnia wymogów spadku napięcia albo nie znaleziono poprawnej konfiguracji: Teta Control 1-S + ZBF albo Teta Control 1-S-UP300W + ZBF."
-          : "System nie spełnia wymogów spadku napięcia albo nie znaleziono poprawnej konfiguracji: Teta Control 1-S24-60W / Teta Control 1-S48-60W / Teta Control 1-S48-100W / Teta Control 1-S48-150W.")
+      code: getNoValidPowerConfigCode(backupNeeded, thRailingNeeded)
     }];
     errorHandling();
     if (!document.body.classList.contains("system-active")) {
@@ -1067,7 +1147,7 @@ function errorHandling() {
   const uniqueErrors = [];
   const seen = new Set();
   (systemData.errorList || []).forEach(error => {
-    const key = error.code || error.message;
+    const key = error.code || getLocalizedErrorMessage(error);
     if (!seen.has(key)) {
       seen.add(key);
       uniqueErrors.push(error);
@@ -1078,7 +1158,7 @@ function errorHandling() {
   systemData.errorList.forEach(error => {
     const item = document.createElement(`li`);
     if (error.code) item.id = error.code;
-    item.innerText = error.message;
+    item.innerText = getLocalizedErrorMessage(error);
     errorList.appendChild(item);
   });
 

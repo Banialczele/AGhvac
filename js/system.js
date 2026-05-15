@@ -1,74 +1,25 @@
-
 function createSystemDataFromAFile(fileData = null) {
   if (!fileData) return;
 
-  // Obsługujemy zarówno stare pliki JSON, jak i nowszy eksport z wrapperem { systemData, initSystem }.
-  const incomingSystem = fileData.systemData || fileData;
-  const incomingInit = fileData.initSystem || {};
+  systemData.supplyType = fileData.supplyType;
+  systemData.wireType = fileData.wireType;
+  systemData.batteryBackUp = fileData.batteryBackUp;
+  systemData.bus = fileData.bus;
 
-  const structureType = incomingSystem.selectedStructureType ||
-    incomingSystem.selectedStructure?.type?.pl ||
-    incomingSystem.selectedStructure?.type?.[lang] ||
-    incomingSystem.selectedStructure;
+  if (fileData.thRailing) {
+    const select = document.getElementById("thRailing");
+    if (select) select.value = fileData.thRailing;
+    systemData.thRailing = fileData.thRailing;
+  }
 
-  const selectedStructure = findStructureByType(structureType) || initSystem.selectedStructure || STRUCTURE_TYPES?.[0] || null;
-
-  systemData = createEmptySystemData({
-    supplyType: incomingSystem.supplyType || ``,
-    wireType: incomingSystem.wireType || '',
-    batteryBackUp: incomingSystem.batteryBackUp || incomingSystem.backup || incomingInit.backup || TRANSLATION.batteryBackUpNo[lang],
-    thRailing: incomingSystem.thRailing || incomingInit.thRailing || TRANSLATION.batteryBackUpYes[lang],
-    bus: Array.isArray(incomingSystem.bus) ? incomingSystem.bus : [],
-    errorList: [],
-    res: incomingSystem.res || null,
-    totalPower: Number(incomingSystem.totalPower) || 0,
-    generatedSupply: incomingSystem.generatedSupply ?? null,
-    selectedStructure,
-  });
-
-  initSystem.selectedStructure = selectedStructure;
-  initSystem.backup = systemData.batteryBackUp;
-  initSystem.thRailing = systemData.thRailing;
-  initSystem.amountOfDetectors = systemData.bus.length || Number(incomingInit.amountOfDetectors) || 1;
-  initSystem.EWL = Number(systemData.bus[0]?.wireLength || incomingInit.EWL || 15);
-  initSystem.detector = systemData.bus[0]?.detector || getDefaultDetectorFromStructure(selectedStructure);
-
-  const thSelect = document.getElementById("thRailing");
-  if (thSelect) thSelect.value = systemData.thRailing;
-
-  const backupSelect = document.getElementById("batteryBackUp");
-  if (backupSelect) backupSelect.value = systemData.batteryBackUp;
-
-  const amountInput = document.getElementById("amountOfDetectors");
-  if (amountInput) amountInput.value = initSystem.amountOfDetectors;
-
-  const ewlInput = document.getElementById("EWL");
-  if (ewlInput) ewlInput.value = initSystem.EWL;
+  systemData.errorList = [];
 }
-
-function findStructureByType(typeValue) {
-  if (!typeValue || typeof STRUCTURE_TYPES === 'undefined') return null;
-  return STRUCTURE_TYPES.find(structure =>
-    structure.type?.pl === typeValue ||
-    structure.type?.en === typeValue ||
-    structure.type?.[lang] === typeValue
-  ) || null;
-}
-
-function getDefaultDetectorFromStructure(structure) {
-  if (!structure?.devices?.length) return null;
-  return structure.devices.find(device => device.class === "detector") || structure.devices[0];
-}
-
 
 function copyImageSegmentOnFormSubmit() {
   const parentNode = document.querySelector(`.systemDiagram`);
   const firstSegment = document.getElementById(`segmentDiagram1`);
-  if (!parentNode || !firstSegment) return;
-
   const segmentsDiagrams = document.querySelectorAll(`.deviceSegment`);
   segmentsDiagrams.forEach((elem, i) => (i > 0 ? parentNode.removeChild(elem) : ""));
-
   const df = new DocumentFragment();
   for (let i = 1; i < systemData.bus.length; i++) {
     const cloned = firstSegment.cloneNode(true);
@@ -79,45 +30,138 @@ function copyImageSegmentOnFormSubmit() {
   parentNode.appendChild(df);
 }
 
-
-function getSelectedExternalPowerSupply() {
-  return systemData.res?.powerSupply?.powerSupply?.supply
-    || systemData.res?.powerSupply?.psu
-    || null;
-}
-
-function getSelectedPowerConfigurationLabel() {
-  const config = systemData.res?.powerSupply;
-  if (config?.label) return config.label;
-
-  const controlUnitName = config?.controlUnit?.type || systemData.supplyType?.type || "";
-  const externalPowerSupply = getSelectedExternalPowerSupply();
-
-  return externalPowerSupply?.description
-    ? `${controlUnitName} + ${externalPowerSupply.description}`
-    : controlUnitName;
-}
-
-function getSelectedControlUnitName() {
-  return systemData.res?.powerSupply?.controlUnit?.type
-    || systemData.supplyType?.type
-    || "";
-}
-
 function updateModControl() {
   const modControl = document.getElementById(`actionsSegmentDevice0`);
-  if (!modControl) return null;
+  modControl.innerText = systemData.supplyType.type
+  return modControl;
+}
 
-  // W górnym polu „Urządzenie” pokazujemy wyłącznie jednostkę sterującą.
-  // Zasilacz zewnętrzny jest prezentowany osobno w panelu „Stan systemu”.
-  const controlUnitName = getSelectedControlUnitName();
-  if (modControl.value !== undefined) {
-    modControl.value = controlUnitName;
-  } else {
-    modControl.innerText = controlUnitName;
+
+function getSystemYesText() {
+  return TRANSLATION?.batteryBackUpYes?.[lang] || (lang === "en" ? "Yes" : "Tak");
+}
+
+function getSystemNoText() {
+  return TRANSLATION?.batteryBackUpNo?.[lang] || (lang === "en" ? "No" : "Nie");
+}
+
+function normalizeSystemBooleanLabel(value, defaultValue = false) {
+  const normalized = String(value ?? "").trim().toUpperCase();
+  const isYes = ["TAK", "YES", "TRUE", "1"].includes(normalized);
+  const isNo = ["NIE", "NO", "FALSE", "0"].includes(normalized);
+  return (isYes || (!isNo && defaultValue)) ? getSystemYesText() : getSystemNoText();
+}
+
+function getSystemBackupLabel() {
+  return normalizeSystemBooleanLabel(initSystem.backup || systemData.batteryBackUp, false);
+}
+
+function getSystemThRailingLabel() {
+  return normalizeSystemBooleanLabel(initSystem.thRailing || systemData.thRailing, true);
+}
+
+function prepareSystemOptionToggle(input, value, optionName) {
+  if (!input) return;
+  input.value = value;
+  input.readOnly = true;
+  input.classList.add("systemOptionToggleInput");
+  input.setAttribute("role", "button");
+  input.setAttribute("tabindex", "0");
+  input.dataset.systemOption = optionName;
+  input.setAttribute(
+    "aria-label",
+    optionName === "thRailing"
+      ? (lang === "en" ? "Change TH35 mounting" : "Zmień montaż TH35")
+      : (lang === "en" ? "Change UPS setting" : "Zmień podtrzymanie akumulatorowe")
+  );
+}
+
+function ensureSystemOptionControls(labelSelect) {
+  if (!labelSelect) return;
+
+  const oldTooltip = labelSelect.querySelector(".modControltooltip, .tooltip");
+  if (oldTooltip) oldTooltip.remove();
+
+  const batteryInput = labelSelect.querySelector("#modControlBatteryBackUp");
+  let thLabel = labelSelect.querySelector(".thRailingDescriptionSystem");
+  let thInput = labelSelect.querySelector("#modControlThRailing");
+
+  if (!thLabel) {
+    thLabel = document.createElement("div");
+    thLabel.className = "thRailingDescriptionSystem";
+    thLabel.textContent = "TH35";
+    labelSelect.appendChild(thLabel);
   }
 
-  return modControl;
+  if (!thInput) {
+    thInput = document.createElement("input");
+    thInput.type = "text";
+    thInput.id = "modControlThRailing";
+    thInput.className = "systemOptionToggleInput thRailingToggleInput";
+    labelSelect.appendChild(thInput);
+  }
+
+  prepareSystemOptionToggle(batteryInput, getSystemBackupLabel(), "backup");
+  prepareSystemOptionToggle(thInput, getSystemThRailingLabel(), "thRailing");
+}
+
+function toggleSystemOption(optionName) {
+  const yesText = getSystemYesText();
+  const noText = getSystemNoText();
+
+  if (optionName === "backup") {
+    const nextValue = getSystemBackupLabel() === yesText ? noText : yesText;
+    initSystem.backup = nextValue;
+    systemData.batteryBackUp = nextValue;
+    const formSelect = document.getElementById("batteryBackUp");
+    if (formSelect) formSelect.value = nextValue;
+  }
+
+  if (optionName === "thRailing") {
+    const nextValue = getSystemThRailingLabel() === yesText ? noText : yesText;
+    initSystem.thRailing = nextValue;
+    systemData.thRailing = nextValue;
+    const formSelect = document.getElementById("thRailing");
+    if (formSelect) formSelect.value = nextValue;
+  }
+
+  functionToUpdateSystem();
+  updateSystemOptionControls();
+}
+
+function updateSystemOptionControls() {
+  const labelSelect = document.getElementById("segmentDeviceLabel");
+  ensureSystemOptionControls(labelSelect);
+}
+
+function setSystemStateThRailing() {
+  const list = document.getElementById("controlUnitList");
+  if (!list) return;
+
+  let row = document.getElementById("controlUnitThRailingRow");
+  let value = document.getElementById("controlUnitThRailingValue");
+
+  if (!row) {
+    row = document.createElement("li");
+    row.id = "controlUnitThRailingRow";
+
+    const label = document.createElement("div");
+    label.id = "controlUnitThRailingLabel";
+
+    const valueWrapper = document.createElement("div");
+    value = document.createElement("span");
+    value.id = "controlUnitThRailingValue";
+    valueWrapper.appendChild(value);
+
+    row.append(label, valueWrapper);
+
+    const cableRow = document.getElementById("powerSupplyCableDim")?.closest("li");
+    list.insertBefore(row, cableRow?.nextSibling || null);
+  }
+
+  const label = document.getElementById("controlUnitThRailingLabel");
+  if (label) label.textContent = lang === "en" ? "TH35 mounting" : "Montaż TH35";
+  if (value) value.textContent = getSystemThRailingLabel();
 }
 
 function copyActionsSegmentOnFormSubmit() {
@@ -166,39 +210,28 @@ function copyActionsSegmentOnFormSubmit() {
   parentNode.appendChild(df);
 }
 
-
 function setSelectInSegment(segment) {
   const select = segment.querySelector(`.segmentDeviceSelect`);
   const firstSegment = document.getElementById(`actionsSegmentDevice0`);
-  if (!select) return;
 
   const df = new DocumentFragment();
-  const structure = systemData.selectedStructure || initSystem.selectedStructure;
-
+  //Ustawienie opisu "Urządzenie" i wartość pola czy jednostka sterująca może obsługiwać UPSa
   if (select === firstSegment) {
     const labelSelect = select.closest(`.segmentDeviceLabel`);
-    const batteryBackUpInput = labelSelect?.querySelector(`#modControlBatteryBackUp`);
-    const before = labelSelect?.querySelector("br");
+    const before = labelSelect.querySelector("br");
     const text = TRANSLATION.systemSegmentDescription[lang];
     const prev = before && before.previousSibling;
 
-    if (labelSelect && before && !(prev && prev.nodeType === Node.TEXT_NODE && prev.nodeValue === text)) {
+    if (!(prev && prev.nodeType === Node.TEXT_NODE && prev.nodeValue === text)) {
       labelSelect.insertBefore(document.createTextNode(text), before);
     }
 
-    if (batteryBackUpInput) {
-      const batteryTranslation =
-        systemData.supplyType?.possibleUPS === "no"
-          ? TRANSLATION.batteryBackUpNo[lang]
-          : TRANSLATION.batteryBackUpYes[lang];
-      batteryBackUpInput.value = batteryTranslation;
-    }
+    ensureSystemOptionControls(labelSelect);
   } else {
     select.innerHTML = "";
-    if (!structure?.devices?.length) return;
 
-    const currentIndex = Number(segment.dataset.segmentindex) - 1;
-    structure.devices.forEach((device) => {
+    // WYGENEROWANIE OPCJI DLA SELECTA URZĄDZENIA!
+    systemData.selectedStructure.devices.forEach((device, i) => {
       let text = '';
       if (device.class === "detector") {
         text = `${TRANSLATION.deviceSegment.detector[lang]} ${device.gasDetected}`;
@@ -214,10 +247,11 @@ function setSelectInSegment(segment) {
         "option",
         {
           value: device.type,
-          selected: systemData.bus[currentIndex]?.detector?.type === device.type ? "selected" : null,
+          selected: systemData.selectedStructure.devices[i].type === initSystem.detector.type ? "selected" : null,
         },
         [text]
       );
+
       df.appendChild(option);
     });
     select.appendChild(df);
@@ -392,65 +426,29 @@ function setList(listName, deviceList) {
 }
 
 // Tworzenie systemu
-
 function setSystem() {
   const actionsList = document.getElementById('actionsList');
-  if (!actionsList || !Array.isArray(systemData.bus) || systemData.bus.length === 0) return;
-
-  resetRenderSignatures();
+  const keep = [0, 1];
+  Array.from(actionsList.children).forEach((child, idx) => {
+    if (!keep.includes(idx)) actionsList.removeChild(child);
+  });
+  document.querySelectorAll('.actionsSegment').forEach((segment, i) => {
+    const detectorType = systemData.bus[i]?.detector?.type;
+    const wrapper = segment.querySelector('.deviceTypeWrapper');
+    const existingToled = wrapper?.querySelector('.toledContainer.toledDescriptionSelect');
+    if (existingToled && detectorType !== 'TOLED') {
+      existingToled.remove();
+    } else if (!existingToled && detectorType === 'TOLED') {
+      wrapper?.appendChild(createSegmentTOLEDDescriptionSelect());
+    }
+  });
   setSystemSegmentsLazy(systemData.bus);
   copyImageSegmentOnFormSubmit();
+  functionToUpdateSystem();
+
   fillData();
   updateSelectValue();
-  checkIfToledExists();
-  renderSystemStateOnly();
-  ensureBackToHomeButton();
   setupSystemEventHandlers();
-}
-
-function getBackToHomeButtonText() {
-  return lang === "en" ? "Back to main page" : "Powrót na stronę główną";
-}
-
-function ensureBackToHomeButton() {
-  const statusPanel = document.querySelector(".systemStatus");
-  if (!statusPanel) return;
-
-  let actions = document.getElementById("systemHomeActions");
-  let button = document.getElementById("backToHomeButton");
-
-  if (!actions) {
-    actions = document.createElement("div");
-    actions.id = "systemHomeActions";
-    actions.className = "systemHomeActions";
-    statusPanel.appendChild(actions);
-  }
-
-  if (!button) {
-    button = document.createElement("button");
-    button.id = "backToHomeButton";
-    button.type = "button";
-    button.className = "systemHomeButton";
-    actions.appendChild(button);
-  }
-
-  button.textContent = getBackToHomeButtonText();
-}
-
-function returnToHomeView() {
-  const body = document.body;
-  const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-
-  body.classList.remove("view-transitioning");
-  body.classList.remove("system-active");
-  body.classList.add("scroll-locked");
-
-  window.setTimeout(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: prefersReducedMotion ? "auto" : "smooth",
-    });
-  }, 0);
 }
 
 let lastCheckedSegment = null;
@@ -484,76 +482,34 @@ function handleSegmentCheckboxClick(e) {
   // Zaktualizuj ostatnio kliknięty
   lastCheckedSegment = current;
 }
-
-function handleRangeSelectionClick(e) {
-  if (e.target.matches(".segmentCheckbox")) {
-    handleSegmentCheckboxClick(e);
-  }
-}
-
 function setupRangeSelection() {
   const container = document.getElementById("system");
-  if (!container || container.dataset.rangeSelectionBound === "true") return;
-
-  container.addEventListener("click", handleRangeSelectionClick);
-  container.dataset.rangeSelectionBound = "true";
-}
-
-// To powinno być wywoływane zawsze po zmianie w systemie:
-
-function getCalculationSignature() {
-  return JSON.stringify({
-    backup: initSystem.backup || systemData.batteryBackUp,
-    thRailing: initSystem.thRailing || systemData.thRailing,
-    bus: systemData.bus.map(seg => ({
-      type: seg.detector?.type,
-      wireLength: Number(seg.wireLength),
-      description: seg.description || "",
-      labeling: seg.labeling || "",
-    })),
+  if (!container) return;
+  container.addEventListener("click", (e) => {
+    if (e.target.matches(".segmentCheckbox")) handleSegmentCheckboxClick(e);
   });
 }
 
-let lastCalculationSignature = null;
-let lastUsedDevicesSignature = null;
-
-function resetRenderSignatures() {
-  lastUsedDevicesSignature = null;
-}
-
-function renderSystemStateOnly() {
+// To powinno być wywoływane zawsze po zmianie w systemie:
+function functionToUpdateSystem() {
+  validateSystem();
   updateWireLength();
   setSystemStateBusLength();
   updateModControl();
+  updateSystemOptionControls();
   updateSelectValue();
   setSystemStatePowerConsumption();
   setSystemStateCableDim();
+  setSystemStateThRailing();
   createSystemUsedDevicesPanel();
   setSystemStateLists();
-  busImageController();
+  busImageController()
 }
 
-function functionToUpdateSystem({ forceValidation = false } = {}) {
-  const signature = getCalculationSignature();
-  let isValid = true;
-
-  if (forceValidation || signature !== lastCalculationSignature) {
-    isValid = validateSystem();
-    lastCalculationSignature = signature;
-  }
-
-  // Nawet przy błędach limitów aktualizujemy widok „Stan systemu”, listy i długość magistrali.
-  // Dzięki temu użytkownik może dalej dodawać segmenty, a błędy są widoczne w panelu statusu.
-  renderSystemStateOnly();
-  return isValid;
-}
-
-
-function handleButton() {
-  setSystemSegmentsLazy(systemData.bus);
+function handleButton(index) {
   copyImageSegmentOnFormSubmit();
-  fillData();
-  updateSelectValue();
+  copyActionsSegmentOnFormSubmit(index);
+  functionToUpdateSystem();
 }
 
 function checkboxChecked() {
@@ -563,30 +519,25 @@ function checkboxChecked() {
     .filter(Boolean);
 }
 
-
 function updateWireLength() {
-  document.querySelectorAll(`.segmentWireLength`).forEach((input, i) => {
-    if (systemData.bus[i] && document.activeElement !== input) {
-      input.value = systemData.bus[i].wireLength;
-    }
-  });
+  document.querySelectorAll(`.segmentWireLength`).forEach((input, i) => (input.value = systemData.bus[i].wireLength));
 }
-
 
 function updateSelectValue() {
   document.querySelectorAll(`.segmentDeviceSelect`).forEach((select, i) => {
-    if (i > 0 && systemData.bus[i - 1]?.detector?.type) {
+    if (i > 0) {
+      select.selected = systemData.bus[i - 1].detector.type;
       select.value = systemData.bus[i - 1].detector.type;
     }
   });
 }
 
-
 function setUsedDevices() {
-  return systemData.bus.reduce((accumulator, current) => {
-    if (current.detector?.type) accumulator[current.detector.type] = current.detector;
+  const result = systemData.bus.reduce((accumulator, current) => {
+    accumulator[current.detector.type] = current.detector;
     return accumulator;
   }, {});
+  return result;
 }
 
 function updateDataInOverlay(event, col, item) {
@@ -600,162 +551,121 @@ function hideOverlayPanel() {
   document.getElementById('overlayPanel').classList.add('hidden');
 }
 
-
-const debounce = (fn, delay = 180) => {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  };
-};
-
-const debouncedUpdateSystem = debounce(() => {
-  functionToUpdateSystem();
-  checkIfToledExists();
-}, 180);
-
-const changeEvent = function (event) {
+changeEvent = function (event) {
   const changeElement = event.target;
-  if (changeElement.matches("select.cable-select")) return;
-  if (changeElement.matches("input[type='checkbox']")) return;
+  if (!changeElement.matches("select.cable-select")) {
+    if (changeElement.matches("input[type='checkbox']")) return;
+    //Dane odnośnie segmentu
+    const indexes = checkboxChecked();
+    const isMulti = indexes.length > 0;
+    const elements = isMulti
+      ? indexes.map((i) => ({
+        index: parseInt(i),
+        segment: document.querySelector(`.systemActions #actionsSegment${i}`),
+      }))
+      : [
+        {
+          index: parseInt(event.target.closest(`.actionsSegment`).dataset.segmentindex),
+          segment: event.target.closest(`.actionsSegment`),
+        },
+      ];
 
-  const segmentRoot = event.target.closest(`.actionsSegment`);
-  if (!segmentRoot) return;
+    elements.forEach(({ index, segment }) => {
+      if (changeElement.matches("select.segmentDeviceSelect")) {
+        const selected = systemData.selectedStructure.devices.find(
+          (device) => device.type === changeElement.value
+        );
 
-  const checkedIndexes = checkboxChecked().map(Number);
-  const isMulti = checkedIndexes.length > 0;
-  const targetIndex = parseInt(segmentRoot.dataset.segmentindex, 10);
-  const elements = isMulti
-    ? checkedIndexes.map((index) => ({ index, segment: document.querySelector(`.systemActions #actionsSegment${index}`) })).filter(item => item.segment)
-    : [{ index: targetIndex, segment: segmentRoot }];
+        if (selected?.type === "TOLED") {
+          const container = segment.querySelector(".deviceTypeWrapper");
+          const wrapper = segment.querySelector(".deviceTypeWrapper");
+          const toled = wrapper.querySelector(".toledContainer.toledDescriptionSelect");
+          if (toled) toled.remove();
 
-  const structure = systemData.selectedStructure || initSystem.selectedStructure;
+          container.appendChild(createSegmentTOLEDDescriptionSelect());
 
-  elements.forEach(({ index, segment }) => {
-    const busIndex = index - 1;
-    if (!systemData.bus[busIndex]) return;
+          const toledSelect = segment.querySelector(".toledDescriptionSelect select");
+          systemData.bus[index - 1].description = toledSelect.value;
 
-    if (changeElement.matches("select.segmentDeviceSelect")) {
-      const selected = structure?.devices?.find((device) => device.type === changeElement.value);
-      if (!selected) return;
-
-      systemData.bus[busIndex].detector = { ...selected };
-
-      if (selected.type === "TOLED") {
-        const wrapper = segment.querySelector(".deviceTypeWrapper");
-        let toledContainer = wrapper?.querySelector(".toledContainer.toledDescriptionSelect");
-        if (!toledContainer && wrapper) {
-          toledContainer = createSegmentTOLEDDescriptionSelect();
-          wrapper.appendChild(toledContainer);
+          // 🔹 DODANE: przypisanie labeling z wybranej opcji
+          const selectedOption = toledSelect.selectedOptions[0];
+          systemData.bus[index - 1].labeling = selectedOption?.dataset.label || null;
         }
 
-        const toledSelect = segment.querySelector(".toledDescriptionSelect select");
-        const selectedOption = toledSelect?.selectedOptions?.[0];
-        systemData.bus[busIndex].description = toledSelect?.value || "";
-        systemData.bus[busIndex].labeling = selectedOption?.dataset.label || null;
-      } else {
-        const toled = segment.querySelector(".toledContainer.toledDescriptionSelect");
-        if (toled) toled.remove();
-        systemData.bus[busIndex].description = "";
-        systemData.bus[busIndex].labeling = null;
+        systemData.bus[index - 1].detector = { ...selected };
       }
-    }
 
-    if (changeElement.matches("select.toledSelect")) {
-      systemData.bus[busIndex].description = changeElement.value;
-      const selectedOption = changeElement.selectedOptions[0];
-      systemData.bus[busIndex].labeling = selectedOption?.dataset.label || null;
-    }
+      if (changeElement.matches("select.toledSelect")) {
+        systemData.bus[index - 1].description = changeElement.value;
 
-    if (changeElement.matches("input.segmentWireLength")) {
-      systemData.bus[busIndex].wireLength = Math.max(1, parseInt(changeElement.value, 10) || 1);
-    }
-  });
+        // 🔹 DODANE: aktualizacja labeling przy zmianie opcji
+        const selectedOption = changeElement.selectedOptions[0];
+        systemData.bus[index - 1].labeling = selectedOption?.dataset.label || null;
+      }
 
-  if (changeElement.matches("input.segmentWireLength")) {
-    debouncedUpdateSystem();
-  } else {
-    functionToUpdateSystem();
-    checkIfToledExists();
+      if (changeElement.matches("input.segmentWireLength")) {
+        systemData.bus[index - 1].wireLength = parseInt(changeElement.value);
+      }
+    });
   }
+  functionToUpdateSystem();
+  checkIfToledExists();
 }
 
-
-
-const clickEvent = function (event) {
+clickEvent = function (event) {
   const btn = event.target;
 
-  if (btn.matches("#backToHomeButton")) {
-    returnToHomeView();
+  if (btn.matches(".systemOptionToggleInput")) {
+    toggleSystemOption(btn.dataset.systemOption);
     return;
   }
 
   const segmentEl = btn.closest(".actionsSegment");
-  const index = segmentEl ? parseInt(segmentEl.dataset.segmentindex, 10) : null;
-
+  let index = segmentEl ? parseInt(segmentEl.dataset.segmentindex, 10) : null;
   if (btn.matches("button.duplicateDeviceButton")) {
-    if (!index || !systemData.bus[index - 1]) return;
-
     const copy = JSON.parse(JSON.stringify(systemData.bus[index - 1]));
     systemData.bus.splice(index, 0, copy);
-    reindexBus();
-    handleButton();
-    functionToUpdateSystem({ forceValidation: true });
+    handleButton(index);
+    functionToUpdateSystem();
     checkIfToledExists();
-    return;
   }
-
+  // Usunięcie segmentu
   if (btn.matches("button.removeDeviceButton")) {
-    if (!index || systemData.bus.length <= 1) return;
-
     systemData.bus.splice(index - 1, 1);
-    reindexBus();
-    handleButton();
-    functionToUpdateSystem({ forceValidation: true });
+    handleButton(index);
     checkIfToledExists();
-    return;
+    functionToUpdateSystem();
   }
-
+  // Zaznacz wszystkie
   if (btn.matches(".checkAll")) {
     document.querySelectorAll(".segmentCheckbox").forEach((cb) => (cb.checked = true));
-    return;
   }
-
+  // Odznacz wszystkie
   if (btn.matches(".unCheckAll")) {
     document.querySelectorAll(".segmentCheckbox").forEach((cb) => (cb.checked = false));
-    return;
-  }
-
-  if (btn.matches("button#exportToCSV")) {
+  } else if (btn.matches("button#exportToCSV")) {
     exportToXLSX();
-    return;
-  }
-
-  if (btn.matches("button#exportToJSON")) {
+  } else if (btn.matches("button#exportToJSON")) {
     exportToJSON();
   }
 }
 
-function reindexBus() {
-  systemData.bus.forEach((segment, i) => {
-    segment.index = i + 1;
-  });
+
+function keydownEvent(event) {
+  const target = event.target;
+  if (!target.matches(".systemOptionToggleInput")) return;
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  toggleSystemOption(target.dataset.systemOption);
 }
-
-
 
 function setupSystemEventHandlers() {
   const container = document.getElementById("system");
-  if (!container || container.dataset.systemHandlersBound === "true") return;
-
   container.addEventListener("change", changeEvent);
-  container.addEventListener("input", (event) => {
-    if (event.target.matches("input.segmentWireLength")) changeEvent(event);
-  });
-  container.addEventListener("click", clickEvent);
-  setupRangeSelection();
 
-  container.dataset.systemHandlersBound = "true";
+  container.addEventListener("click", clickEvent);
+  container.addEventListener("keydown", keydownEvent);
+  setupRangeSelection();
 }
 
 function checkIfToledExists() {
@@ -783,120 +693,91 @@ function checkIfToledExists() {
 }
 
 // Ustawienie długości magistrali w panelu stanu
-
 function setSystemStateBusLength() {
   const busLength = document.getElementById("busLength");
-  if (!busLength) return;
-  const busLengthValue = systemData.bus.reduce((acc, device) => acc + (Number(device.wireLength) || 0), 0);
+  const busLengthValue = systemData.bus.reduce((acc, device) => acc + device.wireLength, 0);
   if (busLength.textContent !== String(busLengthValue)) {
     busLength.textContent = busLengthValue;
   }
 }
 // Ustawienie wartości zużycia energii dla systemu w panelu stanu
+function getSelectedPowerSupplyDescription() {
+  const selectedConfig = systemData.res?.powerSupply || null;
 
-function getSelectedPowerSupplyDisplayName() {
-  const externalPowerSupply = getSelectedExternalPowerSupply();
-  if (externalPowerSupply?.description) return externalPowerSupply.description;
+  const externalPowerSupply =
+    selectedConfig?.powerSupply?.supply ||
+    selectedConfig?.psu ||
+    selectedConfig?.powerSupply ||
+    null;
 
-  const generatedSupply = systemData.generatedSupply;
-  if (generatedSupply) return generatedSupply;
+  if (externalPowerSupply?.description) {
+    return externalPowerSupply.description;
+  }
 
-  const integratedPower = systemData.supplyType?.description?.power;
-  return integratedPower ? `${integratedPower}W` : "";
+  const controlUnit = selectedConfig?.controlUnit || systemData.supplyType || null;
+  const power = Number(controlUnit?.description?.power);
+  const voltage = Number(controlUnit?.description?.supplyVoltage);
+
+  // Jednostki Teta Control 1-S24/48 mają zasilacz zintegrowany.
+  // W panelu pokazujemy jego pełny opis, a nie samą moc, np. HDR-60W-24V.
+  if (Number.isFinite(power) && power > 0 && Number.isFinite(voltage) && voltage > 0) {
+    return `HDR-${power}W-${voltage}V`;
+  }
+
+  const generatedSupply = String(systemData.generatedSupply || "").trim();
+  if (!generatedSupply) return "";
+
+  // Fallback dla starszych zapisanych plików/systemów.
+  return /^\d+$/.test(generatedSupply) ? `${generatedSupply}W` : generatedSupply;
 }
 
-function setSystemStatePowerConsumption() {
+function setSystemStatePowerConsumption(value = 1) {
   const powerConsumption = document.getElementById("powerConsumption");
   const powerSupplyDescription = document.getElementById("powerSupplyType");
   const powerSupplyGenerated = document.getElementById("powerSupplyGenerated");
   const powerSupplyRow = powerSupplyGenerated?.closest("li");
 
-  if (powerConsumption) {
-    const totalPower = String(systemData.totalPower || 0);
-    if (powerConsumption.textContent !== totalPower) powerConsumption.textContent = totalPower;
-  }
-
-  const generatedSupply = getSelectedPowerSupplyDisplayName();
-
   if (powerSupplyRow) {
     powerSupplyRow.classList.add("powerSupplyStatusItem");
-    powerSupplyRow.style.display = generatedSupply ? "" : "none";
-  } else if (powerSupplyGenerated) {
-    powerSupplyGenerated.style.display = generatedSupply ? "" : "none";
   }
 
-  if (powerSupplyDescription && powerSupplyDescription.textContent !== generatedSupply) {
-    powerSupplyDescription.textContent = generatedSupply;
+  const powerSupplyText = getSelectedPowerSupplyDescription();
+
+  if (!powerSupplyText) {
+    if (powerSupplyRow) powerSupplyRow.style.display = "none";
+    else if (powerSupplyGenerated) powerSupplyGenerated.style.display = "none";
+  } else {
+    if (powerSupplyRow) powerSupplyRow.style.display = "";
+    else if (powerSupplyGenerated) powerSupplyGenerated.style.display = "";
+
+    if (powerSupplyDescription) {
+      powerSupplyDescription.textContent = powerSupplyText;
+    }
+  }
+
+  if (powerConsumption && powerConsumption.textContent !== String(value)) {
+    powerConsumption.textContent = systemData.totalPower;
   }
 }
-
 
 function setSystemStateCableDim() {
-  const wireCrossSection = document.querySelector(`#wireCrossSection`);
-  if (wireCrossSection && wireCrossSection.innerText !== systemData.wireType) {
-    wireCrossSection.innerText = systemData.wireType || "";
-  }
-}
+  document.querySelector(`#wireCrossSection`).innerText = systemData.wireType;
 
+}
 function createSystemUsedDevicesPanel() {
   const systemUsedDevicesContainer = document.getElementById("usedDevicesContainer");
-  if (!systemUsedDevicesContainer) return;
-
+  systemUsedDevicesContainer.replaceChildren();
   const result = setUsedDevices();
-  const signature = JSON.stringify({
-    supplyType: systemData.supplyType?.type || "",
-    devices: Object.keys(result).sort(),
-    lang,
-  });
 
-  if (signature === lastUsedDevicesSignature) return;
-  lastUsedDevicesSignature = signature;
-
-  const df = document.createDocumentFragment();
-  if (systemData.supplyType?.type) df.appendChild(setSystemUsedPSU(systemData.supplyType.type));
-
-  for (const value of Object.values(result)) {
-    df.appendChild(setSystemUsedDevice(value));
+  //ZNALEZIENIE OBRAZU JEDNOSTKI STERUJĄCEJ
+  systemUsedDevicesContainer.appendChild(setSystemUsedPSU(systemData.supplyType.type));
+  for (const [key, value] of Object.entries(result)) {
+    systemUsedDevicesContainer.appendChild(setSystemUsedDevice(value));
   }
-
-  systemUsedDevicesContainer.replaceChildren(df);
 }
 
 // // Ustawienie wykorzystanego w systemie rodzaju jednostki sterującej
 // // USTAWIENIE JEDNOSTKI STERUJĄCEJ
-function setSystemUsedExternalPowerSupply(powerSupply) {
-  const item = document.createElement("div");
-  const dataContainer = document.createElement("div");
-  const imageContainer = document.createElement("div");
-  const name = document.createElement("p");
-  const description = document.createElement("p");
-  const image = document.createElement("img");
-
-  setAttributes(item, {
-    class: "usedDeviceItem",
-    id: `used${String(powerSupply.description || powerSupply.type || "PowerSupply").replace(/ |\+|-/g, "")}Device`,
-  });
-  setAttributes(dataContainer, { class: "systemUsedDeviceDataContainer" });
-  setAttributes(imageContainer, { class: "usedDeviceImageContainer" });
-  setAttributes(name, { class: "usedDeviceName" });
-  setAttributes(description, { class: "systemUsedDeviceType" });
-  setAttributes(image, {
-    src: `./PNG/Teta MOD Control 1.png`,
-    alt: `power supply image`,
-  });
-
-  name.appendChild(document.createTextNode(powerSupply.description || powerSupply.type || "Zasilacz"));
-  description.appendChild(document.createTextNode(`${TRANSLATION.filePSU?.[lang] || "Zasilacz"} ${powerSupply.power ? `- ${powerSupply.power}W` : ""}`));
-
-  dataContainer.appendChild(name);
-  dataContainer.appendChild(description);
-  imageContainer.appendChild(image);
-  item.appendChild(dataContainer);
-  item.appendChild(imageContainer);
-
-  return item;
-}
-
 function setSystemUsedPSU(supplyType) {
   const systemUsedPSU = document.createElement("div");
   const systemUsedPSUDataContainer = document.createElement("div");
@@ -968,8 +849,6 @@ function setSystemUsedDevice(device) {
     systemUsedDeviceType.appendChild(
       document.createTextNode(`${TRANSLATION.deviceDescription[lang]} ${device.gasDetected}`)
     );
-  } else if (device.type === "Teta Control V" || device.class === `valveCtrl`) {
-    systemUsedDeviceType.appendChild(document.createTextNode(`${TRANSLATION.valveControl[lang]}`));
   } else {
     systemUsedDeviceType.appendChild(document.createTextNode(`${TRANSLATION.signallerDescription[lang]}`));
   }
@@ -1014,79 +893,83 @@ function setSystemUsedDevice(device) {
   return systemUsedDevice;
 }
 
-
 function setSystemSegmentsLazy(bus) {
   const container = document.getElementById('actionsList');
-  const template = document.getElementById('actionsSegment1');
-  if (!container || !template) return;
+  const SEGMENT_BATCH_SIZE = 10;
+  let loadedCount = 1;
 
-  // Limit aplikacji to 50 segmentów, więc jednorazowy render przez DocumentFragment
-  // jest prostszy i stabilniejszy niż lazy loading + scroll listener + setTimeout.
-  Array.from(container.querySelectorAll('.actionsSegment')).forEach((segment) => {
-    if (segment.id !== 'actionsSegment0' && segment.id !== 'actionsSegment1') segment.remove();
-  });
-
-  if (!bus.length) return;
-
-  updateSegmentDom(template, 1, bus[0]);
-  const df = document.createDocumentFragment();
-
-  for (let i = 1; i < bus.length; i++) {
+  function renderSegment(index) {
+    const template = document.getElementById('actionsSegment1');
     const newSegment = template.cloneNode(true);
-    updateSegmentDom(newSegment, i + 1, bus[i]);
-    df.appendChild(newSegment);
+    const newIndex = index + 1;
+    const detectorType = systemData.bus[index]?.detector?.type;
+    const wrapper = newSegment.querySelector('.deviceTypeWrapper');
+    const existingToled = wrapper?.querySelector('.toledContainer.toledDescriptionSelect');
+    if (existingToled && detectorType !== 'TOLED') {
+      existingToled.remove();
+    } else if (!existingToled && detectorType === 'TOLED') {
+      wrapper?.appendChild(createSegmentTOLEDDescriptionSelect());
+    }
+    newSegment.style.display = '';
+    newSegment.id = `actionsSegment${newIndex}`;
+    newSegment.dataset.segmentindex = newIndex;
+
+    // Numer segmentu
+    const inputId = newSegment.querySelector('.segmentId');
+    if (inputId) {
+      inputId.value = newIndex;
+      inputId.id = `actionsSegmentIndex${newIndex}`;
+    }
+    //Label selecta
+    const actionsSegmentDeviceLabel = newSegment.querySelector(`.segmentDeviceLabel`);
+    actionsSegmentDeviceLabel.setAttribute(`for`, `actionsSegmentDevice${newIndex}`)
+    // Select urządzenia
+    const select = newSegment.querySelector('.segmentDeviceSelect');
+    if (select && systemData.bus[index] && systemData.bus[index].detector) {
+      select.value = systemData.bus[index].detector.type || "";
+      select.id = `actionsSegmentDevice${newIndex}`;
+    }
+    const wireLengthLabel = newSegment.querySelector(`.segmentWireLengthLabel`);
+    wireLengthLabel.setAttribute(`for`, `actionsSegmentWireLength${newIndex}`)
+    // Długość kabla
+    const wireLengthInput = newSegment.querySelector('.segmentWireLength');
+    if (wireLengthInput && systemData.bus[index] && systemData.bus[index].wireLength) {
+      wireLengthInput.value = systemData.bus[index].wireLength;
+      wireLengthInput.id = `actionsSegmentWireLength${newIndex}`;
+    }
+    // Przycisk duplikacji i usuwania
+    const dupBtn = newSegment.querySelector('.duplicateDeviceButton');
+    if (dupBtn) dupBtn.id = `duplicateDevice${newIndex}`;
+    const remBtn = newSegment.querySelector('.removeDeviceButton');
+    if (remBtn) remBtn.id = `removeDevice${newIndex}`;
+    return newSegment;
   }
 
-  container.appendChild(df);
-}
-
-function updateSegmentDom(segment, newIndex, busSegment) {
-  segment.style.display = '';
-  segment.id = `actionsSegment${newIndex}`;
-  segment.dataset.segmentindex = newIndex;
-
-  const inputId = segment.querySelector('.segmentId');
-  if (inputId) {
-    inputId.value = newIndex;
-    inputId.id = `actionsSegmentIndex${newIndex}`;
+  function loadMoreSegments() {
+    const end = Math.min(loadedCount + SEGMENT_BATCH_SIZE, bus.length);
+    for (let i = loadedCount; i < end; i++) {
+      const seg = renderSegment(i);
+      if (seg) container.appendChild(seg);
+    }
+    loadedCount = end;
   }
 
-  const indexLabel = segment.querySelector('.segmentIndexLabel');
-  if (indexLabel) indexLabel.setAttribute(`for`, `actionsSegmentIndex${newIndex}`);
+  loadMoreSegments();
 
-  const actionsSegmentDeviceLabel = segment.querySelector(`.segmentDeviceLabel`);
-  if (actionsSegmentDeviceLabel) actionsSegmentDeviceLabel.setAttribute(`for`, `actionsSegmentDevice${newIndex}`);
-
-  const select = segment.querySelector('.segmentDeviceSelect');
-  if (select) {
-    select.id = `actionsSegmentDevice${newIndex}`;
-    select.value = busSegment?.detector?.type || "";
+  function onScroll() {
+    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 10) {
+      if (loadedCount < bus.length) loadMoreSegments();
+    }
   }
+  container.removeEventListener('scroll', container._infiniteScrollHandler || (() => { }));
+  container._infiniteScrollHandler = onScroll;
+  container.addEventListener('scroll', onScroll);
 
-  const wireLengthLabel = segment.querySelector(`.segmentWireLengthLabel`);
-  if (wireLengthLabel) wireLengthLabel.setAttribute(`for`, `actionsSegmentWireLength${newIndex}`);
-
-  const wireLengthInput = segment.querySelector('.segmentWireLength');
-  if (wireLengthInput) {
-    wireLengthInput.value = busSegment?.wireLength || 1;
-    wireLengthInput.id = `actionsSegmentWireLength${newIndex}`;
-  }
-
-  const dupBtn = segment.querySelector('.duplicateDeviceButton');
-  if (dupBtn) dupBtn.id = `duplicateDevice${newIndex}`;
-
-  const remBtn = segment.querySelector('.removeDeviceButton');
-  if (remBtn) remBtn.id = `removeDevice${newIndex}`;
-
-  const wrapper = segment.querySelector('.deviceTypeWrapper');
-  const existingToled = wrapper?.querySelector('.toledContainer.toledDescriptionSelect');
-  if (existingToled) existingToled.remove();
-
-  if (busSegment?.detector?.type === 'TOLED' && wrapper) {
-    const toledContainer = createSegmentTOLEDDescriptionSelect();
-    const toledSelect = toledContainer.querySelector('select');
-    if (toledSelect && busSegment.description) toledSelect.value = busSegment.description;
-    wrapper.appendChild(toledContainer);
-  }
+  setTimeout(function tryLoadMore() {
+    if (loadedCount < bus.length && container.scrollHeight <= container.clientHeight) {
+      loadMoreSegments();
+      setTimeout(tryLoadMore, 100);
+    }
+  }, 100);
 }
 

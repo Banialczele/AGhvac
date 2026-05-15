@@ -827,3 +827,54 @@
     overflow: visible;
   }
 }
+
+/* Prezentacja dobranego zasilacza w panelu stanu systemu.
+   Selektor :has() jest celowo dodany jako fallback, gdy w HTML zabraknie klasy. */
+.controlUnitList .powerSupplyStatusItem,
+.controlUnitList li:has(#powerSupplyGenerated) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  row-gap: 8px;
+  padding: 12px;
+  margin-top: 2px;
+  background: var(--accent-bg-color);
+  border-left: 4px solid var(--secondary-bg-color);
+  border-radius: 8px;
+}
+
+.controlUnitList .powerSupplyStatusItem>div:first-child,
+.controlUnitList li:has(#powerSupplyGenerated)>div:first-child {
+  display: block;
+  width: 100%;
+  color: #666;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.controlUnitList .powerSupplyStatusItem>div:last-child,
+.controlUnitList li:has(#powerSupplyGenerated)>div:last-child {
+  display: block;
+  width: 100%;
+}
+
+.controlUnitList .powerSupplyStatusItem #powerSupplyType,
+.controlUnitList li:has(#powerSupplyGenerated) #powerSupplyType {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  margin: 0;
+  color: #222;
+  background: #fff;
+  border: 2px solid var(--input-border-color);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
