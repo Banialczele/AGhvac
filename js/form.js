@@ -1094,7 +1094,7 @@ function validateSystem() {
     if (!result || result.status === "error") return;
 
     const pwrNoReserve = Number(result.powerConsumption_W) || 0;
-    const pwrWithReserve = Math.ceil(pwrNoReserve * 1.10);
+    const pwrWithReserve = Math.ceil(pwrNoReserve * 1.20);
     const voltageForCU = (type.includes("24V") || Number(result.supplyVoltage_V) < 30) ? 24 : 48;
 
     const analysis = {
