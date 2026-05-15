@@ -15,7 +15,6 @@ function findStructureByType(typeValue) {
     const pl = String(structure?.type?.pl || "").trim().toLowerCase();
     const en = String(structure?.type?.en || "").trim().toLowerCase();
     const current = String(structure?.type?.[lang] || "").trim().toLowerCase();
-
     return normalized === pl || normalized === en || normalized === current;
   }) || null;
 }
@@ -23,6 +22,20 @@ function findStructureByType(typeValue) {
 function getDefaultDetectorFromStructure(structure) {
   if (!structure?.devices?.length) return null;
   return structure.devices.find((device) => device.class === "detector") || structure.devices[0] || null;
+}
+
+function findDeviceByType(deviceType, selectedStructure = null) {
+  if (!deviceType) return null;
+
+  const fromStructure = selectedStructure?.devices?.find((device) => device.type === deviceType);
+  if (fromStructure) return fromStructure;
+
+  if (typeof Devices !== "undefined" && Array.isArray(Devices)) {
+    const fromGlobal = Devices.find((device) => device.type === deviceType);
+    if (fromGlobal) return fromGlobal;
+  }
+
+  return null;
 }
 
 function createSystemDataFromAFile(fileData = null) {
@@ -33,9 +46,9 @@ function createSystemDataFromAFile(fileData = null) {
   const incomingInit = fileData.initSystem || {};
 
   const structureType = incomingSystem.selectedStructureType ||
+    incomingSystem.selectedStructure?.type?.[lang] ||
     incomingSystem.selectedStructure?.type?.pl ||
     incomingSystem.selectedStructure?.type?.en ||
-    incomingSystem.selectedStructure?.type?.[lang] ||
     incomingSystem.selectedStructure ||
     incomingInit.selectedStructure?.type?.[lang] ||
     incomingInit.selectedStructure?.type?.pl ||
@@ -43,6 +56,7 @@ function createSystemDataFromAFile(fileData = null) {
     incomingInit.selectedStructure;
 
   const selectedStructure = findStructureByType(structureType)
+    || incomingSystem.selectedStructure
     || initSystem?.selectedStructure
     || systemData?.selectedStructure
     || (typeof getDefaultStructure === "function" ? getDefaultStructure() : null)
@@ -52,13 +66,7 @@ function createSystemDataFromAFile(fileData = null) {
     if (!deviceLike) return null;
     const deviceType = typeof deviceLike === "string" ? deviceLike : deviceLike.type;
     if (!deviceType) return typeof deviceLike === "object" ? deviceLike : null;
-
-    const fromStructure = selectedStructure?.devices?.find(device => device.type === deviceType);
-    const fromGlobal = typeof Devices !== "undefined" && Array.isArray(Devices)
-      ? Devices.find(device => device.type === deviceType)
-      : null;
-
-    return fromStructure || fromGlobal || (typeof deviceLike === "object" ? deviceLike : null);
+    return findDeviceByType(deviceType, selectedStructure) || (typeof deviceLike === "object" ? deviceLike : null);
   };
 
   const incomingBus = Array.isArray(incomingSystem.bus) ? incomingSystem.bus : [];
@@ -68,11 +76,11 @@ function createSystemDataFromAFile(fileData = null) {
       ...segment,
       index: Number(segment.index) || index + 1,
       detector,
-      wireLength: Number(segment.wireLength ?? segment.cableLen_m ?? segment.length ?? initSystem?.EWL ?? 15) || 15,
+      wireLength: Number(segment.wireLength ?? segment.cableLen_m ?? segment.length ?? incomingInit.EWL ?? initSystem?.EWL ?? 15) || 15,
       description: segment.description || "",
       labeling: segment.labeling ?? null,
     };
-  }).filter(segment => segment.detector?.type);
+  }).filter((segment) => segment.detector?.type);
 
   const backupValue = incomingSystem.batteryBackUp || incomingSystem.backup || incomingInit.backup || initSystem?.backup || TRANSLATION?.batteryBackUpNo?.[lang] || "Nie";
   const thRailingValue = incomingSystem.thRailing || incomingInit.thRailing || initSystem?.thRailing || TRANSLATION?.batteryBackUpYes?.[lang] || "Tak";
@@ -80,22 +88,21 @@ function createSystemDataFromAFile(fileData = null) {
   const incomingSupplyType = incomingSystem.supplyType || incomingSystem.res?.powerSupply?.controlUnit || null;
   const supplyType = typeof incomingSupplyType === "string"
     ? (typeof CONTROLUNITLIST !== "undefined" && Array.isArray(CONTROLUNITLIST)
-      ? CONTROLUNITLIST.find(controlUnit => controlUnit.type === incomingSupplyType)
+      ? CONTROLUNITLIST.find((controlUnit) => controlUnit.type === incomingSupplyType)
       : null) || incomingSupplyType
     : incomingSupplyType;
 
-  systemData = createEmptySystemData({
-    supplyType: supplyType || ``,
-    wireType: incomingSystem.wireType || incomingSystem.res?.powerSupply?.cable?.type || "",
-    batteryBackUp: backupValue,
-    thRailing: thRailingValue,
-    bus: normalizedBus,
-    errorList: [],
-    res: incomingSystem.res || null,
-    totalPower: Number(incomingSystem.totalPower) || 0,
-    generatedSupply: incomingSystem.generatedSupply ?? null,
-    selectedStructure,
-  });
+  systemData.supplyType = supplyType || ``;
+  systemData.wireType = incomingSystem.wireType || incomingSystem.res?.powerSupply?.cable?.type || "";
+  systemData.batteryBackUp = backupValue;
+  systemData.thRailing = thRailingValue;
+  systemData.devicesTypes = incomingSystem.devicesTypes || { detectors: [], signallers: [] };
+  systemData.bus = normalizedBus;
+  systemData.errorList = [];
+  systemData.res = incomingSystem.res || null;
+  systemData.totalPower = Number(incomingSystem.totalPower) || 0;
+  systemData.generatedSupply = incomingSystem.generatedSupply ?? null;
+  systemData.selectedStructure = selectedStructure;
 
   initSystem.selectedStructure = selectedStructure;
   initSystem.backup = backupValue;
@@ -116,13 +123,8 @@ function createSystemDataFromAFile(fileData = null) {
 
   const gasSelect = document.getElementById("gasDetected");
   if (gasSelect && initSystem.detector?.type) {
-    const option = Array.from(gasSelect.options).find((opt) => {
-      return opt.dataset?.devicename === initSystem.detector.type;
-    });
-
-    if (option) {
-      gasSelect.value = option.value;
-    }
+    const option = Array.from(gasSelect.options).find((opt) => opt.dataset?.devicename === initSystem.detector.type);
+    if (option) gasSelect.value = option.value;
   }
 
   const thSelect = document.getElementById("thRailing");
@@ -216,6 +218,8 @@ function ensureSystemOptionControls(labelSelect) {
     thLabel.className = "thRailingDescriptionSystem";
     thLabel.textContent = "TH35";
     labelSelect.appendChild(thLabel);
+  } else {
+    thLabel.textContent = "TH35";
   }
 
   if (!thInput) {
@@ -228,6 +232,11 @@ function ensureSystemOptionControls(labelSelect) {
 
   prepareSystemOptionToggle(batteryInput, getSystemBackupLabel(), "backup");
   prepareSystemOptionToggle(thInput, getSystemThRailingLabel(), "thRailing");
+}
+
+function updateSystemOptionControls() {
+  const labelSelect = document.getElementById("segmentDeviceLabel");
+  ensureSystemOptionControls(labelSelect);
 }
 
 function toggleSystemOption(optionName) {
@@ -252,11 +261,6 @@ function toggleSystemOption(optionName) {
 
   functionToUpdateSystem();
   updateSystemOptionControls();
-}
-
-function updateSystemOptionControls() {
-  const labelSelect = document.getElementById("segmentDeviceLabel");
-  ensureSystemOptionControls(labelSelect);
 }
 
 function setSystemStateThRailing() {
@@ -287,6 +291,51 @@ function setSystemStateThRailing() {
   const label = document.getElementById("controlUnitThRailingLabel");
   if (label) label.textContent = lang === "en" ? "TH35 mounting" : "Montaż TH35";
   if (value) value.textContent = getSystemThRailingLabel();
+}
+
+function getBackToHomeButtonText() {
+  return lang === "en" ? "Back to main page" : "Powrót na stronę główną";
+}
+
+function ensureBackToHomeButton() {
+  const statusPanel = document.querySelector(".systemStatus");
+  if (!statusPanel) return;
+
+  let actions = document.getElementById("systemHomeActions");
+  let button = document.getElementById("backToHomeButton");
+
+  if (!actions) {
+    actions = document.createElement("div");
+    actions.id = "systemHomeActions";
+    actions.className = "systemHomeActions";
+    statusPanel.appendChild(actions);
+  }
+
+  if (!button) {
+    button = document.createElement("button");
+    button.id = "backToHomeButton";
+    button.type = "button";
+    button.className = "systemHomeButton";
+    actions.appendChild(button);
+  }
+
+  button.textContent = getBackToHomeButtonText();
+}
+
+function returnToHomeView() {
+  const body = document.body;
+  const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+  body.classList.remove("view-transitioning");
+  body.classList.remove("system-active");
+  body.classList.add("scroll-locked");
+
+  window.setTimeout(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+    });
+  }, 0);
 }
 
 function copyActionsSegmentOnFormSubmit() {
@@ -338,64 +387,76 @@ function copyActionsSegmentOnFormSubmit() {
 function setSelectInSegment(segment) {
   const select = segment.querySelector(`.segmentDeviceSelect`);
   const firstSegment = document.getElementById(`actionsSegmentDevice0`);
+  if (!select) return;
 
   const df = new DocumentFragment();
-  //Ustawienie opisu "Urządzenie" i wartość pola czy jednostka sterująca może obsługiwać UPSa
+
+  // Ustawienie opisu "Urządzenie" i wartości pola UPS dla jednostki sterującej.
   if (select === firstSegment) {
     const labelSelect = select.closest(`.segmentDeviceLabel`);
-    const before = labelSelect.querySelector("br");
+    const batteryBackUpInput = labelSelect?.querySelector(`#modControlBatteryBackUp`);
+    const before = labelSelect?.querySelector("br");
     const text = TRANSLATION.systemSegmentDescription[lang];
     const prev = before && before.previousSibling;
 
-    if (!(prev && prev.nodeType === Node.TEXT_NODE && prev.nodeValue === text)) {
+    if (labelSelect && before && !(prev && prev.nodeType === Node.TEXT_NODE && prev.nodeValue === text)) {
       labelSelect.insertBefore(document.createTextNode(text), before);
     }
 
     ensureSystemOptionControls(labelSelect);
-  } else {
-    select.innerHTML = "";
-
-    // WYGENEROWANIE OPCJI DLA SELECTA URZĄDZENIA!
-    systemData.selectedStructure.devices.forEach((device, i) => {
-      let text = '';
-      if (device.class === "detector") {
-        text = `${TRANSLATION.deviceSegment.detector[lang]} ${device.gasDetected}`;
-      } else if (device.type === "Teta Control V") {
-        text = `${TRANSLATION.valveControl[lang]}`;
-      } else if (device.type === "TOLED") {
-        text = `${TRANSLATION.toledDescription[lang]} ${device.type}`;
-      } else {
-        text = `${TRANSLATION.deviceSegment.signaller[lang]} ${device.type}`;
-      }
-
-      const option = el(
-        "option",
-        {
-          value: device.type,
-          selected: systemData.selectedStructure.devices[i].type === initSystem.detector.type ? "selected" : null,
-        },
-        [text]
-      );
-
-      df.appendChild(option);
-    });
-    select.appendChild(df);
+    return;
   }
+
+  select.innerHTML = "";
+
+  const structure = systemData.selectedStructure || initSystem.selectedStructure;
+  if (!structure?.devices?.length) return;
+
+  const currentIndex = Number(segment.dataset.segmentindex) - 1;
+  const currentDeviceType = systemData.bus[currentIndex]?.detector?.type;
+
+  // WYGENEROWANIE OPCJI DLA SELECTA URZĄDZENIA!
+  structure.devices.forEach((device) => {
+    let text = '';
+    if (device.class === "detector") {
+      text = `${TRANSLATION.deviceSegment.detector[lang]} ${device.gasDetected}`;
+    } else if (device.type === "Teta Control V") {
+      text = `${TRANSLATION.valveControl[lang]}`;
+    } else if (device.type === "TOLED") {
+      text = `${TRANSLATION.toledDescription[lang]} ${device.type}`;
+    } else {
+      text = `${TRANSLATION.deviceSegment.signaller[lang]} ${device.type}`;
+    }
+
+    const option = el(
+      "option",
+      {
+        value: device.type,
+        selected: currentDeviceType === device.type ? "selected" : null,
+      },
+      [text]
+    );
+
+    df.appendChild(option);
+  });
+  select.appendChild(df);
 }
 
 function fillData() {
   const actionsSegments = document.querySelectorAll(`.actionsSegment`);
   actionsSegments.forEach((segment) => setSelectInSegment(segment));
-  actionsSegments.forEach((segment) =>
-    segment.querySelector(`.segmentWireLength`) !== null
-      ? (segment.querySelector(`.segmentWireLength`).value = initSystem.EWL)
-      : ""
-  );
+  actionsSegments.forEach((segment) => {
+    const input = segment.querySelector(`.segmentWireLength`);
+    if (!input) return;
+    const index = Number(segment.dataset.segmentindex) - 1;
+    input.value = systemData.bus[index]?.wireLength ?? initSystem.EWL;
+  });
 }
 
 //setup bus images
 function setBusImages(busElem, type) {
   const busImage = busElem.querySelector(`.busImageContainer img`);
+  if (!busImage) return;
   setAttributes(busImage, {
     src: `./SVG/tcon${type === "detector" ? "P" : "L"}.svg`,
     alt: "T-Konektor image",
@@ -403,8 +464,11 @@ function setBusImages(busElem, type) {
 }
 
 function setImage(busElem, device, detectorContainer, signallerContainer) {
+  if (!busElem || !device?.type) return;
+
   const detectorImage = busElem.querySelector(detectorContainer);
   const signallerImg = busElem.querySelector(signallerContainer);
+  if (!detectorImage || !signallerImg) return;
 
   if (device.class === `detector`) {
     setAttributes(detectorImage, {
@@ -423,10 +487,24 @@ function setImage(busElem, device, detectorContainer, signallerContainer) {
   }
 }
 
+function updateBusImageForSegment(index) {
+  const segment = document.querySelector(`#segmentDiagram${index}`)
+    || document.querySelector(`.systemDiagram .deviceSegment[data-segmentindex="${index}"]`);
+  const detector = systemData.bus[index - 1]?.detector;
+
+  if (!segment || !detector) return;
+
+  setBusImages(segment, detector.class);
+  setImage(segment, detector, `.detectorImageContainer img`, `.warningDeviceImageContainer img`);
+}
+
 function busImageController() {
-  const segments = document.querySelectorAll(`.deviceSegment`);
-  segments.forEach((segment, i) => {
-    const detector = systemData.bus[i].detector;
+  const segments = document.querySelectorAll(`.systemDiagram .deviceSegment`);
+  segments.forEach((segment, fallbackIndex) => {
+    const index = Number(segment.dataset.segmentindex) || fallbackIndex + 1;
+    const detector = systemData.bus[index - 1]?.detector;
+    if (!detector) return;
+
     setBusImages(segment, detector.class);
     setImage(segment, detector, `.detectorImageContainer img`, `.warningDeviceImageContainer img`);
   });
@@ -548,52 +626,6 @@ function setList(listName, deviceList) {
     //if(listName === `signallersList`) console.log(key, value)
     listToSet.appendChild(createListItem(key, value));
   }
-}
-
-
-function getBackToHomeButtonText() {
-  return lang === "en" ? "‹ Back to main page" : "‹ Powrót na stronę główną";
-}
-
-function ensureBackToHomeButton() {
-  const statusPanel = document.querySelector(".systemStatus");
-  if (!statusPanel) return;
-
-  let actions = document.getElementById("systemHomeActions");
-  let button = document.getElementById("backToHomeButton");
-
-  if (!actions) {
-    actions = document.createElement("div");
-    actions.id = "systemHomeActions";
-    actions.className = "systemHomeActions";
-    statusPanel.appendChild(actions);
-  }
-
-  if (!button) {
-    button = document.createElement("button");
-    button.id = "backToHomeButton";
-    button.type = "button";
-    button.className = "systemHomeButton";
-    actions.appendChild(button);
-  }
-
-  button.textContent = getBackToHomeButtonText();
-}
-
-function returnToHomeView() {
-  const body = document.body;
-  const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-
-  body.classList.remove("view-transitioning");
-  body.classList.remove("system-active");
-  body.classList.add("scroll-locked");
-
-  window.setTimeout(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: prefersReducedMotion ? "auto" : "smooth",
-    });
-  }, 0);
 }
 
 // Tworzenie systemu
@@ -725,63 +757,61 @@ function hideOverlayPanel() {
 
 changeEvent = function (event) {
   const changeElement = event.target;
-  if (!changeElement.matches("select.cable-select")) {
-    if (changeElement.matches("input[type='checkbox']")) return;
-    //Dane odnośnie segmentu
-    const indexes = checkboxChecked();
-    const isMulti = indexes.length > 0;
-    const elements = isMulti
-      ? indexes.map((i) => ({
-        index: parseInt(i),
-        segment: document.querySelector(`.systemActions #actionsSegment${i}`),
-      }))
-      : [
-        {
-          index: parseInt(event.target.closest(`.actionsSegment`).dataset.segmentindex),
-          segment: event.target.closest(`.actionsSegment`),
-        },
-      ];
+  if (changeElement.matches("select.cable-select")) return;
+  if (changeElement.matches("input[type='checkbox']")) return;
 
-    elements.forEach(({ index, segment }) => {
-      if (changeElement.matches("select.segmentDeviceSelect")) {
-        const selected = systemData.selectedStructure.devices.find(
-          (device) => device.type === changeElement.value
-        );
+  const sourceSegment = event.target.closest(`.actionsSegment`);
+  if (!sourceSegment) return;
 
-        if (selected?.type === "TOLED") {
-          const container = segment.querySelector(".deviceTypeWrapper");
-          const wrapper = segment.querySelector(".deviceTypeWrapper");
-          const toled = wrapper.querySelector(".toledContainer.toledDescriptionSelect");
-          if (toled) toled.remove();
+  const checkedIndexes = checkboxChecked().map(Number);
+  const indexes = checkedIndexes.length > 0
+    ? checkedIndexes
+    : [Number(sourceSegment.dataset.segmentindex)];
 
-          container.appendChild(createSegmentTOLEDDescriptionSelect());
+  indexes.forEach((index) => {
+    const segment = document.querySelector(`.systemActions #actionsSegment${index}`) || sourceSegment;
+    if (!systemData.bus[index - 1]) return;
 
-          const toledSelect = segment.querySelector(".toledDescriptionSelect select");
-          systemData.bus[index - 1].description = toledSelect.value;
+    if (changeElement.matches("select.segmentDeviceSelect")) {
+      const structure = systemData.selectedStructure || initSystem.selectedStructure;
+      const selected = structure?.devices?.find((device) => device.type === changeElement.value)
+        || findDeviceByType(changeElement.value, structure);
 
-          // 🔹 DODANE: przypisanie labeling z wybranej opcji
-          const selectedOption = toledSelect.selectedOptions[0];
-          systemData.bus[index - 1].labeling = selectedOption?.dataset.label || null;
-        }
+      if (!selected) return;
 
-        systemData.bus[index - 1].detector = { ...selected };
+      const wrapper = segment.querySelector(".deviceTypeWrapper");
+      const existingToled = wrapper?.querySelector(".toledContainer.toledDescriptionSelect");
+
+      if (selected.type === "TOLED") {
+        if (existingToled) existingToled.remove();
+        wrapper?.appendChild(createSegmentTOLEDDescriptionSelect());
+
+        const toledSelect = segment.querySelector(".toledDescriptionSelect select");
+        systemData.bus[index - 1].description = toledSelect?.value || "";
+        systemData.bus[index - 1].labeling = toledSelect?.selectedOptions?.[0]?.dataset?.label || null;
+      } else {
+        if (existingToled) existingToled.remove();
+        systemData.bus[index - 1].description = "";
+        systemData.bus[index - 1].labeling = null;
       }
 
-      if (changeElement.matches("select.toledSelect")) {
-        systemData.bus[index - 1].description = changeElement.value;
+      systemData.bus[index - 1].detector = { ...selected };
+      updateBusImageForSegment(index);
+    }
 
-        // 🔹 DODANE: aktualizacja labeling przy zmianie opcji
-        const selectedOption = changeElement.selectedOptions[0];
-        systemData.bus[index - 1].labeling = selectedOption?.dataset.label || null;
-      }
+    if (changeElement.matches("select.toledSelect")) {
+      systemData.bus[index - 1].description = changeElement.value;
+      systemData.bus[index - 1].labeling = changeElement.selectedOptions?.[0]?.dataset?.label || null;
+    }
 
-      if (changeElement.matches("input.segmentWireLength")) {
-        systemData.bus[index - 1].wireLength = parseInt(changeElement.value);
-      }
-    });
-  }
+    if (changeElement.matches("input.segmentWireLength")) {
+      systemData.bus[index - 1].wireLength = parseInt(changeElement.value, 10) || 1;
+    }
+  });
+
   functionToUpdateSystem();
   checkIfToledExists();
+  requestAnimationFrame(() => busImageController());
 }
 
 clickEvent = function (event) {
@@ -827,7 +857,6 @@ clickEvent = function (event) {
   }
 }
 
-
 function keydownEvent(event) {
   const target = event.target;
   if (!target.matches(".systemOptionToggleInput")) return;
@@ -838,11 +867,14 @@ function keydownEvent(event) {
 
 function setupSystemEventHandlers() {
   const container = document.getElementById("system");
-  container.addEventListener("change", changeEvent);
+  if (!container || container.dataset.systemHandlersBound === "true") return;
 
+  container.addEventListener("change", changeEvent);
   container.addEventListener("click", clickEvent);
   container.addEventListener("keydown", keydownEvent);
   setupRangeSelection();
+
+  container.dataset.systemHandlersBound = "true";
 }
 
 function checkIfToledExists() {
@@ -884,27 +916,20 @@ function getSelectedPowerSupplyDescription() {
   const externalPowerSupply =
     selectedConfig?.powerSupply?.supply ||
     selectedConfig?.psu ||
-    selectedConfig?.powerSupply ||
     null;
 
-  if (externalPowerSupply?.description) {
-    return externalPowerSupply.description;
-  }
+  if (externalPowerSupply?.description) return externalPowerSupply.description;
 
   const controlUnit = selectedConfig?.controlUnit || systemData.supplyType || null;
   const power = Number(controlUnit?.description?.power);
   const voltage = Number(controlUnit?.description?.supplyVoltage);
 
-  // Jednostki Teta Control 1-S24/48 mają zasilacz zintegrowany.
-  // W panelu pokazujemy jego pełny opis, a nie samą moc, np. HDR-60W-24V.
   if (Number.isFinite(power) && power > 0 && Number.isFinite(voltage) && voltage > 0) {
     return `HDR-${power}W-${voltage}V`;
   }
 
   const generatedSupply = String(systemData.generatedSupply || "").trim();
   if (!generatedSupply) return "";
-
-  // Fallback dla starszych zapisanych plików/systemów.
   return /^\d+$/.test(generatedSupply) ? `${generatedSupply}W` : generatedSupply;
 }
 
@@ -913,26 +938,16 @@ function setSystemStatePowerConsumption(value = 1) {
   const powerSupplyDescription = document.getElementById("powerSupplyType");
   const powerSupplyGenerated = document.getElementById("powerSupplyGenerated");
   const powerSupplyRow = powerSupplyGenerated?.closest("li");
-
-  if (powerSupplyRow) {
-    powerSupplyRow.classList.add("powerSupplyStatusItem");
-  }
-
   const powerSupplyText = getSelectedPowerSupplyDescription();
 
   if (!powerSupplyText) {
     if (powerSupplyRow) powerSupplyRow.style.display = "none";
-    else if (powerSupplyGenerated) powerSupplyGenerated.style.display = "none";
   } else {
     if (powerSupplyRow) powerSupplyRow.style.display = "";
-    else if (powerSupplyGenerated) powerSupplyGenerated.style.display = "";
-
-    if (powerSupplyDescription) {
-      powerSupplyDescription.textContent = powerSupplyText;
-    }
+    if (powerSupplyDescription) powerSupplyDescription.textContent = powerSupplyText;
   }
 
-  if (powerConsumption && powerConsumption.textContent !== String(value)) {
+  if (powerConsumption && powerConsumption.textContent !== String(systemData.totalPower)) {
     powerConsumption.textContent = systemData.totalPower;
   }
 }

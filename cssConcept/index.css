@@ -425,15 +425,15 @@ header #configuratorLanguage .langLink:first-child {
 
 .formContainer .form {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   grid-template-areas:
-    ". amounts"
-    "buildingInfo building"
-    "gasInfo gas"
-    "batteryInfo batterybackup"
-    "thRailingInfo thRailing"
-    "wireInfo wireLength"
-    ". button";
+    ". amounts amounts"
+    "buildingInfo building building"
+    "gasInfo gas gas"
+    "batteryInfo batterybackup batterybackup"
+    "thRailingInfo thRailing thRailing"
+    "wireInfo wireLength wireLength"
+    ". button returnSystem";
   row-gap: calc(3 * var(--input-margin));
 }
 
@@ -619,6 +619,21 @@ header #configuratorLanguage .langLink:first-child {
 .form .formButton {
   grid-area: button;
   place-self: end end;
+}
+
+.form .returnToSystemButton {
+  grid-area: returnSystem;
+  place-self: end start;
+  width: 190px;
+  background: var(--secondary-bg-color);
+  color: #fff;
+  margin: 0px 5px;
+}
+
+.form .returnToSystemButton:hover,
+.form .returnToSystemButton:focus {
+  background: #a9a9a9;
+  outline: none;
 }
 
 .contentContainer .descriptionContainer {
@@ -1510,7 +1525,8 @@ body:not(.system-active) header {
       "batteryInfo batterybackup"
       "thRailingInfo thRailing"
       "wireInfo wireLength"
-      ". button";
+      ". button"
+      ". returnSystem";
     row-gap: 14px;
   }
 
@@ -1537,6 +1553,11 @@ body:not(.system-active) header {
   }
 
   body:not(.system-active) .form .formButton {
+    place-self: stretch;
+  }
+
+  body:not(.system-active) .form .returnToSystemButton {
+    width: 100%;
     place-self: stretch;
   }
 

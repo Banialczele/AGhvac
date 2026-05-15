@@ -480,6 +480,38 @@ function syncInitSystemFromFormValues() {
   };
 }
 
+
+function getReturnToSystemButtonText() {
+  return lang === "en" ? "Back to system" : "Powrót do systemu";
+}
+
+function getReturnToSystemUnavailableMessage() {
+  return lang === "en"
+    ? "No system found. Please generate the system again."
+    : "Brak systemu, proszę wygenerować system na nowo.";
+}
+
+function returnToGeneratedSystem() {
+  if (Array.isArray(systemData?.bus) && systemData.bus.length > 1) {
+    transitionToSystemView();
+    return;
+  }
+
+  alert(getReturnToSystemUnavailableMessage());
+}
+
+function setupReturnToSystemButton() {
+  const button = document.getElementById("returnToSystemButton");
+  if (!button) return;
+
+  button.textContent = getReturnToSystemButtonText();
+
+  if (button.dataset.returnListenerBound === "true") return;
+  button.dataset.returnListenerBound = "true";
+
+  button.addEventListener("click", returnToGeneratedSystem);
+}
+
 function formInit() {
   createStructureTypesListSelect();
   createDetectedGasListSelect();
@@ -488,6 +520,7 @@ function formInit() {
   setInputDefaultData();
   syncInitSystemFromFormValues();
   setupInitialFormValidationListeners();
+  setupReturnToSystemButton();
   handleFormSubmit();
 }
 

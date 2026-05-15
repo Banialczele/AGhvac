@@ -88,13 +88,13 @@ function getDataForExcel() {
     rows.push([]);
     rows.push(rowsDescription.accessories);
 
-    const busLengthValue = systemData.bus.reduce((acc, device) => acc + (Number(device.wireLength) || 0), 0);
+    const busLengthValue = systemData.bus.reduce((acc, device) => acc + device.wireLength, 0);
     rows.push(["", `${systemData.wireType}`, busLengthValue]);
     rows.push([]);
     rows.push([]);
 
     rows.push(["",
-        `${TRANSLATION.structureType[lang]}`, `${systemData.selectedStructure?.type?.[lang] || systemData.selectedStructure || ""}`
+        `${TRANSLATION.structureType[lang]}`, `${systemData.selectedStructure.type[lang]}`
     ]);
     rows.push([]);
 
@@ -180,16 +180,7 @@ function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
         if (label === `Jednostka sterująca` || label === `Control Unit`) {
             store.push([`${iterator}${lpPrefix}`, label, devices.type, devices.productKey, `1${TRANSLATION.quantity[lang]}`]);
             return iterator + 1;
-        } else if ([
-            TRANSLATION.fileBufferPSU?.pl,
-            TRANSLATION.fileBufferPSU?.en,
-            TRANSLATION.filePSU?.pl,
-            TRANSLATION.filePSU?.en,
-            `Zasilacz buforowy`,
-            `Zasilacz`,
-            `Buffer power supply`,
-            `Power supply`,
-        ].includes(label)) {
+        } else if (label === `Zasilacz buforowy` || label === `Zasilacz`) {
             const deviceType = typeof devices === 'object' ? devices.type : devices;
             const deviceDescription = typeof devices === 'object' ? devices.description : '';
             const deviceProductKey = typeof devices === 'object' ? devices.productKey : '';
@@ -231,7 +222,7 @@ function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
 function exportToJSON() {
     systemData.backup = initSystem.backup;
     const stringData = JSON.stringify(systemData);
-    const blob = new Blob([stringData], { type: "application/json" });
+    const blob = new Blob([stringData], { type: "text/javascript" });
     const url = URL.createObjectURL(blob);
     downloadFile(url, "json");
 }
@@ -361,14 +352,10 @@ function renderLoadedSystem() {
 
     if (typeof validateSystem === "function") {
         validateSystem();
-        if (typeof functionToUpdateSystem === "function") {
-            functionToUpdateSystem();
-        }
+        if (typeof functionToUpdateSystem === "function") functionToUpdateSystem();
     }
 
-    if (typeof initSystem !== "undefined") {
-        initSystem.systemIsGenerated = true;
-    }
+    if (typeof initSystem !== "undefined") initSystem.systemIsGenerated = true;
 
     switchToSystemViewAfterFileLoad();
 }
@@ -376,11 +363,8 @@ function renderLoadedSystem() {
 function handleDropFile(event) {
     event.preventDefault();
     event.stopPropagation();
-
     setDragAndDropActive(false);
-
-    const file = event.dataTransfer?.files?.[0];
-    convertAndLoadFileData(file);
+    convertAndLoadFileData(event.dataTransfer?.files?.[0]);
 }
 
 function handleDragOver(event) {
@@ -395,17 +379,12 @@ function handleDragLeave(event) {
 
     const area = getDragAndDropArea();
     if (!area) return;
-
-    if (event.relatedTarget && area.contains(event.relatedTarget)) {
-        return;
-    }
-
+    if (event.relatedTarget && area.contains(event.relatedTarget)) return;
     setDragAndDropActive(false);
 }
 
 function handleInputLoadFile(event) {
-    const file = event.target.files?.[0];
-    convertAndLoadFileData(file);
+    convertAndLoadFileData(event.target.files?.[0]);
     event.target.value = "";
 }
 
@@ -434,7 +413,6 @@ function convertAndLoadFileData(file) {
         }
 
         let normalizedData;
-
         try {
             normalizedData = normalizeLoadedSystemPayload(parsedData);
         } catch (error) {
@@ -444,9 +422,7 @@ function convertAndLoadFileData(file) {
 
         try {
             const loaded = createSystemDataFromAFile(normalizedData);
-            if (loaded === false) {
-                throw new Error("createSystemDataFromAFile returned false");
-            }
+            if (loaded === false) throw new Error("createSystemDataFromAFile returned false");
             renderLoadedSystem();
         } catch (error) {
             showFileLoadError("loadFailed", error);
@@ -465,7 +441,6 @@ function setupDragAndDropVisualState() {
     if (!area || area.dataset.dragVisualBound === "true") return;
 
     area.dataset.dragVisualBound = "true";
-
     area.addEventListener("dragenter", handleDragOver);
     area.addEventListener("dragover", handleDragOver);
     area.addEventListener("dragleave", handleDragLeave);
