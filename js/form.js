@@ -840,12 +840,17 @@ function buildPowerConfigurationsForAnalysis(analysis, backupNeeded, thRailingNe
 
     if (backupNeeded && analysis.type === "48V / 48V + UPS") {
       // Dla konfiguracji na szynę TH35 nie zatrzymujemy się wyłącznie na wariancie 24V + UPS.
-      // Jeżeli magistrala przechodzi dopiero jako 48V, nadal dopuszczamy Teta MOD Control 1 + ZBF
-      // i filtrujemy ZBF-y do wariantów 24V, żeby nie wybrać zasilacza 12V.
-      addExternalPowerSupplyConfig(configs, "Teta MOD Control 1", zbfList, "powersupplyMC", analysis, 15, {
+      // Jeżeli magistrala przechodzi dopiero jako 48V, najpierw próbujemy Teta MOD Control 1 + ZBF.
+      // ZBF jest filtrowany do wariantów 24V, żeby nie wybrać zasilacza 12V.
+      addExternalPowerSupplyConfig(configs, "Teta MOD Control 1", zbfList, "powersupplyMC", analysis, 5, {
         requireVoltageMatch: false,
         minSupplyVoltage: 21,
       });
+
+      // Jeżeli system wymaga więcej mocy niż największy ZBF z listy (140 W), poprzedni filtr
+      // zwracał pustą listę i aplikacja pokazywała błąd mimo tego, że w CONTROLUNITLIST istnieje
+      // jednostka 48 V / 300 W z UPS. Traktujemy ją jako bezpieczny fallback zasilający system.
+      addDirectControlUnitConfig(configs, "Teta Control 1-S-UP300W", analysis, 50);
     }
 
     return configs.sort(comparePowerConfigurations);
@@ -870,7 +875,12 @@ function buildPowerConfigurationsForAnalysis(analysis, backupNeeded, thRailingNe
     }
 
     if (analysis.type === "48V / 48V + UPS") {
-      // Teta Control 1-S-UP300W ma własny zasilacz magistrali, a ZBF dobieramy jako zasilacz podtrzymujący.
+      // Teta Control 1-S-UP300W ma własny zasilacz magistrali 48 V / 300 W, więc może zasilić
+      // systemy, dla których zewnętrzne ZBF-y 140 W są za małe. Dodajemy ją bezpośrednio jako
+      // konfigurację podstawową dla układów wymagających UPS.
+      addDirectControlUnitConfig(configs, "Teta Control 1-S-UP300W", analysis, 25);
+
+      // Zachowujemy starszą ścieżkę z ZBF jako dodatkową alternatywę dla mniejszych systemów.
       // Dla tej konfiguracji nie porównujemy napięcia ZBF z napięciem magistrali 48 V.
       addExternalPowerSupplyConfig(configs, "Teta Control 1-S-UP300W", zbfList, "powersupplyMC", analysis, 30, {
         requireVoltageMatch: false,
@@ -1084,7 +1094,7 @@ function validateSystem() {
     if (!result || result.status === "error") return;
 
     const pwrNoReserve = Number(result.powerConsumption_W) || 0;
-    const pwrWithReserve = Math.ceil(pwrNoReserve * 1.15);
+    const pwrWithReserve = Math.ceil(pwrNoReserve * 1.10);
     const voltageForCU = (type.includes("24V") || Number(result.supplyVoltage_V) < 30) ? 24 : 48;
 
     const analysis = {
@@ -1108,6 +1118,10 @@ function validateSystem() {
   const chosenConfig = possibleConfigs[0] || null;
 
   if (!chosenConfig) {
+    // Nie zostawiamy starego wyniku z poprzedniej poprawnej analizy, bo po zmianie urządzeń
+    // panel statusu mógł pokazywać nieaktualną konfigurację razem z nowym błędem.
+    systemData.res = null;
+    systemData.generatedSupply = null;
     systemData.errorList = [{
       code: getNoValidPowerConfigCode(backupNeeded, thRailingNeeded)
     }];

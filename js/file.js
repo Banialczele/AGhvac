@@ -2,6 +2,12 @@
 // EXPORT XLSX / JSON – poprawiona wersja dla nowej struktury systemData.res
 // ============================================================================
 
+function getExcelFileName(fileName) {
+    const defaultFileName = `TetaSystem_${setDate()}.xlsx`;
+    const name = String(fileName || defaultFileName).trim() || defaultFileName;
+    return name.toLowerCase().endsWith(".xlsx") ? name : `${name}.xlsx`;
+}
+
 function exportToXLSX() {
     const rows = getDataForExcel();
     const worksheet = XLSX.utils.aoa_to_sheet(rows);
@@ -18,7 +24,11 @@ function exportToXLSX() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "System");
 
     const fileName = prompt("Nazwa pliku?", `TetaSystem_${setDate()}.xlsx`);
-    XLSX.writeFile(workbook, fileName || `TetaSystem_${setDate()}.xlsx`);
+    XLSX.writeFile(workbook, getExcelFileName(fileName));
+}
+
+function exportToCSV() {
+    exportToXLSX();
 }
 
 function getDataForExcel() {
@@ -222,7 +232,7 @@ function insertDeviceTypeData(iterator, devices, label, store, options = {}) {
 function exportToJSON() {
     systemData.backup = initSystem.backup;
     const stringData = JSON.stringify(systemData);
-    const blob = new Blob([stringData], { type: "text/javascript" });
+    const blob = new Blob([stringData], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     downloadFile(url, "json");
 }
